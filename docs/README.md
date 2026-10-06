@@ -1,4 +1,4 @@
-# Documentación del proyecto «Justo a Tiempo»
+# Documentación del proyecto «Tatú»
 
 Índice de todo lo que hay en esta carpeta. **El repositorio es solo documentación: todavía no
 existe código de producto** (la estructura de código planeada está en
