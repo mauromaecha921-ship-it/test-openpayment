@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Secretos (RNF-01): nunca entran al repo
+.env
+*.key
+*.pem
+
+.DS_Store
