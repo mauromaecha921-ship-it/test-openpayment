@@ -1,0 +1,16 @@
+# Secretos: nunca al repo
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+private.key
+
+# Datos locales del piloto (tokens en texto plano, db/README.md § Pendientes 3)
+api/data/
+*.db
+*.db-*
+
+node_modules/
+dist/
+coverage/

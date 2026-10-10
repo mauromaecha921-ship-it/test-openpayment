@@ -1,0 +1,131 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Tema del piloto: la misma paleta neutra de los wireframes (Plan frontend § 6). La identidad visual
+   sigue pendiente (P-17). Contrastes sobre blanco: #4D4D4D 8,5:1 · #6B6B6B 5,3:1 · #1F55C6 6,6:1.
+   #8C8C88 (3,4:1) es solo para bordes y controles, nunca para texto. */
+
+/* El piloto solo tiene tema claro, como los wireframes: `dark:` de shadcn queda atado a una clase
+   que no se usa, para que el modo oscuro del sistema no mezcle colores. */
+@custom-variant dark (&:is(.dark *));
+:root {
+  color-scheme: light;
+}
+
+@theme inline {
+  --font-sans: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  /* Propios del piloto */
+  --color-tenue: var(--tenue);
+  --color-control: var(--control);
+  --color-enlace: var(--enlace);
+  --color-enlace-hover: var(--enlace-hover);
+  --color-pagado: var(--pagado);
+  --color-pagado-fondo: var(--pagado-fondo);
+  --color-pagando: var(--pagando);
+  --color-pagando-fondo: var(--pagando-fondo);
+  --color-rechazo: var(--rechazo);
+  --color-rechazo-fondo: var(--rechazo-fondo);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.67);
+  --radius-lg: calc(var(--radius) * 0.84);
+  --radius-xl: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.33);
+  --radius-3xl: calc(var(--radius) * 1.67);
+  --radius-4xl: 999px;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #1c1c1c;
+  --card: #ffffff;
+  --card-foreground: #1c1c1c;
+  --popover: #ffffff;
+  --popover-foreground: #1c1c1c;
+  --primary: #1c1c1c;
+  --primary-foreground: #ffffff;
+  --secondary: #e6e6e3;
+  --secondary-foreground: #1c1c1c;
+  --muted: #f5f5f3;
+  --muted-foreground: #4d4d4d;
+  --tenue: #6b6b6b;
+  --accent: #f5f5f3;
+  --accent-foreground: #1c1c1c;
+  --destructive: #a2231d;
+  --border: #d4d4d0;
+  --input: #8c8c88;
+  --control: #8c8c88;
+  --ring: #1f55c6;
+  --enlace: #1f55c6;
+  --enlace-hover: #163f94;
+  --radius: 12px;
+
+  /* Estados del cobro: siempre con ícono y texto, nunca solo color. Todos ≥ 4,5:1 sobre su fondo. */
+  --pagado: #17612c;
+  --pagado-fondo: #e3f1e6;
+  --pagando: #7a4b00;
+  --pagando-fondo: #fdf1dc;
+  --rechazo: #a2231d;
+  --rechazo-fondo: #fbe7e6;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 16px;
+    line-height: 1.4;
+    margin: 0;
+  }
+  a {
+    color: var(--enlace);
+    text-underline-offset: 3px;
+  }
+  a:hover {
+    color: var(--enlace-hover);
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+  h1:focus {
+    outline: none;
+  }
+}
+
+@utility mono {
+  font-family: var(--font-mono);
+}

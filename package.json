@@ -1,0 +1,22 @@
+{
+  "name": "tatu-piloto",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "api",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev -w api\" \"npm run dev -w web\"",
+    "dev:web": "npm run dev -w web",
+    "test": "npm test -w api",
+    "typecheck": "npm run typecheck -w api",
+    "check:secretos": "node scripts/check-secretos.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "10.0.5"
+  }
+}
