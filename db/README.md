@@ -24,6 +24,10 @@ Cuando exista `api/`, `001_esquema.sql` pasa a ser `api/src/db/migraciones/001_i
 
 ## Modelo
 
+![Modelo entidad-relación](./modelo-er.svg)
+
+El mismo modelo en Mermaid, con todos los tipos:
+
 ```mermaid
 erDiagram
   programa ||--o{ cobro : tiene
