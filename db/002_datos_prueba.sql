@@ -7,11 +7,6 @@
 
 BEGIN;
 
-INSERT INTO municipio (codigo_dane, nombre, departamento) VALUES
-  ('11001', 'Bogotá, D.C.', 'Bogotá, D.C.'),
-  ('05001', 'Medellín',     'Antioquia'),
-  ('76001', 'Cali',         'Valle del Cauca');
-
 INSERT INTO programa (id, entidad, nombre, tipo, destino, billetera_programa,
                       codigo_moneda, escala_moneda, vigencia_inicio, vigencia_fin,
                       tope_total, estado, token_acceso, url_gestion)
@@ -25,23 +20,12 @@ INSERT INTO punto (id, nombre, direccion, billetera, tipo) VALUES
   ('b0000000-0000-0000-0000-000000000001', 'Tienda Marta — corresponsal', 'Calle 1 # 2-3',
    'https://ilp.interledger-test.dev/punto-1', 'retiro');
 
-INSERT INTO beneficiario (id, tipo_documento, numero_documento, fecha_expedicion,
-                          primer_nombre, primer_apellido, segundo_apellido,
-                          fecha_nacimiento, sexo, celular, municipio_id, estrato,
-                          categoria_afiliacion, autoriza_datos, fecha_autorizacion, version_politica)
-VALUES
-  ('c0000000-0000-0000-0000-000000000001', 'CC', '900000001', '1977-07-01',
-   'Ana', 'Prueba', 'Uno', '1959-06-02', 'F', '3000000001', '11001', 2,
-   'A', true, '2026-10-01', 'v1'),
-  ('c0000000-0000-0000-0000-000000000002', 'CC', '900000002', '1990-01-15',
-   'Luis', 'Prueba', 'Dos', '1972-01-10', 'M', '3000000002', '05001', 1,
-   'A', true, '2026-10-01', 'v1'),
-  ('c0000000-0000-0000-0000-000000000003', 'CC', '900000003', '1972-03-20',
-   'Jorge', 'Prueba', 'Tres', '1954-03-01', 'M', NULL, '11001', 1,      -- sin celular
-   'A', true, '2026-10-01', 'v1'),
-  ('c0000000-0000-0000-0000-000000000004', 'CC', '900000004', '1985-09-09',
-   'Rosa', 'Prueba', 'Cuatro', '1967-09-01', 'F', '3000000004', '76001', 2,  -- retroactivo
-   'A', true, '2026-10-01', 'v1');
+-- Ana y Luis tienen cuenta; Jorge cobra en el punto; Rosa trae un retroactivo
+INSERT INTO beneficiario (id, tipo_documento, numero_documento) VALUES
+  ('c0000000-0000-0000-0000-000000000001', 'CC', '900000001'),
+  ('c0000000-0000-0000-0000-000000000002', 'CC', '900000002'),
+  ('c0000000-0000-0000-0000-000000000003', 'CC', '900000003'),
+  ('c0000000-0000-0000-0000-000000000004', 'CC', '900000004');
 
 INSERT INTO cuenta_beneficiario (id, beneficiario_id, billetera, estado, verificada_en) VALUES
   ('d0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001',
