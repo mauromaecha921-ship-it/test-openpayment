@@ -12,7 +12,7 @@ INSERT INTO programa (id, entidad, nombre, tipo, destino, billetera_programa,
                       tope_total, estado, token_acceso, url_gestion)
 VALUES ('a0000000-0000-0000-0000-000000000001', 'Colsubsidio', 'Subsidio jóvenes (simulado)',
         'subsidio', 'libre', 'https://ilp.interledger-test.dev/programa-subsidio',
-        'USD', 2, '2026-10-01', '2026-12-31',
+        'USD', 2, '2026-10-01', '2027-12-31',
         69000000, 'Activo', 'token-falso-solo-demo',
         'https://auth.interledger-test.dev/token/falso');
 

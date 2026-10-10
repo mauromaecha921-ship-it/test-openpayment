@@ -13,11 +13,17 @@ viven en Colsubsidio y se consultan en la liquidación; no se copian aquí.
 |---|---|
 | `001_esquema.sql` | Crea tipos, tablas, restricciones, índices y triggers |
 | `002_datos_prueba.sql` | Escenario ficticio de la demo: 4 personas, 1 punto, 3 cobros |
+| `003_ajustes.sql` | Bloqueo por PIN, `evento.actor`, fecha de solicitud de aprobación, reglas del cobro (RN-03, RN-04, RN-06, RN-07) y RLS |
 
 ```bash
 psql "$DATABASE_URL" -f db/001_esquema.sql
 psql "$DATABASE_URL" -f db/002_datos_prueba.sql
+psql "$DATABASE_URL" -f db/003_ajustes.sql
 ```
+
+**En Supabase:** SQL Editor → pegar y ejecutar cada archivo en ese orden. El `003` activa
+RLS en todas las tablas: la API pública de Supabase (`anon`) queda sin acceso y el backend
+entra con la cadena de conexión del proyecto (en `.env`, nunca en el repo).
 
 Requiere PostgreSQL 13 o superior (usa `gen_random_uuid()` sin extensiones).
 Cuando exista `api/`, `001_esquema.sql` pasa a ser `api/src/db/migraciones/001_init.sql`.
@@ -153,7 +159,8 @@ misma persona → 1 solo cobro.
 
 1. **Fallido libera a la persona.** Solo se puede marcar `Fallido` con una respuesta
    definitiva del banco; un timeout deja el cobro en `Pagando` hasta reconciliar.
-2. **Bloqueo de 15 min tras 3 PIN errados** (P-12): todavía no tiene tabla.
+2. **Saldo del bono:** si la compra es menor que el bono, hoy el resto se pierde. Si debe
+   quedar para otra compra, cambia el modelo.
 3. **Tokens y cédula en texto plano:** en producción, tokens cifrados con KMS en una tabla
    aparte y `numero_documento` como HMAC más valor cifrado.
 4. Si los menores (TI) cobran ellos o un acudiente.
