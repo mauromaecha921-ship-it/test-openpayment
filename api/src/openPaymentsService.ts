@@ -12,3 +12,36 @@
 //   token.rotate · token.revoke / grant.cancel (AD-20, por probar)
 //
 // TODO: implementar (Rol 1, hito viernes 14:00).
+
+import {
+  createUnauthenticatedClient,
+  type UnauthenticatedClient,
+} from "@interledger/open-payments";
+
+// Cliente público reutilizable (una sola vez, no por request).
+let clientePublico: Promise<UnauthenticatedClient> | undefined;
+const obtenerClientePublico = () =>
+  (clientePublico ??= createUnauthenticatedClient({ validateResponses: true }));
+
+export interface BilleteraResuelta {
+  id: string;
+  assetCode: string;
+  assetScale: number;
+  authServer: string;
+  resourceServer: string;
+}
+
+// O1 · HU-01: resolver una wallet address por su URL https://
+export async function obtenerBilletera(
+  url: string,
+): Promise<BilleteraResuelta> {
+  const cliente = await obtenerClientePublico();
+  const wallet = await cliente.walletAddress.get({ url });
+  return {
+    id: wallet.id,
+    assetCode: wallet.assetCode,
+    assetScale: wallet.assetScale,
+    authServer: wallet.authServer,
+    resourceServer: wallet.resourceServer,
+  };
+}
