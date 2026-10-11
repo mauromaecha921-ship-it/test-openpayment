@@ -1,0 +1,27 @@
+-- 001_init: 6 tablas + índice único parcial (RN-02) + columna version (RN-10).
+-- Diccionario campo por campo: Historias § Diccionario por tabla.
+-- Resumen (Guía § Modelo de datos · Arquitectura § 4.1):
+--
+--   programa            id, entidad, nombre, tipo (subsidio|bono), destino
+--                       (libre|restringido), vigencia, tope_total (fijo desde la
+--                       aprobación, RN-08), estado, wallet_programa, access_token,
+--                       manage_url, continue_uri, continue_token, nonce,
+--                       finish_nonce, asset_code, asset_scale, grant_url
+--   punto               id, nombre, wallet_address (única), tipo (retiro|compra),
+--                       dirección
+--   programa_punto      programa_id, punto_id (llave compuesta; extra HU-21)
+--   cuenta_beneficiario documento, wallet_address, estado
+--                       (SinEnlazar|PorVerificar|Verificada); sin tokens del
+--                       beneficiario
+--   cobro               id, programa_id, documento, canal, punto_id, monto,
+--                       incoming_payment_url, outgoing_payment_url, estado,
+--                       referencia (única), version (bloqueo optimista, RN-10),
+--                       idempotency_key (UNIQUE), intentos_pin, motivo_rechazo
+--   evento              id, entidad, entidad_id, desde, hacia, detalle, creado
+--                       (solo inserción; `detalle` NUNCA guarda tokens, PIN ni
+--                       llaves — RNF-09)
+--
+-- Índice único parcial (RN-02): un solo cobro activo por (programa_id, documento)
+-- en estados Solicitado, PorConfirmar, Pagando y Pagado.
+--
+-- TODO: escribir el DDL (Rol 2, antes del viernes).
