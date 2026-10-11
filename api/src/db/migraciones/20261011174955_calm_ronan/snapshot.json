@@ -1,0 +1,1747 @@
+{
+  "dialect": "postgres",
+  "id": "3d8b2044-8853-4708-bee9-c8591e0ee50d",
+  "prevIds": [
+    "00000000-0000-0000-0000-000000000000"
+  ],
+  "version": "8",
+  "ddl": [
+    {
+      "values": [
+        "subsidio",
+        "bono"
+      ],
+      "name": "tipo_programa",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "libre",
+        "restringido"
+      ],
+      "name": "destino_programa",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "Borrador",
+        "EsperandoAprobacion",
+        "Activo",
+        "Pausado",
+        "Cerrado"
+      ],
+      "name": "estado_programa",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "retiro",
+        "compra"
+      ],
+      "name": "tipo_punto",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "SinEnlazar",
+        "PorVerificar",
+        "Verificada"
+      ],
+      "name": "estado_cuenta",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "cuenta",
+        "retiro",
+        "compra"
+      ],
+      "name": "canal_cobro",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "Solicitado",
+        "PorConfirmar",
+        "Pagando",
+        "Pagado",
+        "Rechazado",
+        "Fallido"
+      ],
+      "name": "estado_cobro",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "CC",
+        "TI",
+        "CE",
+        "PPT",
+        "PA"
+      ],
+      "name": "tipo_doc",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": true,
+      "name": "beneficiario",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": true,
+      "name": "bloqueo_pin",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": true,
+      "name": "cobro",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": true,
+      "name": "cuenta_beneficiario",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": true,
+      "name": "evento",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": true,
+      "name": "programa",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": true,
+      "name": "programa_punto",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": true,
+      "name": "punto",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "type": "bigserial",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evento"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "programa_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "bloqueo_pin"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "beneficiario"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "programa_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa_punto"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "punto"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "tipo_entidad",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evento"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "programa_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "beneficiario_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "type": "tipo_doc",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "tipo_documento",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "beneficiario"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "punto_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa_punto"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "nombre",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "punto"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "entidad",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "beneficiario_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "bloqueo_pin"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "bloqueado_hasta",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "bloqueo_pin"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "numero_documento",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "beneficiario"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "punto_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "billetera",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "nombre",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "direccion",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "punto"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id_entidad",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evento"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "cobro_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "bloqueo_pin"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "estado_anterior",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evento"
+    },
+    {
+      "type": "tipo_programa",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "tipo",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "billetera",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "punto"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "creado_en",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "beneficiario"
+    },
+    {
+      "type": "estado_cuenta",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'SinEnlazar'",
+      "generated": null,
+      "identity": null,
+      "name": "estado",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "cuenta_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "destino_programa",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "destino",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "nonce_cliente",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "creado_en",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "bloqueo_pin"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "estado_nuevo",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evento"
+    },
+    {
+      "type": "tipo_punto",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "tipo",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "punto"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "beneficiario_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "billetera_programa",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "nonce_cierre",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "type": "canal_cobro",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "canal",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'{}'",
+      "generated": null,
+      "identity": null,
+      "name": "detalle",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evento"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "codigo_moneda",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "total_compra",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "creado_en",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evento"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "verificada_en",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "monto",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "escala_moneda",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'sistema'",
+      "generated": null,
+      "identity": null,
+      "name": "actor",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "evento"
+    },
+    {
+      "type": "estado_cobro",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'Solicitado'",
+      "generated": null,
+      "identity": null,
+      "name": "estado",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "vigencia_inicio",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "motivo_rechazo",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "vigencia_fin",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "tope_total",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "smallint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "intentos_pin",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "estado_programa",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'Borrador'",
+      "generated": null,
+      "identity": null,
+      "name": "estado",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "('SUB-'::text || lpad((nextval('cobro_referencia_seq'::regclass))::text, 4, '0'::text))",
+      "generated": null,
+      "identity": null,
+      "name": "referencia",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "token_acceso",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "llave_idempotencia",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "url_gestion",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "url_pago_entrante",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "uri_continuacion",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "url_pago_saliente",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "name": "version",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "token_continuacion",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "creado_en",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "nonce_cliente",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "nonce_cierre",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "actualizado_en",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "url_permiso",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "aprobacion_solicitada_en",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null,
+          "isExpression": false,
+          "value": "beneficiario_id"
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "cobro_beneficiario_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null,
+          "isExpression": false,
+          "value": "cuenta_id"
+        }
+      ],
+      "isUnique": false,
+      "where": "(cuenta_id IS NOT NULL)",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "cobro_cuenta_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null,
+          "isExpression": false,
+          "value": "actualizado_en"
+        }
+      ],
+      "isUnique": false,
+      "where": "(estado = 'Pagando'::estado_cobro)",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "cobro_pagando_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null,
+          "isExpression": false,
+          "value": "programa_id"
+        },
+        {
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null,
+          "isExpression": false,
+          "value": "creado_en"
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "cobro_programa_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null,
+          "isExpression": false,
+          "value": "punto_id"
+        }
+      ],
+      "isUnique": false,
+      "where": "(punto_id IS NOT NULL)",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "cobro_punto_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null,
+          "isExpression": false,
+          "value": "tipo_entidad"
+        },
+        {
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null,
+          "isExpression": false,
+          "value": "id_entidad"
+        },
+        {
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null,
+          "isExpression": false,
+          "value": "id"
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "evento_entidad_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "evento"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null,
+          "isExpression": false,
+          "value": "programa_id"
+        },
+        {
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null,
+          "isExpression": false,
+          "value": "beneficiario_id"
+        }
+      ],
+      "isUnique": true,
+      "where": "(estado = ANY (ARRAY['Solicitado'::estado_cobro, 'PorConfirmar'::estado_cobro, 'Pagando'::estado_cobro, 'Pagado'::estado_cobro]))",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "un_cobro_vivo_por_persona",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null,
+          "isExpression": false,
+          "value": "beneficiario_id"
+        }
+      ],
+      "isUnique": true,
+      "where": "(estado = ANY (ARRAY['PorVerificar'::estado_cuenta, 'Verificada'::estado_cuenta]))",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "una_cuenta_vigente",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "programa_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "programa",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "programa_punto_programa_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "programa_punto"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "punto_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "punto",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "programa_punto_punto_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "programa_punto"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "beneficiario_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "beneficiario",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "cuenta_beneficiario_beneficiario_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "beneficiario_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "beneficiario",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "cobro_beneficiario_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "programa_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "programa",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "cobro_programa_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "punto_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "punto",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "cobro_punto_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "cuenta_id",
+        "beneficiario_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "cuenta_beneficiario",
+      "columnsTo": [
+        "id",
+        "beneficiario_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "cuenta_del_beneficiario",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "beneficiario_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "beneficiario",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "bloqueo_pin_beneficiario_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "bloqueo_pin"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "cobro_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "cobro",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "bloqueo_pin_cobro_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "bloqueo_pin"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "programa_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "programa",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "name": "bloqueo_pin_programa_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "bloqueo_pin"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": true,
+      "name": "programa_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": true,
+      "name": "punto_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "punto"
+    },
+    {
+      "columns": [
+        "programa_id",
+        "punto_id"
+      ],
+      "nameExplicit": true,
+      "name": "programa_punto_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "programa_punto"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": true,
+      "name": "beneficiario_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "beneficiario"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": true,
+      "name": "cuenta_beneficiario_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": true,
+      "name": "cobro_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": true,
+      "name": "evento_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "evento"
+    },
+    {
+      "columns": [
+        "programa_id",
+        "beneficiario_id"
+      ],
+      "nameExplicit": true,
+      "name": "bloqueo_pin_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "bloqueo_pin"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "billetera"
+      ],
+      "nullsNotDistinct": false,
+      "name": "punto_billetera_key",
+      "entityType": "uniques",
+      "schema": "public",
+      "table": "punto"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "tipo_documento",
+        "numero_documento"
+      ],
+      "nullsNotDistinct": false,
+      "name": "documento_unico",
+      "entityType": "uniques",
+      "schema": "public",
+      "table": "beneficiario"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "id",
+        "beneficiario_id"
+      ],
+      "nullsNotDistinct": false,
+      "name": "cuenta_de_beneficiario",
+      "entityType": "uniques",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "llave_idempotencia"
+      ],
+      "nullsNotDistinct": false,
+      "name": "cobro_llave_idempotencia_key",
+      "entityType": "uniques",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "referencia"
+      ],
+      "nullsNotDistinct": false,
+      "name": "cobro_referencia_key",
+      "entityType": "uniques",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "value": "((estado <> ALL (ARRAY['Activo'::estado_programa, 'Pausado'::estado_programa])) OR ((token_acceso IS NOT NULL) AND (url_gestion IS NOT NULL)))",
+      "name": "activo_con_permiso",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "value": "(((tipo = 'subsidio'::tipo_programa) AND (destino = 'libre'::destino_programa)) OR ((tipo = 'bono'::tipo_programa) AND (destino = 'restringido'::destino_programa)))",
+      "name": "destino_segun_tipo",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "value": "((estado <> 'EsperandoAprobacion'::estado_programa) OR (aprobacion_solicitada_en IS NOT NULL))",
+      "name": "espera_con_fecha",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "value": "(billetera_programa ~~ 'https://%'::text)",
+      "name": "programa_billetera_programa_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "value": "(codigo_moneda ~ '^[A-Z]{3}$'::text)",
+      "name": "programa_codigo_moneda_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "value": "((char_length(entidad) >= 3) AND (char_length(entidad) <= 80))",
+      "name": "programa_entidad_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "value": "((escala_moneda >= 0) AND (escala_moneda <= 18))",
+      "name": "programa_escala_moneda_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "value": "((char_length(nombre) >= 3) AND (char_length(nombre) <= 80))",
+      "name": "programa_nombre_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "value": "(tope_total > 0)",
+      "name": "programa_tope_total_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "value": "((estado = 'Borrador'::estado_programa) OR (tope_total IS NOT NULL))",
+      "name": "tope_antes_de_aprobar",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "value": "(vigencia_fin > vigencia_inicio)",
+      "name": "vigencia_valida",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "programa"
+    },
+    {
+      "value": "(billetera ~~ 'https://%'::text)",
+      "name": "punto_billetera_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "punto"
+    },
+    {
+      "value": "(numero_documento ~ '^[A-Za-z0-9]{3,20}$'::text)",
+      "name": "beneficiario_numero_documento_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "beneficiario"
+    },
+    {
+      "value": "(billetera ~~ 'https://%'::text)",
+      "name": "cuenta_beneficiario_billetera_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "value": "((estado = 'Verificada'::estado_cuenta) = (verificada_en IS NOT NULL))",
+      "name": "verificada_con_fecha",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "cuenta_beneficiario"
+    },
+    {
+      "value": "((total_compra IS NULL) OR (monto IS NULL) OR (monto <= total_compra))",
+      "name": "bono_no_supera_compra",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "value": "(((canal <> 'cuenta'::canal_cobro) AND (cuenta_id IS NULL)) OR ((canal = 'cuenta'::canal_cobro) AND ((cuenta_id IS NOT NULL) OR (estado = 'Rechazado'::estado_cobro))))",
+      "name": "canal_y_cuenta",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "value": "(((canal = 'cuenta'::canal_cobro) AND (punto_id IS NULL)) OR ((canal = ANY (ARRAY['retiro'::canal_cobro, 'compra'::canal_cobro])) AND (punto_id IS NOT NULL)))",
+      "name": "canal_y_punto",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "value": "(intentos_pin >= 0)",
+      "name": "cobro_intentos_pin_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "value": "(monto > 0)",
+      "name": "cobro_monto_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "value": "(total_compra > 0)",
+      "name": "cobro_total_compra_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "value": "(((canal <> 'compra'::canal_cobro) AND (total_compra IS NULL)) OR ((canal = 'compra'::canal_cobro) AND ((total_compra IS NOT NULL) OR (estado = 'Rechazado'::estado_cobro))))",
+      "name": "compra_con_total",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "value": "((monto IS NOT NULL) OR (estado = 'Rechazado'::estado_cobro))",
+      "name": "monto_si_avanza",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "value": "((estado <> ALL (ARRAY['Rechazado'::estado_cobro, 'Fallido'::estado_cobro])) OR (motivo_rechazo IS NOT NULL))",
+      "name": "motivo_si_termina_mal",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "value": "((estado <> 'Pagado'::estado_cobro) OR (url_pago_saliente IS NOT NULL))",
+      "name": "pagado_con_pago_saliente",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "cobro"
+    },
+    {
+      "value": "(actor ~ '^(sistema|entidad|beneficiario|punto|banco)(:[0-9a-f-]{36})?$'::text)",
+      "name": "actor_valido",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "evento"
+    },
+    {
+      "value": "(tipo_entidad = ANY (ARRAY['programa'::text, 'cuenta'::text, 'cobro'::text, 'beneficiario'::text]))",
+      "name": "evento_tipo_entidad_check",
+      "entityType": "checks",
+      "schema": "public",
+      "table": "evento"
+    },
+    {
+      "incrementBy": "1",
+      "minValue": "1",
+      "maxValue": "9223372036854775807",
+      "startWith": "1",
+      "cacheSize": 1,
+      "cycle": false,
+      "name": "cobro_referencia_seq",
+      "entityType": "sequences",
+      "schema": "public"
+    }
+  ],
+  "renames": []
+}

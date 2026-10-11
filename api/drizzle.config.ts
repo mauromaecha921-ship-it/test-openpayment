@@ -14,6 +14,8 @@ export default defineConfig({
   schema: './src/db/schema.ts',
   // Misma carpeta que documenta «Estructura del proyecto § 3» para migraciones.
   out: './src/db/migraciones',
+  // Solo el esquema de la app: evita traer auth/storage/realtime de Supabase.
+  schemaFilter: ['public'],
   dbCredentials: {
     url: process.env.DATABASE_URL!,
   },
