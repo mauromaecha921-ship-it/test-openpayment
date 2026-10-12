@@ -3,6 +3,7 @@ import { config } from './config'
 import { rutas as programas } from './programas/rutas'
 import { rutas as cuentas } from './cuentas/rutas'
 import { rutas as cobros } from './cobros/rutas'
+import { rutas as puntos } from './puntos/rutas'
 import { router as liquidacion } from './liquidacion/router'
 import { rutas as extras } from './extras'
 
@@ -13,6 +14,7 @@ app.use(express.json())
 app.use(programas) // /programas*, /callback/:id
 app.use(cuentas) // /cuentas, /cuentas/callback/:id
 app.use(cobros) // /cobros*
+app.use(puntos) // /puntos (HU-03)
 app.use('/liquidacion', liquidacion) // simulador (AD-13 / P-02)
 app.use(extras) // /config
 
