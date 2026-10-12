@@ -4,6 +4,9 @@
 > octubre de 2026): qué es Tatú, qué ya probamos con dinero de prueba real, qué aprendimos y qué
 > decidir antes del evento. Los demás documentos de `docs/` son el detalle y el contexto para la IA;
 > no hace falta leerlos para entender el proyecto. Actualizado el **12 de octubre de 2026**.
+>
+> **Está basado en lo que se construyó y probó en la rama `piloto`** (10 a 12 de octubre): un piloto
+> desechable con pagos reales en la Interledger Test Wallet. El código del evento se escribe desde cero.
 
 ---
 
@@ -119,7 +122,7 @@ Los cinco primeros pueden tumbar la demo si no se conocen.
 
 | Tema | Qué choca | Qué hizo el piloto |
 |---|---|---|
-| Datos personales | La BD guarda nombres, fechas, celular… de los beneficiarios; la Arquitectura dice que no guardamos la base | Se usó la tabla tal cual; **decidir** el mínimo para inscribir a alguien *(D-01, D-31)* |
+| Datos personales | La BD guardaba nombres, fechas, celular… de los beneficiarios; la Arquitectura dice que no guardamos la base | **Resuelto en `main`** (12 oct): beneficiario mínimo, solo documento y wallet verificada («somos pasarela»). El piloto usó el esquema anterior *(D-01, D-31)* |
 | PIN | La Guía dice «con hash»; la Arquitectura dice que no se guarda | Lo guarda la liquidación simulada, con hash *(D-07)* |
 | Callback | ¿Vuelve a la web o a la API? | Vuelve a la API, que redirige a la web *(D-06)* |
 | Datos de la demo | «Adulto mayor» en los wireframes, «jóvenes» de Colsubsidio en la BD | Se usó «adulto mayor» *(D-10)* |
@@ -157,8 +160,10 @@ Más detalle: [`api/README.md`](../api/README.md).
 - [ ] **Decidir qué entra:** las 18 historias obligatorias ya se probaron en el piloto. Proponemos
       sumar al backlog **«Mi caja» del punto** (HU-26 propuesta), **varios subsidios por persona** y
       **«Renovar permiso»**, que salieron de probar.
-- [ ] **Base de datos:** el evento usa Supabase (PostgreSQL). El esquema está en `db/001_esquema.sql`;
-      sumar lo que agregó el piloto (`api/src/db/migraciones/002` a `004`).
+- [ ] **Base de datos:** el evento usa Supabase (PostgreSQL). El esquema está en `db/` de `main`
+      (`001` a `003`: beneficiario mínimo, bloqueo por PIN y RLS). Falta sumar lo que el piloto
+      necesitó: la liquidación con PIN opcional, el monto por persona y la renovación del permiso
+      (`api/src/db/migraciones/003` y `004` de la rama `piloto`).
 - [ ] **Reescribir en el evento** lo que haga falta: el piloto **no se copia** (regla de la Guía). Lo
       que se reutiliza son los aprendizajes de este documento.
 - [ ] **Extras** (solo si el flujo principal pasa el viernes a las 17:15): bono en comercio, QR del
