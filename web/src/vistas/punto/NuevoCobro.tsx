@@ -1,9 +1,9 @@
-import { ChevronRight, TriangleAlert } from 'lucide-react'
+import { ChevronRight, TriangleAlert, Wallet } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 
 import { api, mensajeDeError } from '@/api/client'
-import type { Cobro, CobroResumen } from '@/api/tipos'
+import type { CajaPunto, Cobro, CobroResumen, PagosEnPunto } from '@/api/tipos'
 import { usePolling } from '@/api/usePolling'
 import { Aviso, MensajeError } from '@/componentes/Comun'
 import { EstadoCobro } from '@/componentes/EstadoCobro'
@@ -15,7 +15,28 @@ import { Input } from '@/componentes/ui/input'
 import { useRol } from '@/contexto/Rol'
 import { formatHora } from '@/lib/textos'
 
-/** Wireframe 14: el punto digita la cédula; la API busca el subsidio con pago disponible (D-21). */
+/** D-36: lo de hoy en una línea, con el enlace a «Mi caja». */
+function CajaDeHoy({ puntoId }: { puntoId: string | null }) {
+  const caja = usePolling(() => api.get<CajaPunto>(`/puntos/${puntoId}/resumen?desde=hoy`), 10_000, true, { clave: puntoId })
+  const t = caja.datos?.totales[0]
+  if (!caja.datos) return null
+  return (
+    <Link
+      to="/punto/caja"
+      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-muted px-4 py-3 text-foreground no-underline hover:text-foreground"
+    >
+      <Wallet aria-hidden className="size-5 shrink-0" />
+      <span className="flex-1">
+        Hoy entregaste <strong>{t ? textoMonto(t.entregado, t.moneda) : '$0'}</strong> · ya te reembolsaron todo · <strong>$0</strong> por adelantado
+      </span>
+      <span className="inline-flex items-center gap-1 text-enlace">
+        Mi caja <ChevronRight aria-hidden className="size-4" />
+      </span>
+    </Link>
+  )
+}
+
+/** Wireframe 14: el punto digita la cédula; si la persona tiene varios subsidios, elige cuál pagar. */
 export default function NuevoCobro() {
   const navegar = useNavigate()
   const { puntoId } = useRol()
@@ -25,20 +46,49 @@ export default function NuevoCobro() {
   // Una llave por intento (HU-10): la misma en el doble clic y en el reintento de la misma cédula.
   const llave = useMemo(() => crypto.randomUUID(), [documento])
 
+  // Si la persona tiene subsidios en varios programas, el punto elige cuál pagar
+  const [opciones, setOpciones] = useState<PagosEnPunto | null>(null)
+
   const hoy = usePolling(() => api.get<CobroResumen[]>(`/puntos/${puntoId}/cobros?desde=hoy`), null, false, { clave: puntoId })
+
+  /** Sin programaId, la API elige (D-21) y deja el rechazo en pantalla si no hay nada que pagar (HU-13). */
+  const pedir = async (cedula: string, programaId?: string) => {
+    setEnviando(true)
+    setError(null)
+    try {
+      const c = await api.post<Cobro>('/cobros', {
+        documento: cedula,
+        canal: 'retiro',
+        puntoId,
+        programaId,
+        // Una llave por cédula y subsidio: el doble clic en la misma opción no crea dos cobros
+        llaveIdempotencia: programaId ? `${llave}-${programaId}` : llave,
+      })
+      navegar(`/punto/cobros/${c.id}`)
+    } catch (e) {
+      setError(mensajeDeError(e))
+      setEnviando(false)
+    }
+  }
 
   const consultar = async () => {
     const cedula = documento.trim()
     if (!/^\d{5,12}$/.test(cedula)) return setError('Digita el número de la cédula, sin puntos ni espacios.')
     setEnviando(true)
     setError(null)
+    setOpciones(null)
+    let consulta: PagosEnPunto | null = null
     try {
-      const c = await api.post<Cobro>('/cobros', { documento: cedula, canal: 'retiro', puntoId, llaveIdempotencia: llave })
-      navegar(`/punto/cobros/${c.id}`)
-    } catch (e) {
-      setError(mensajeDeError(e))
-      setEnviando(false)
+      consulta = await api.get<PagosEnPunto>(`/puntos/${puntoId}/pagos?documento=${cedula}`)
+    } catch {
+      // Cédula desconocida o liquidación caída: el cobro lo dice como siempre
     }
+    if (consulta && consulta.pagos.length > 1) {
+      setOpciones(consulta)
+      setEnviando(false)
+      return
+    }
+    await pedir(cedula, consulta?.pagos[0]?.programa.id)
   }
 
   return (
@@ -69,6 +119,7 @@ export default function NuevoCobro() {
             onChange={(e) => {
               setDocumento(e.target.value.replace(/\D/g, ''))
               setError(null)
+              setOpciones(null)
             }}
             className="h-auto min-h-16 rounded-xl border-2 border-foreground px-4 py-3 text-[30px] tracking-[1px] md:text-[30px]"
           />
@@ -77,10 +128,42 @@ export default function NuevoCobro() {
           Pide la cédula original y digita el número. No necesitas fotos ni papeles.
         </p>
         <MensajeError>{error}</MensajeError>
-        <Button type="submit" size="lg" className="min-h-[60px] text-xl" disabled={enviando}>
-          {enviando ? 'Consultando…' : 'Consultar'}
-        </Button>
+        {!opciones && (
+          <Button type="submit" size="lg" className="min-h-[60px] text-xl" disabled={enviando}>
+            {enviando ? 'Consultando…' : 'Consultar'}
+          </Button>
+        )}
       </form>
+
+      {opciones && (
+        <section aria-labelledby="titulo-opciones" className="flex flex-col gap-3 rounded-2xl border-2 border-foreground p-5">
+          <h2 id="titulo-opciones" className="m-0 text-xl font-bold">
+            {opciones.persona.nombre} tiene {opciones.pagos.length} subsidios por cobrar
+          </h2>
+          <p className="m-0 text-muted-foreground">¿Cuál vas a pagar? Cada retiro paga uno; el otro lo puede cobrar después.</p>
+          <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
+            {opciones.pagos.map((p) => (
+              <li key={p.programa.id}>
+                <button
+                  type="button"
+                  disabled={enviando}
+                  onClick={() => void pedir(documento.trim(), p.programa.id)}
+                  className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-control bg-background px-4 py-3 text-left text-foreground hover:bg-muted disabled:opacity-60"
+                >
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <strong className="text-2xl">{textoMonto(p.monto, p.moneda)}</strong>
+                    <span className="text-[15px] text-muted-foreground">{p.programa.nombre}</span>
+                  </span>
+                  <ChevronRight aria-hidden className="size-6 shrink-0" />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <Button variant="outline" onClick={() => setOpciones(null)} disabled={enviando}>
+            Cancelar
+          </Button>
+        </section>
+      )}
 
       <Aviso icono={<TriangleAlert aria-hidden />}>
         Entrega el efectivo solo cuando veas <strong>«Pagado»</strong>.
@@ -88,6 +171,7 @@ export default function NuevoCobro() {
       </div>
 
       <section className="mt-2 flex min-w-0 flex-col gap-2.5 md:mt-0" aria-labelledby="titulo-hoy">
+        <CajaDeHoy puntoId={puntoId} />
         <h2 id="titulo-hoy" className="m-0 text-lg font-bold">
           Cobros de hoy
         </h2>

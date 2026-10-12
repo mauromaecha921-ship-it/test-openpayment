@@ -14,7 +14,9 @@ import { useResumen } from './useResumen'
 export default function DondeCobrar() {
   const { datos: r } = useResumen()
   const puntos = usePolling(() => api.get<Punto[]>('/puntos'), null, false)
-  const monto = r?.pago ? textoMonto(r.pago.monto, r.pago.moneda) : null
+  // Con varios subsidios, el punto pregunta cuál pagar: aquí no se muestra un monto fijo
+  const unico = r?.pagos.length === 1 ? r.pago : null
+  const monto = unico ? textoMonto(unico.monto, unico.moneda) : null
 
   return (
     <MarcoBeneficiario ancho="ancho">
@@ -25,7 +27,7 @@ export default function DondeCobrar() {
       <div className="grid items-start gap-[18px] md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-10">
       <div className="flex min-w-0 flex-col gap-[18px]">
       <ol className="m-0 flex list-none flex-col gap-2.5 p-0 text-[17px]">
-        {['Lleva tu cédula original.', 'En el punto digitan tu número.', `Confirmas con tu PIN y recibes ${monto ?? 'tu subsidio'} en efectivo.`].map((t, i) => (
+        {['Lleva tu cédula original.', (r?.pagos.length ?? 0) > 1 ? 'En el punto digitan tu número y eliges cuál de tus subsidios cobrar.' : 'En el punto digitan tu número.', `Confirmas con tu PIN y recibes ${monto ?? 'tu subsidio'} en efectivo.`].map((t, i) => (
           <li key={i} className="flex items-start gap-3">
             <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-foreground text-[15px] font-bold">
               {i + 1}
@@ -34,10 +36,10 @@ export default function DondeCobrar() {
           </li>
         ))}
       </ol>
-      {r?.pago && (
+      {unico && (
         <p className="m-0 flex items-center gap-2">
           <Clock aria-hidden className="size-[18px] shrink-0" />
-          Puedes cobrar hasta el {formatFecha(r.pago.vigenciaFin)}.
+          Puedes cobrar hasta el {formatFecha(unico.vigenciaFin)}.
         </p>
       )}
       </div>

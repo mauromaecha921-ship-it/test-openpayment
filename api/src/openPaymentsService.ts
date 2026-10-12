@@ -40,15 +40,19 @@ export class ErrorOP extends Error {
 
 type Operacion = 'pagoSaliente' | 'otra'
 
-function traducir(e: unknown, operacion: Operacion): ErrorOP {
+export function traducir(e: unknown, operacion: Operacion): ErrorOP {
   if (e instanceof ErrorOP) return e
   if (e instanceof OpenPaymentsClientError) {
     const { status, code, description } = e
     // Solo status, code y description: nunca tokens (RNF-09).
     log.warn('Error de Open Payments', { status, code, description, operacion })
-    // 403 al crear el pago saliente: el candidato a InsufficientGrant (se confirma en V-02).
+    // La Test Wallet responde 403 «Inactive Token» (no 401) cuando el token del permiso venció:
+    // es TokenVencido, y conToken lo rota. Confundirlo con el tope dejaba el programa sin pagar (D-34).
+    if (status === 401 || (status === 403 && /inactive token/i.test(description ?? ''))) {
+      return new ErrorOP('TokenVencido', status, code, description)
+    }
+    // Cualquier otro 403 al crear el pago saliente: el candidato a InsufficientGrant (se confirma en V-02).
     if (status === 403 && operacion === 'pagoSaliente') return new ErrorOP('TopeSuperado', status, code, description)
-    if (status === 401) return new ErrorOP('TokenVencido', status, code, description)
     // Sin status (tiempo agotado, red) o un 5xx: no sabemos si pasó. Nunca se marca Fallido por esto.
     if (status === undefined || status >= 500) return new ErrorOP('SinRespuesta', status, code, description)
     return new ErrorOP('ErrorOpenPayments', status, code, description)

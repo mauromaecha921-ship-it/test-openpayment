@@ -2,7 +2,10 @@
 
 > Parte del [plan general](./README.md). Web en React, Vite, Tailwind CSS y shadcn/ui (AD-04),
 > construida a partir de las 22 pantallas de `wireframe/Wireframes de la app.html` y conectada a la
-> API del [Plan backend](./Plan%20backend.md). **Estado: plan, sin ejecutar.**
+> API del [Plan backend](./Plan%20backend.md). **Estado (12 de octubre de 2026): construido en
+> `web/`, y corregido después de la primera corrida** (vistas para PC y celular, registro del equipo,
+> varios subsidios por persona y la caja del punto): ver el [Plan de ajustes](./Plan%20de%20ajustes.md).
+> Donde este plan dice «celular, 390 px», hoy significa «también en PC» (D-30).
 
 Reglas que vienen de los documentos: cliente delgado sin secretos (el navegador solo habla con
 nuestra API, nunca con el SDK), móvil primero desde 360 px, español sencillo y un rol que se elige

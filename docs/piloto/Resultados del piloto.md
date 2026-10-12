@@ -4,10 +4,12 @@
 > marca con ✅ funciona · ⚠️ funciona con ajustes · ❌ no funciona · ⏳ sin probar, con su
 > evidencia y la acción que se propone para `docs/`.
 >
-> **Estado al 10 de octubre de 2026:** backend construido (Fases 0, 2, 3, 4 y 5 en código, rama
-> `piloto`, sin commits), probado con un Open Payments falso y con la web corriendo contra él.
-> **Falta todo lo que exige la Test Wallet**: la Fase 1 (`npm run primer-cobro -w api`) y los
-> criterios «con callback real» de las Fases 3 a 5 (`npm run guion -w api`). Ver § 5.
+> **Estado al 12 de octubre de 2026:** probado **con pagos reales en la Test Wallet** desde la app,
+> con wallets del equipo en COP: aprobación con callback real, cobro a la cuenta, retiro en el punto
+> (reembolso en 3,9 s en promedio), renovación del permiso, varios subsidios por persona y la caja del
+> punto. 147 pruebas de la API en verde. No se corrieron los scripts `primer-cobro` y `guion` (usan
+> las wallets del guion original); las tablas por fase de abajo son del 10 de octubre. Resumen para
+> el equipo: [`docs/Resumen para el equipo.md`](../Resumen%20para%20el%20equipo.md).
 
 ---
 
@@ -93,6 +95,9 @@ ya confirma:
 | D-30 | «Móvil primero desde 360 px» y «Beneficiario (celular, 390 px)» se leyeron como «solo celular»: en PC, el beneficiario y el punto quedaban en una columna de 480 px | Plan frontend § 4 y § 8 | Un marco que cambia en 768 px: columna en el celular y barra completa con columnas en PC ([Plan de ajustes](./Plan%20de%20ajustes.md) F1). **Acción:** que el Plan frontend diga que todos los roles se usan también en PC |
 | D-31 | El esquema de `beneficiario` exige fechas, autorización de datos y más campos que un registro rápido (cédula y wallet) no tiene | `db/001_esquema.sql` frente al registro del equipo | Se llenan con valores fijos del piloto (`version_politica = 'piloto-equipo'`). **Acción:** definir el mínimo para inscribir a alguien y cuáles campos pueden ser nulos |
 | D-32 | En un PC con antivirus que inspecciona HTTPS, Node rechaza el certificado de la Test Wallet (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`) y **ninguna** llamada a Open Payments sale; la API lo reportaba como «sin respuesta» | Prueba en el equipo del 10 de octubre | `api/src/certificados.ts` hace que Node confíe también en los certificados del sistema. **Acción:** anotarlo en la Guía (checklist del equipo) para el día del evento |
+| D-34 | Con el token del permiso vencido, la Test Wallet responde **403 «Inactive Token»**, no 401. La API lo tomaba como «el programa llegó a su tope» y no intentaba rotar | Pago en el punto del 12 de octubre, 28 h después de aprobar | `traducir` lo clasifica como `TokenVencido` y `conToken` rota (`errores-op.test.ts`). **Acción:** corregir la tabla de errores del Plan backend § 6 |
+| D-35 | El token del permiso dura **600 s**. Un día después de aprobar, la rotación falla (401 `invalid_client`, «invalid access token») y hay que aprobar de nuevo; la app no tiene botón para eso | Pago en el punto del 12 de octubre; `scripts/mantener-permiso.ts` | Prueba del 11–12 de octubre: 4 rotaciones seguidas cada 5 min ✅, y rotar un token vencido hace 1 min también ✅. Entre 11 min y 28 h deja de poderse (sin medir). **Hecho:** la API rota el token al arrancar y cada `TOKEN_RENOVAR_CADA_SEG` (240 s, `programas/renovacion.ts`); si el banco ya no acepta la rotación, el programa queda con `permiso_vencido_en` (migración 004) y el tablero ofrece «Renovar permiso», que pide un permiso nuevo por lo que falta del tope y conserva lo cobrado (`renovacion.test.ts`). **Acción:** llevar el mecanismo a HU-06 y al Plan backend |
+| D-36 | Ningún documento le da al punto una vista de su caja (cuánto entregó y cuánto le reembolsaron); esas cifras solo están en el tablero de la entidad (HU-15) | Prueba del 12 de octubre con el Punto de Fernando | «Mi caja» (`/punto/caja`, `GET /puntos/:id/resumen`) y la franja de hoy en «Nuevo cobro» ([Plan de ajustes](./Plan%20de%20ajustes.md) § 8). Con datos reales: $110.000 entregados y reembolsados, 3,9 s en promedio, $0 por adelantado. **Acción:** agregar HU-26 «Ver mi caja» al backlog |
 | D-33 | Las wallets de la semilla «solo UI» (`https://ilp.interledger-test.dev/ana` y `/luis`) existen de verdad, son de otras personas y están en EUR y USD | `GET /api/beneficiarios` con la Test Wallet real | Se avisa en `api/README.md`; el equipo usa `db:reset` (BD limpia) y sus propias wallets. **Acción:** usar en `db/002_datos_prueba.sql` direcciones que no existan (por ejemplo, con un prefijo `tatu-ejemplo-`) |
 
 ---

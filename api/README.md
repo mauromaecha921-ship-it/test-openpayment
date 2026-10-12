@@ -49,6 +49,11 @@ los pagos son reales o simulados y qué falta. Conviene revisarla antes del prim
 Quien se registra **después** de aprobar queda como novedad (RN-08): no entra en el tope y el
 banco puede rechazar su cobro. Registren a todos antes de aprobar, o creen otro programa.
 
+**El permiso dura lo que dure el programa:** el token de la Test Wallet vence a los 10 minutos, y la
+API lo renueva sola al arrancar y cada 4 minutos (`TOKEN_RENOVAR_CADA_SEG`). Si estuvo apagada
+tanto que el banco ya no acepta la renovación, el tablero muestra «Renovar permiso»: la entidad
+aprueba una vez por lo que falta del tope y lo ya cobrado se conserva (D-35).
+
 **HTTPS en Windows:** la API confía también en los certificados del sistema
 (`src/certificados.ts`). En equipos con antivirus que inspecciona HTTPS, sin eso Node rechaza la
 Test Wallet (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`) y ninguna llamada sale (D-32).

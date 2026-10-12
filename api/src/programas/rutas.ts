@@ -71,6 +71,11 @@ export function rutasProgramas(): Router {
     res.json(await servicio.cancelarAprobacion(req.params.id))
   })
 
+  // D-35: el permiso venció en el banco (la API estuvo apagada); se pide uno nuevo por lo que falta
+  r.post('/programas/:id/renovar-permiso', async (req, res) => {
+    res.json(await servicio.renovarPermiso(req.params.id))
+  })
+
   r.get('/programas/:id/tablero', async (req, res) => {
     res.json(await servicio.tablero(req.params.id))
   })

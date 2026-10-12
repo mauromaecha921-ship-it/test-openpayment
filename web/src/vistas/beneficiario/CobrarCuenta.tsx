@@ -1,6 +1,6 @@
 import { Check, ShieldCheck } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 
 import { api, mensajeDeError } from '@/api/client'
 import type { Cobro } from '@/api/tipos'
@@ -19,20 +19,24 @@ export default function CobrarCuenta() {
   const navegar = useNavigate()
   const { documento } = useRol()
   const { datos: r, error, recargar } = useResumen()
+  // Con varios subsidios, el que se eligió en Inicio (?programa=); si ya no está pendiente, vuelve a Inicio
+  const [busqueda] = useSearchParams()
+  const elegido = busqueda.get('programa')
+  const pago = r && (elegido ? (r.pagos.find((p) => p.programa.id === elegido) ?? null) : r.pago)
   const [enviando, setEnviando] = useState(false)
   const [errorCobro, setErrorCobro] = useState<string | null>(null)
   // Una llave por intento: se reutiliza en el doble clic y en los reintentos (HU-10).
   const llave = useMemo(() => crypto.randomUUID(), [])
 
-  if (r && !r.pago) return <Navigate to="/beneficiario" replace />
+  if (r && !pago) return <Navigate to="/beneficiario" replace />
   if (r && r.cuenta?.estado !== 'Verificada') return <Navigate to="/beneficiario/cuenta" replace />
 
   const cobrar = async () => {
-    if (!r?.pago || !documento) return
+    if (!pago || !documento) return
     setEnviando(true)
     setErrorCobro(null)
     try {
-      const c = await api.post<Cobro>('/cobros', { programaId: r.pago.programa.id, documento, canal: 'cuenta', llaveIdempotencia: llave })
+      const c = await api.post<Cobro>('/cobros', { programaId: pago.programa.id, documento, canal: 'cuenta', llaveIdempotencia: llave })
       navegar(`/beneficiario/cobros/${c.id}`, { replace: true })
     } catch (e) {
       setErrorCobro(mensajeDeError(e))
@@ -40,7 +44,7 @@ export default function CobrarCuenta() {
     }
   }
 
-  const monto = r?.pago ? textoMonto(r.pago.monto, r.pago.moneda) : ''
+  const monto = pago ? textoMonto(pago.monto, pago.moneda) : ''
 
   return (
     <MarcoBeneficiario nav={false}>
@@ -48,7 +52,7 @@ export default function CobrarCuenta() {
       <Titulo className="text-[26px] md:text-[32px]">Cobrar a mi cuenta</Titulo>
       {!r && error && <ErrorCarga mensaje={error} reintentar={() => void recargar()} />}
       {!r && !error && <Cargando />}
-      {r?.pago && r.cuenta && (
+      {r && pago && r.cuenta && (
         <>
           <section className="flex flex-col gap-4 rounded-2xl border border-control p-[22px]">
             <div className="flex flex-col gap-0.5">
@@ -58,7 +62,7 @@ export default function CobrarCuenta() {
             <dl className="m-0 flex flex-col gap-3">
               <div className="flex flex-col gap-0.5">
                 <dt className="text-sm text-tenue">De</dt>
-                <dd className="m-0">{r.pago.programa.nombre}</dd>
+                <dd className="m-0">{pago.programa.nombre}</dd>
               </div>
               <div className="flex flex-col gap-0.5">
                 <dt className="text-sm text-tenue">A tu cuenta</dt>
@@ -77,7 +81,7 @@ export default function CobrarCuenta() {
           <MensajeError>{errorCobro}</MensajeError>
 
           <div className="mt-auto flex flex-col gap-3 md:mt-2">
-            <Button size="lg" className="min-h-[60px] text-xl" onClick={() => void cobrar()} disabled={enviando || r.pago.programa.estado !== 'Activo'}>
+            <Button size="lg" className="min-h-[60px] text-xl" onClick={() => void cobrar()} disabled={enviando || pago.programa.estado !== 'Activo'}>
               {enviando ? 'Pidiendo el pago…' : `Cobrar ${monto}`}
             </Button>
             <Button asChild variant="outline" size="lg" className="text-[17px]">

@@ -1,19 +1,33 @@
-import { CreditCard, History, House } from 'lucide-react'
+import { CreditCard, History, House, ScanLine, Wallet, type LucideIcon } from 'lucide-react'
 import { NavLink } from 'react-router'
 
 import { cn } from '@/lib/utils'
 
-const enlaces = [
+export interface Seccion {
+  to: string
+  texto: string
+  Icono: LucideIcon
+  /** Solo se marca activa en la ruta exacta (para la raíz del rol). */
+  fin: boolean
+}
+
+export const SECCIONES_BENEFICIARIO: Seccion[] = [
   { to: '/beneficiario', texto: 'Inicio', Icono: House, fin: true },
   { to: '/beneficiario/cuenta', texto: 'Mi cuenta', Icono: CreditCard, fin: false },
   { to: '/beneficiario/historial', texto: 'Historial', Icono: History, fin: false },
 ]
 
-/** Secciones del beneficiario en el celular: barra fija abajo. En PC se oculta y van arriba. */
-export function NavInferior() {
+/** D-36: el punto también tiene secciones: cobrar y ver su caja. */
+export const SECCIONES_PUNTO: Seccion[] = [
+  { to: '/punto', texto: 'Nuevo cobro', Icono: ScanLine, fin: true },
+  { to: '/punto/caja', texto: 'Mi caja', Icono: Wallet, fin: false },
+]
+
+/** Secciones del rol en el celular: barra fija abajo. En PC se oculta y van arriba. */
+export function NavInferior({ secciones }: { secciones: Seccion[] }) {
   return (
     <nav aria-label="Secciones" className="sticky bottom-0 flex border-t border-border bg-background md:hidden">
-      {enlaces.map(({ to, texto, Icono, fin }) => (
+      {secciones.map(({ to, texto, Icono, fin }) => (
         <NavLink
           key={to}
           to={to}
@@ -36,10 +50,10 @@ export function NavInferior() {
 }
 
 /** Las mismas secciones en la barra superior, solo en PC y tablet. */
-export function NavSuperior() {
+export function NavSuperior({ secciones }: { secciones: Seccion[] }) {
   return (
     <nav aria-label="Secciones" className="hidden self-stretch md:flex">
-      {enlaces.map(({ to, texto, Icono, fin }) => (
+      {secciones.map(({ to, texto, Icono, fin }) => (
         <NavLink
           key={to}
           to={to}

@@ -274,6 +274,8 @@ export async function callback(id: string, q: { hash?: string; interact_ref?: st
   if (!original) return `${config().APP_BASE_URL}/entidad?resultado=invalido`
   const p = await aplicarVencimiento(original)
 
+  // D-35: vuelve de renovar el permiso (el programa sigue Activo o Pausado)
+  if ((p.estado === 'Activo' || p.estado === 'Pausado') && p.uri_continuacion) return callbackRenovacion(p, q)
   // HU-04: un callback repetido con el programa ya Activo redirige igual sin cambiar nada
   if (p.estado === 'Activo' || p.estado === 'Pausado') return urlRegreso(id, 'aprobado')
   if (p.estado !== 'EsperandoAprobacion') return urlRegreso(id, 'vencido')
@@ -338,6 +340,100 @@ export async function cancelarAprobacion(id: string) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// D-35 · renovar el permiso cuando el banco ya no acepta el token (la API estuvo apagada)
+// ---------------------------------------------------------------------------------------------
+
+export type ResultadoRenovacion = 'aprobada' | 'rechazada' | 'invalida'
+
+function urlTablero(id: string, renovacion: ResultadoRenovacion) {
+  return `${config().APP_BASE_URL}/entidad/programas/${encodeURIComponent(id)}?renovacion=${renovacion}`
+}
+
+/** Pide un permiso nuevo por lo que falta del tope. El programa no cambia de estado. */
+export async function renovarPermiso(id: string) {
+  const p = exigir(id)
+  exigirEstado(p, 'Activo', 'Pausado')
+  if (!p.permiso_vencido_en) throw conflicto('PermisoVigente', 'El permiso sigue vigente: no hace falta renovarlo')
+  const restante = (p.tope_total ?? 0) - cobros.sumaComprometida(p.id)
+  if (restante <= 0) throw conflicto('TopeAgotado', 'Ya se pagó todo el tope: no queda nada por autorizar')
+
+  const nonce = randomUUID()
+  let pendiente: op.PermisoPendiente
+  try {
+    pendiente = await op.pedirPermisoPrograma({
+      billetera: p.billetera_programa,
+      tope: restante,
+      moneda: moneda(p),
+      nonce,
+      urlRetorno: `${config().API_BASE_URL}/callback/${p.id}`,
+    })
+  } catch (e) {
+    throw errorOpApi(e, 'No pudimos pedir la renovación al banco')
+  }
+  transaccion(() => {
+    repo.actualizar(p.id, {
+      nonce_cliente: nonce,
+      nonce_cierre: pendiente.nonceCierre,
+      uri_continuacion: pendiente.uriContinuacion,
+      token_continuacion: pendiente.tokenContinuacion,
+      url_permiso: pendiente.urlPermiso,
+    })
+    eventos.registrar({ tipo: 'programa', id: p.id, detalle: { texto: 'Se pidió renovar el permiso en el banco.', tope: aTexto(restante) } })
+  })
+  return { redirect: pendiente.redirect, programa: vistaPrograma(exigir(id)) }
+}
+
+async function callbackRenovacion(p: FilaPrograma, q: { hash?: string; interact_ref?: string; result?: string }): Promise<string> {
+  const limpiar = (texto: string, resultado: string) =>
+    transaccion(() => {
+      repo.actualizar(p.id, TEMPORALES_EN_NULL)
+      eventos.registrar({ tipo: 'programa', id: p.id, detalle: { texto, resultado } })
+    })
+
+  if (q.result === 'grant_rejected' || q.result === 'grant_invalid') {
+    limpiar('La renovación del permiso fue rechazada en el banco.', q.result)
+    return urlTablero(p.id, 'rechazada')
+  }
+  const coincide =
+    q.hash && q.interact_ref && p.nonce_cliente && p.nonce_cierre && p.url_permiso
+      ? verificarHash(q.hash, { nonceCliente: p.nonce_cliente, nonceCierre: p.nonce_cierre, interactRef: q.interact_ref, urlPermiso: p.url_permiso })
+      : null
+  if (!coincide) {
+    eventos.registrar({ tipo: 'programa', id: p.id, detalle: { texto: 'Callback de renovación con hash inválido: se ignoró.', resultado: 'invalido' } })
+    return urlTablero(p.id, 'invalida')
+  }
+
+  let permiso: op.TokenPermiso
+  try {
+    permiso = await op.continuarPermiso({ uriContinuacion: p.uri_continuacion!, tokenContinuacion: p.token_continuacion!, interactRef: q.interact_ref! })
+  } catch (e) {
+    if (!exigir(p.id).permiso_vencido_en) return urlTablero(p.id, 'aprobada') // otro callback ya la completó
+    log.warn('grant.continue de la renovación falló', { error: e, programa: p.id })
+    limpiar('El banco no confirmó la renovación del permiso.', 'invalido')
+    return urlTablero(p.id, 'invalida')
+  }
+
+  // Lo que ya salió (o está saliendo) quedó en el permiso viejo: el tablero lo suma al nuevo
+  const yaSalio = cobros.sumaComprometida(p.id)
+  transaccion(() => {
+    repo.actualizar(p.id, {
+      ...TEMPORALES_EN_NULL,
+      token_acceso: permiso.token,
+      url_gestion: permiso.urlGestion,
+      permiso_vencido_en: null,
+      gastado_permisos_anteriores: yaSalio,
+    })
+    eventos.registrar({
+      tipo: 'programa',
+      id: p.id,
+      detalle: { texto: 'Permiso renovado en el banco.', yaSalio: aTexto(yaSalio), expiresIn: permiso.expiraEnSeg ?? null },
+    })
+  })
+  cacheGastado.delete(p.id)
+  return urlTablero(p.id, 'aprobada')
+}
+
+// ---------------------------------------------------------------------------------------------
 // HU-18 · pausar y reanudar
 // ---------------------------------------------------------------------------------------------
 
@@ -375,7 +471,7 @@ async function rotar(programaId: string, tokenViejo: string): Promise<string> {
   if (enCurso) return enCurso
 
   const promesa = (async () => {
-    if (!actual.token_acceso || !actual.url_gestion) throw new PermisoVencido()
+    if (!actual.token_acceso || !actual.url_gestion || actual.permiso_vencido_en) throw new PermisoVencido()
     try {
       const nuevo = await op.rotarToken({ urlGestion: actual.url_gestion, token: actual.token_acceso })
       transaccion(() => {
@@ -389,6 +485,9 @@ async function rotar(programaId: string, tokenViejo: string): Promise<string> {
       return nuevo.token
     } catch (e) {
       log.warn('No se pudo rotar el token', { error: e, programa: programaId })
+      // Sin respuesta (red, 5xx): no se sabe si el permiso murió; se reintenta en la próxima vuelta
+      if (e instanceof ErrorOP && e.tipo === 'SinRespuesta') throw e
+      marcarPermisoVencido(programaId)
       throw new PermisoVencido()
     }
   })()
@@ -400,10 +499,32 @@ async function rotar(programaId: string, tokenViejo: string): Promise<string> {
   }
 }
 
+/** El banco ya no acepta el token ni su rotación: queda así hasta que la entidad lo renueve. */
+function marcarPermisoVencido(programaId: string) {
+  transaccion(() => {
+    const p = exigir(programaId)
+    if (p.permiso_vencido_en || (p.estado !== 'Activo' && p.estado !== 'Pausado')) return
+    repo.actualizar(programaId, { permiso_vencido_en: ahoraIso() })
+    eventos.registrar({
+      tipo: 'programa',
+      id: programaId,
+      detalle: { texto: 'El permiso venció en el banco: hay que renovarlo para seguir pagando.', permisoVencido: true },
+    })
+  })
+  cacheGastado.delete(programaId)
+}
+
+/** Rota el token del permiso ya, sin esperar a que falle (renovación en segundo plano, D-35). */
+export async function rotarPermiso(programaId: string): Promise<string> {
+  const p = exigir(programaId)
+  if (!p.token_acceso || p.permiso_vencido_en) throw new PermisoVencido()
+  return rotar(programaId, p.token_acceso)
+}
+
 /** Corre `fn` con el token del programa; ante TokenVencido, rota y reintenta una sola vez. */
 export async function conToken<T>(programaId: string, fn: (token: string, p: FilaPrograma) => Promise<T>): Promise<T> {
   const p = exigir(programaId)
-  if (!p.token_acceso) throw new PermisoVencido()
+  if (!p.token_acceso || p.permiso_vencido_en) throw new PermisoVencido()
   try {
     return await fn(p.token_acceso, p)
   } catch (e) {
@@ -412,7 +533,10 @@ export async function conToken<T>(programaId: string, fn: (token: string, p: Fil
     try {
       return await fn(token, exigir(programaId))
     } catch (e2) {
-      if (e2 instanceof ErrorOP && e2.tipo === 'TokenVencido') throw new PermisoVencido()
+      if (e2 instanceof ErrorOP && e2.tipo === 'TokenVencido') {
+        marcarPermisoVencido(programaId)
+        throw new PermisoVencido()
+      }
       throw e2
     }
   }
@@ -427,20 +551,23 @@ type Fuente = 'banco' | 'plataforma'
 
 const cacheGastado = new Map<string, { valor: number; vence: number }>()
 
-/** Cobrado = spentDebitAmount del permiso; si falla, lo Pagado en la BD con fuente «plataforma». */
+/**
+ * Cobrado = spentDebitAmount del permiso (más lo que salió con permisos anteriores, si se renovó);
+ * si falla, lo Pagado en la BD con fuente «plataforma».
+ */
 async function cobrado(p: FilaPrograma): Promise<{ valor: number; fuente: Fuente }> {
   if (p.estado === 'Cerrado') {
     const d = datosDelCierre(p.id)
     if (d) return { valor: deTexto(d.cobrado), fuente: d.fuente }
   }
-  if ((p.estado === 'Activo' || p.estado === 'Pausado') && p.token_acceso) {
+  if ((p.estado === 'Activo' || p.estado === 'Pausado') && p.token_acceso && !p.permiso_vencido_en) {
     const guardado = cacheGastado.get(p.id)
     if (guardado && guardado.vence > Date.now()) return { valor: guardado.valor, fuente: 'banco' }
     try {
       const gastado = await conToken(p.id, (token, actual) =>
         op.gastadoDelPermiso({ billeteraPrograma: actual.billetera_programa, token }),
       )
-      const valor = gastado === null ? 0 : deTexto(gastado)
+      const valor = exigir(p.id).gastado_permisos_anteriores + (gastado === null ? 0 : deTexto(gastado))
       cacheGastado.set(p.id, { valor, vence: Date.now() + 3000 })
       return { valor, fuente: 'banco' }
     } catch (e) {

@@ -4,7 +4,7 @@ import { API_SIMULADA } from '@/api/client'
 import { cn } from '@/lib/utils'
 
 import { EstadoPagos } from './EstadoPagos'
-import { NavSuperior } from './NavInferior'
+import { NavSuperior, type Seccion } from './NavInferior'
 
 const pastilla = 'rounded-full border px-3 py-1 text-sm whitespace-nowrap'
 
@@ -35,17 +35,17 @@ interface Props {
   quien?: string
   /** Etiqueta del rol («Entidad»). En la variante celular solo se ve en PC. */
   rol?: string
-  /** Variante celular: muestra las secciones del beneficiario en la barra (solo en PC). */
-  secciones?: boolean
+  /** Variante celular: las secciones del rol, en la barra (solo en PC). */
+  secciones?: Seccion[]
 }
 
-export function Encabezado({ variante, quien, rol, secciones = false }: Props) {
+export function Encabezado({ variante, quien, rol, secciones }: Props) {
   if (variante === 'celular') {
     return (
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-2.5 gap-y-1 px-5 py-2 md:gap-x-4 md:px-6">
           <Logo compacto />
-          {secciones && <NavSuperior />}
+          {secciones && <NavSuperior secciones={secciones} />}
           <span className="ml-auto flex items-center gap-2">
             <EstadoPagos corto />
             <AvisoSimulada corto />

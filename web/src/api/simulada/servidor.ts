@@ -8,6 +8,7 @@ import type {
   Billetera,
   Canal,
   Cobro,
+  CajaPunto,
   CobroResumen,
   Cuenta,
   EstadoCobro,
@@ -15,6 +16,9 @@ import type {
   EventoCobro,
   Moneda,
   Motivo,
+  PagoPendiente,
+  PagosEnPunto,
+  PeriodoCaja,
   PersonaRegistrada,
   Programa,
   Punto,
@@ -600,12 +604,34 @@ const rutas: Array<[string, string, Manejador]> = [
     e.puntos.push(p)
     return { status: 201, cuerpo: publicoPunto(p) }
   }],
-  ['GET', '/puntos/:id/cobros', (e, p) => {
-    const desde = hoy()
-    return e.cobros
-      .filter((c) => c.punto?.id === p.id && c.creado.slice(0, 10) >= desde)
-      .sort((a, b) => b.creado.localeCompare(a.creado))
-      .map(resumenCobro)
+  ['GET', '/puntos/:id/pagos', (e, _p, _b, q): PagosEnPunto => {
+    const quien = persona(e, q.get('documento') ?? '')
+    if (!quien) throw new Falla(404, 'SinPagoDisponible', 'Esta cédula no tiene pagos disponibles')
+    return { persona: { nombre: quien.nombre, etiqueta: quien.etiqueta, tienePin: !!quien.pin }, pagos: pagosPendientes(e, quien, true) }
+  }],
+  ['GET', '/puntos/:id/cobros', (e, p, _b, q) => cobrosDePunto(e, p.id, q.get('desde')).map(resumenCobro)],
+  ['GET', '/puntos/:id/resumen', (e, p, _b, q): CajaPunto => {
+    const punto = e.puntos.find((x) => x.id === p.id)
+    if (!punto) throw new Falla(404, 'NoEncontrado', 'Ese punto no existe')
+    const periodo: PeriodoCaja = q.get('desde') === '7d' || q.get('desde') === 'todo' ? (q.get('desde') as PeriodoCaja) : 'hoy'
+    const lista = cobrosDePunto(e, p.id, periodo)
+    const pagados = lista.filter((c) => c.estado === 'Pagado')
+    const entregado = sumarMontos('0', ...pagados.map((c) => c.monto))
+    const segundos = pagados.map((c) => c.segundosHastaPagado).filter((s): s is number => s !== null)
+    return {
+      punto: publicoPunto(punto),
+      periodo,
+      totales: lista.length
+        ? [{ moneda: COP, entregado, reembolsado: entregado, pendiente: sumarMontos('0', ...lista.filter((c) => c.estado === 'Pagando').map((c) => c.monto)) }]
+        : [],
+      cobros: {
+        pagados: pagados.length,
+        enCurso: lista.filter((c) => c.estado === 'Solicitado' || c.estado === 'PorConfirmar' || c.estado === 'Pagando').length,
+        rechazados: lista.filter((c) => c.estado === 'Rechazado' || c.estado === 'Fallido').length,
+      },
+      reembolsoSegundos: segundos.length ? Math.round((segundos.reduce((a, b) => a + b, 0) / segundos.length) * 10) / 10 : null,
+      giradoPorAdelantado: '0',
+    }
   }],
 
   // Beneficiarios y cuentas
@@ -654,15 +680,12 @@ const rutas: Array<[string, string, Manejador]> = [
     const quien = persona(e, p.documento)
     if (!quien) throw new Falla(404, 'NoExiste', 'No encontramos esa cédula')
     const propios = e.cobros.filter((c) => c.documento === quien.documento).sort((a, b) => b.creado.localeCompare(a.creado))
-    const programa = e.programas
-      .filter((x) => x.estado === 'Activo' || x.estado === 'Pausado')
-      .find((x) => !propios.some((c) => c.programa.id === x.id && c.estado === 'Pagado'))
+    const pagos = pagosPendientes(e, quien, false)
     const ultimo = propios.find((c) => c.estado === 'Pagado' || c.estado === 'Pagando')
     return {
       persona: { nombre: quien.nombre, documento: quien.documento, tienePin: !!quien.pin },
-      pago: programa
-        ? { programa: { id: programa.id, nombre: programa.nombre, estado: programa.estado }, monto: montoDe(programa, quien), moneda: programa.moneda, vigenciaFin: programa.vigenciaFin }
-        : null,
+      pagos,
+      pago: pagos[0] ?? null,
       cuenta: cuentaVigente(e, quien.documento),
       ultimoCobro: ultimo ? resumenCobro(ultimo) : null,
     }
@@ -703,6 +726,25 @@ const rutas: Array<[string, string, Manejador]> = [
     return publicoCobro(c)
   }],
 ]
+
+/** Cobros del punto en el periodo de «Mi caja» (hoy, últimos 7 días o todo). */
+function cobrosDePunto(e: Estado, puntoId: string, desde: string | null): CobroS[] {
+  const limite = desde === 'todo' ? '' : desde === '7d' ? iso(Date.now() - 6 * 86_400_000).slice(0, 10) : hoy()
+  return e.cobros.filter((c) => c.punto?.id === puntoId && c.creado.slice(0, 10) >= limite).sort((a, b) => b.creado.localeCompare(a.creado))
+}
+
+/** Como la API: todos los programas Activos o Pausados donde no ha cobrado; en el punto, solo los que reciben hoy. */
+function pagosPendientes(e: Estado, quien: PersonaLiquidacion, soloQueReciben: boolean): PagoPendiente[] {
+  return e.programas
+    .filter((x) => (soloQueReciben ? x.estado === 'Activo' && hoy() >= x.vigenciaInicio && hoy() <= x.vigenciaFin : x.estado === 'Activo' || x.estado === 'Pausado'))
+    .filter((x) => !e.cobros.some((c) => c.documento === quien.documento && c.programa.id === x.id && c.estado === 'Pagado'))
+    .map((x) => ({
+      programa: { id: x.id, nombre: x.nombre, estado: x.estado },
+      monto: montoDe(x, quien),
+      moneda: x.moneda,
+      vigenciaFin: x.vigenciaFin,
+    }))
+}
 
 function personaRegistrada(e: Estado, x: PersonaLiquidacion): PersonaRegistrada {
   const c = cuentaVigente(e, x.documento)

@@ -26,6 +26,10 @@ export interface FilaPrograma {
   url_permiso: string | null
   /** Unidades mínimas; null = LIQUIDACION_MONTO_BASE (migración 003). */
   monto_por_persona: number | null
+  /** Migración 004: cuándo se detectó que el permiso ya no sirve; null = vigente (D-35). */
+  permiso_vencido_en: string | null
+  /** Migración 004: lo que salió con permisos anteriores del programa. */
+  gastado_permisos_anteriores: number
 }
 
 export type CamposPrograma = Partial<Omit<FilaPrograma, 'id'>>

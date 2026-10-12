@@ -66,7 +66,9 @@ export function falsoOP(real: ModuloOP) {
     leerWallet: vi.fn(wallet),
     diagnosticoLlave: vi.fn(async () => ({ configurado: true, coincide: true, detalle: 'falso' })),
     pedirPermisoPrograma: vi.fn(async (a: { tope: number }) => {
+      // Un permiso nuevo (aprobar o renovar) empieza sin gasto
       estado.tope = a.tope
+      estado.gastado = 0
       return pendiente()
     }),
     continuarPermiso: vi.fn(async () => {

@@ -5,7 +5,16 @@ existe código de producto** (la estructura de código planeada está en
 [`Estructura del proyecto.md`](./Estructura%20del%20proyecto.md)). El código del
 [piloto desechable](./piloto/README.md) vive solo en la rama `piloto` y nunca se mezcla a `main`.
 
-## Documentos
+## Empieza aquí
+
+**[Resumen para el equipo](./Resumen%20para%20el%20equipo.md)**: lo importante en un solo
+documento. Qué es Tatú, qué ya funciona con dinero de prueba real, qué aprendimos en el piloto,
+cómo correrlo y qué decidir antes del evento. Con eso basta para entender el proyecto.
+
+Los demás documentos son el **detalle y el contexto** (sobre todo para la IA que ayuda a construir):
+léelos solo cuando necesites una regla, una decisión técnica o un endpoint exacto.
+
+## Documentos de detalle y contexto
 
 | Documento | Qué es | Cuándo leerlo | Estado |
 |---|---|---|---|
@@ -17,10 +26,11 @@ existe código de producto** (la estructura de código planeada está en
 | [Hallazgos — Investigación de Fuentes.md](./Hallazgos%20—%20Investigación%20de%20Fuentes.md) | Consolidación de la investigación: correcciones a ENDPOINTS, evidencia de spec para P-05/P-07/P-13, payloads JSON de referencia, checklist de pruebas T-1…T-9, anexo de repos | Antes de programar cualquier llamada a Open Payments y antes de las pruebas del 8 de oct | Activo (6 oct 2026) |
 | [Estructura del proyecto.md](./Estructura%20del%20proyecto.md) | Diseño del árbol de carpetas futuro (api/, web/, liquidación), decisiones de estructura (P-02, P-11, P-15, P-20), mapas ruta→archivo y HU→archivo | Al crear el esqueleto del código | Diseño, sin código |
 | [script-incoming-payment-grant.ts](./script-incoming-payment-grant.ts) | Script *pre-request* de Bruno que firma un grant de incoming-payment (firma RFC 9421/Ed25519) | Como referencia de firma; no es ejecutable en CI | Referencia |
-| [piloto/](./piloto/README.md) | Primer piloto desechable (SQLite en vez de Supabase): plan general con hallazgos D-01…D-22 y verificaciones V-01…V-21, [plan backend](./piloto/Plan%20backend.md), [plan frontend](./piloto/Plan%20frontend.md) y [resultados](./piloto/Resultados%20del%20piloto.md) (hallazgos nuevos D-23…D-29) | Para seguir el piloto y antes de volver a tocar la documentación | En ejecución en la rama `piloto`: backend construido, falta la Test Wallet (10 oct 2026) |
+| [piloto/](./piloto/README.md) | Primer piloto desechable (SQLite en vez de Supabase): plan general con hallazgos D-01…D-22 y verificaciones V-01…V-21, [plan backend](./piloto/Plan%20backend.md), [plan frontend](./piloto/Plan%20frontend.md), [plan de ajustes](./piloto/Plan%20de%20ajustes.md) y [resultados](./piloto/Resultados%20del%20piloto.md) (hallazgos D-23…D-36) | Para el detalle de lo que se probó y antes de volver a tocar la documentación | Probado con pagos reales en la Test Wallet, rama `piloto` (12 oct 2026) |
 
 ## Orden de lectura recomendado
 
+0. **[Resumen para el equipo](./Resumen%20para%20el%20equipo.md)** (todo lo importante; para el equipo basta con este).
 1. **Guía** (producto, alcance, stack).
 2. **Historias** (qué se construye, reglas y criterios).
 3. **Arquitectura** (cómo se construye y qué decisiones ya están tomadas).

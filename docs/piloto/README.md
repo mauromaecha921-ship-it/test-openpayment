@@ -1,10 +1,11 @@
 # Piloto 1: plan general
 
-> **Estado (10 de octubre de 2026): en ejecución en la rama `piloto`.** El backend está construido
-> y probado con dobles (Fases 0, 2, 3, 4 y 5 en código; 120 pruebas en verde) y la web corre contra
-> él. **Bloqueado por la Test Wallet:** falta crear las wallets de la demo (§ 12) para correr la
-> Fase 1 y los pagos reales. Avance, evidencia y hallazgos nuevos:
-> [Resultados del piloto](./Resultados%20del%20piloto.md). Cómo correr la API: [`api/README.md`](../../api/README.md).
+> **Estado (12 de octubre de 2026): probado con pagos reales en la Test Wallet, rama `piloto`.**
+> Con wallets del equipo en COP: aprobación del permiso, cobro a la cuenta, retiro en el punto con
+> reembolso en segundos, varios subsidios por persona, renovación del permiso y la caja del punto.
+> 147 pruebas de la API y 19 de la web en verde. Lo importante está en el
+> [Resumen para el equipo](../Resumen%20para%20el%20equipo.md); el detalle y los hallazgos D-23…D-36,
+> en [Resultados del piloto](./Resultados%20del%20piloto.md). Cómo correr la API: [`api/README.md`](../../api/README.md).
 >
 > **Qué es:** un primer piloto **desechable** que arma el proyecto tal como lo describen `docs/`,
 > `db/` y `wireframe/`, con **SQLite en lugar de Supabase**, para comprobar qué de la

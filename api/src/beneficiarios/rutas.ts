@@ -1,13 +1,11 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { noEncontrado, validar } from '../comun/errores.js'
-import { fechaBogota, moneda, vistaCobro, vistaCuenta, vistaPersona } from '../comun/vistas.js'
+import { vistaCobro, vistaCuenta, vistaPersona } from '../comun/vistas.js'
 import * as repo from '../db/repositorios/beneficiarios.js'
 import * as cobros from '../db/repositorios/cobros.js'
 import * as cuentas from '../db/repositorios/cuentas.js'
-import * as programas from '../db/repositorios/programas.js'
 import { documento } from '../liquidacion/contrato.js'
-import * as liquidacion from '../liquidacion/cliente.js'
 import * as datosLiquidacion from '../liquidacion/datos.js'
 import * as servicio from './servicio.js'
 
@@ -56,31 +54,15 @@ export function rutasBeneficiarios(): Router {
     const b = repo.porDocumento(doc)
     if (!b) throw noEncontrado('Esa cédula no está registrada')
     const propios = cobros.deBeneficiario(b.id)
-
-    // El pago disponible: el primer programa Activo o Pausado donde la persona no ha cobrado
-    let pago = null
-    let liquidacionDisponible = true
-    for (const p of programas.listar().filter((x) => x.estado === 'Activo' || x.estado === 'Pausado')) {
-      if (propios.some((c) => c.programa_id === p.id && c.estado === 'Pagado')) continue
-      try {
-        const disponible = await liquidacion.pago(p.id, doc)
-        if (!disponible.disponible) continue
-        pago = {
-          programa: { id: p.id, nombre: p.nombre, estado: p.estado },
-          monto: disponible.monto,
-          moneda: moneda(p),
-          vigenciaFin: fechaBogota(p.vigencia_fin),
-        }
-        break
-      } catch {
-        liquidacionDisponible = false
-      }
-    }
+    // Todos los subsidios por cobrar, no solo el primero: una persona puede estar en varios programas
+    const { pagos, liquidacionDisponible } = await servicio.pagosPendientes(b)
 
     const ultimo = propios.find((c) => c.estado === 'Pagado' || c.estado === 'Pagando')
     res.json({
       persona: { nombre: b.primer_nombre, documento: b.numero_documento, tienePin: datosLiquidacion.tienePin(doc) },
-      pago,
+      pagos,
+      // El primero, para quien solo mira un pago (compatibilidad)
+      pago: pagos[0] ?? null,
       liquidacionDisponible,
       cuenta: vistaCuenta(cuentas.ultimaDe(b.id)),
       ultimoCobro: ultimo ? vistaCobro(ultimo, { eventos: false }) : null,

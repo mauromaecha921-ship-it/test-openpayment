@@ -46,7 +46,9 @@ export function vistaPrograma(p: FilaPrograma) {
     tope: texto(p.tope_total),
     montoPorPersona: aTexto(p.monto_por_persona ?? BigInt(config().LIQUIDACION_MONTO_BASE)),
     estado: p.estado,
-    permisoActivo: p.token_acceso !== null,
+    permisoActivo: p.token_acceso !== null && p.permiso_vencido_en === null,
+    // D-35: el banco ya no acepta el token ni su rotación; la entidad tiene que renovarlo
+    permisoVencido: (p.estado === 'Activo' || p.estado === 'Pausado') && p.permiso_vencido_en !== null,
   }
 }
 

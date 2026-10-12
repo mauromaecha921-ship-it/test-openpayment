@@ -4,10 +4,13 @@
 > y SQLite (`node:sqlite`), siguiendo `Estructura del proyecto.md`, la API de la Guía, las
 > Historias y `db/001_esquema.sql`.
 >
-> **Estado (10 de octubre de 2026): construido en la rama `piloto`, sin commits todavía.** Todo lo
-> de este plan está en `api/` y pasa 120 pruebas con un Open Payments falso. Faltan las puertas que
-> exigen la Test Wallet (Fase 1 y los pagos reales de las Fases 3 a 5). Los ajustes frente a este
-> plan están en el § 14; la evidencia, en [Resultados del piloto](./Resultados%20del%20piloto.md).
+> **Estado (12 de octubre de 2026): construido en la rama `piloto` y probado con pagos reales en la
+> Test Wallet** desde la app (aprobación, cobro a la cuenta y retiro en el punto). Pasa 147 pruebas
+> con un Open Payments falso. Lo que cambió después de este plan (registro del equipo, monto por
+> persona, renovación del token, varios subsidios por persona y la caja del punto) está en el
+> [Plan de ajustes](./Plan%20de%20ajustes.md); los ajustes originales, en el § 14; la evidencia, en
+> [Resultados del piloto](./Resultados%20del%20piloto.md). Ojo: la rotación del token ya no es solo
+> reactiva (D-12): se hace en segundo plano (D-35).
 
 ---
 

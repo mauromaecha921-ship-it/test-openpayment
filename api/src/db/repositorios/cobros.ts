@@ -127,6 +127,14 @@ export function cuantosEnEstado(programaId: string, estado: EstadoCobro): number
   })!.n
 }
 
+/** Lo que ya salió o está saliendo (Pagado y Pagando): al renovar el permiso, eso ya no cabe en el nuevo. */
+export function sumaComprometida(programaId: string): number {
+  return uno<{ total: number }>(
+    `SELECT coalesce(sum(monto), 0) AS total FROM cobro WHERE programa_id = :p AND estado IN ('Pagado', 'Pagando')`,
+    { p: programaId },
+  )!.total
+}
+
 export function sumaPagada(programaId: string): number {
   return uno<{ total: number }>(
     `SELECT coalesce(sum(monto), 0) AS total FROM cobro WHERE programa_id = :p AND estado = 'Pagado'`,

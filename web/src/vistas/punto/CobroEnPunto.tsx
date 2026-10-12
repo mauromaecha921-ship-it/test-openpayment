@@ -30,7 +30,7 @@ export default function CobroEnPunto() {
   const pantalla = pantallaDelCobro(c?.estado)
 
   return (
-    <MarcoPunto>
+    <MarcoPunto nav={false}>
       {!c && consulta.error && <ErrorCarga mensaje={consulta.error} reintentar={() => void consulta.recargar()} />}
       {pantalla === 'cargando' && !consulta.error && <Cargando />}
       <div aria-live="polite" className="flex flex-1 flex-col gap-[18px]">

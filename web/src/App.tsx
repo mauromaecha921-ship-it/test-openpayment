@@ -21,6 +21,7 @@ import Entrada from '@/vistas/Entrada'
 import Equipo from '@/vistas/Equipo'
 import Estado from '@/vistas/Estado'
 import CobroEnPunto from '@/vistas/punto/CobroEnPunto'
+import MiCaja from '@/vistas/punto/MiCaja'
 import NuevoCobro from '@/vistas/punto/NuevoCobro'
 
 // Solo existe en el modo «API simulada»: hace las veces de la Test Wallet.
@@ -65,6 +66,7 @@ export default function App() {
         <Route path="/beneficiario/historial" element={<ConRol rol="beneficiario"><Historial /></ConRol>} />
 
         <Route path="/punto" element={<ConRol rol="punto"><NuevoCobro /></ConRol>} />
+        <Route path="/punto/caja" element={<ConRol rol="punto"><MiCaja /></ConRol>} />
         <Route path="/punto/cobros/:id" element={<ConRol rol="punto"><CobroEnPunto /></ConRol>} />
 
         {API_SIMULADA && (

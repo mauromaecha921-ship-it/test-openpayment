@@ -1,9 +1,9 @@
-import { CreditCard, Pause, Play, Store } from 'lucide-react'
+import { CreditCard, Pause, Play, RefreshCw, Store, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 
 import { api, mensajeDeError } from '@/api/client'
-import type { CobroResumen, Tablero as DatosTablero } from '@/api/tipos'
+import type { CobroResumen, Tablero as DatosTablero, Redireccion } from '@/api/tipos'
 import { BilleteraCorta } from '@/componentes/BilleteraCorta'
 import { CifraGrande } from '@/componentes/CifraGrande'
 import { MensajeError, Tarjeta } from '@/componentes/Comun'
@@ -17,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/componentes/ui/tabs'
 import { formatHora, formatSegundos, plural } from '@/lib/textos'
 import { cn } from '@/lib/utils'
+import { prepararPestana } from '@/lib/ventana'
 
 type Filtro = 'todos' | 'pagados' | 'rechazados'
 
@@ -36,6 +37,88 @@ function filtrar(cobros: CobroResumen[], filtro: Filtro) {
   if (filtro === 'pagados') return cobros.filter((c) => c.estado === 'Pagado')
   if (filtro === 'rechazados') return cobros.filter((c) => c.estado === 'Rechazado' || c.estado === 'Fallido')
   return cobros
+}
+
+/**
+ * D-35: el token del permiso dura 10 minutos y la API lo renueva sola mientras está prendida. Si
+ * estuvo apagada mucho tiempo, el banco ya no acepta la renovación: hay que aprobar un permiso
+ * nuevo por lo que falta del tope. El tablero se actualiza solo cuando vuelve aprobado.
+ */
+function AvisoPermisoVencido({ programaId }: { programaId: string }) {
+  const [enviando, setEnviando] = useState(false)
+  const [esperando, setEsperando] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const renovar = async () => {
+    const pestana = prepararPestana()
+    setEnviando(true)
+    setError(null)
+    try {
+      const r = await api.post<Redireccion>(`/programas/${programaId}/renovar-permiso`)
+      setEsperando(r.redirect)
+      pestana.ir(r.redirect)
+    } catch (e) {
+      pestana.cerrar()
+      setError(mensajeDeError(e))
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  return (
+    <section role="alert" className="flex flex-col gap-3 rounded-xl border-2 border-rechazo bg-rechazo-fondo p-5 text-rechazo">
+      <h2 className="m-0 flex items-center gap-2 text-lg font-bold">
+        <TriangleAlert aria-hidden className="size-5 shrink-0" />
+        El permiso en tu banco venció
+      </h2>
+      <p className="m-0 text-foreground">
+        La plataforma estuvo apagada tanto tiempo que el banco ya no acepta renovarlo sola. Mientras tanto, los cobros fallan sin mover
+        dinero. Apruébalo de nuevo en tu banco, una sola vez, por lo que falta del tope; lo ya cobrado se conserva.
+      </p>
+      <MensajeError>{error}</MensajeError>
+      {esperando ? (
+        <div className="flex flex-wrap items-center gap-3 text-foreground">
+          <span>Esperando tu aprobación en el banco…</span>
+          <Button variant="outline" onClick={() => window.open(esperando, '_blank', 'noopener')}>
+            Abrir mi banco otra vez
+          </Button>
+        </div>
+      ) : (
+        <Button className="self-start" onClick={() => void renovar()} disabled={enviando}>
+          <RefreshCw aria-hidden />
+          {enviando ? 'Pidiendo la renovación…' : 'Renovar permiso'}
+        </Button>
+      )}
+    </section>
+  )
+}
+
+/** Lo que devuelve el banco al renovar (?renovacion=aprobada | rechazada | invalida). */
+function ResultadoRenovacion() {
+  const [busqueda, setBusqueda] = useSearchParams()
+  const r = busqueda.get('renovacion')
+  if (!r) return null
+  const aprobada = r === 'aprobada'
+  return (
+    <p
+      role="status"
+      className={cn(
+        'm-0 flex flex-wrap items-center gap-3 rounded-xl border-2 px-4 py-3 font-bold',
+        aprobada ? 'border-pagado bg-pagado-fondo text-pagado' : 'border-pagando bg-pagando-fondo text-pagando',
+      )}
+    >
+      <span className="flex-1">
+        {aprobada
+          ? 'Permiso renovado: los cobros vuelven a salir.'
+          : r === 'rechazada'
+            ? 'No aprobaste la renovación en tu banco; puedes intentarlo de nuevo.'
+            : 'No pudimos confirmar la respuesta de tu banco; intenta de nuevo.'}
+      </span>
+      <Button variant="ghost" size="sm" onClick={() => setBusqueda({}, { replace: true })}>
+        Cerrar
+      </Button>
+    </p>
+  )
 }
 
 export default function Tablero({ tablero: t, error, recargar }: { tablero: DatosTablero; error: string | null; recargar: () => Promise<unknown> }) {
@@ -83,6 +166,9 @@ export default function Tablero({ tablero: t, error, recargar }: { tablero: Dato
           </Button>
         </div>
       </div>
+
+      <ResultadoRenovacion />
+      {p.permisoVencido && <AvisoPermisoVencido programaId={p.id} />}
 
       {pausado && (
         <p role="status" className="m-0 rounded-xl border-2 border-pagando bg-pagando-fondo px-4 py-3 font-bold text-pagando">

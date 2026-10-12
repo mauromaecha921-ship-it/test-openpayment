@@ -1,7 +1,8 @@
 # Piloto 1: plan de ajustes (probar de verdad y vistas que se adaptan)
 
-> Parte del [plan general](./README.md). **Estado (10 de octubre de 2026): ejecutado**, salvo los
-> pagos reales, que esperan las llaves de la Test Wallet (§ 1). Resultado y evidencia en el § 7.
+> Parte del [plan general](./README.md). **Estado (12 de octubre de 2026): ejecutado y probado con
+> pagos reales en la Test Wallet.** Resultado y evidencia en el § 7; después se agregaron la
+> renovación del permiso (D-35), varios subsidios por persona y la caja del punto (§ 8, D-36).
 > Responde a la primera corrida del 10 de octubre: el front quedó como una copia literal de los
 > wireframes y de su guion, y no servía para lo que se quería probar: **enviar a otras wallets,
 > registrar usuarios y ver que todo funcione**, en celular y en PC.
@@ -154,4 +155,22 @@ otras personas).
 | B1 a B4 · Registro, liquidación en la BD, monto por persona, `/estado` | ✅ | `npm test -w api`: 133 pruebas en verde (13 nuevas en `beneficiarios/registro.test.ts` y `liquidacion/datos.test.ts`) |
 | F2 y F3 · «Equipo de prueba», «Estado de los pagos», entrada sin guion | ✅ | Contra la API real: wallet inexistente → «No encontramos esa cuenta»; `/estado` lista lo que falta |
 | F4 · API simulada | ✅ | En el navegador: registrar (con y sin PIN) → crear programa de $10.000 por persona (tope $50.000) → aprobar → cobrar a la cuenta (Pagado en 3,5 s) → retiro con PIN (Pagado en 2,6 s); sin PIN, «Esta persona no registró un PIN» |
-| Pagos reales en la Test Wallet | ⏳ | Faltan las llaves (§ 1). El arreglo de HTTPS (D-32) ya está probado: la API lee wallets reales de la Test Wallet |
+| Pagos reales en la Test Wallet | ✅ | 10 a 12 de octubre, con wallets del equipo en COP: aprobación con callback real, cobro a la cuenta, retiro en el punto (reembolso en 3,9 s en promedio) y renovación del permiso |
+
+---
+
+## 8. La caja del punto (hallazgo D-36, 12 de octubre)
+
+**Vacío en los documentos:** ninguna historia le da al punto una vista de cuánto entregó y cuánto le
+reembolsaron. Las cifras «reembolso en segundos» y «plata girada por adelantado: $0» solo están en
+el tablero de la **entidad** (HU-15), y HU-12 manda al punto a mirar su Test Wallet. Para el pitch es
+justo lo que prueba el beneficio del punto. Historia propuesta para el equipo:
+
+> **HU-26 · Ver mi caja (punto).** Como punto de retiro, quiero ver cuánto efectivo entregué y cuánto
+> me reembolsaron, para saber que recuperé todo sin girar plata por adelantado.
+
+| Parte | Qué |
+|---|---|
+| API | `GET /puntos/:id/resumen?desde=hoy\|7d\|todo`: entregado (retiros Pagados, que son a la vez lo reembolsado a su wallet), pendiente (en Pagando: todavía no se entrega), cobros pagados, rechazados y en curso, promedio de segundos del PIN al reembolso y girado por adelantado ($0). `GET /puntos/:id/cobros` acepta también `desde=7d` y `desde=todo` |
+| Web | Navegación del punto (como la del beneficiario): **Nuevo cobro** y **Mi caja**. En «Nuevo cobro», una franja con lo de hoy. «Mi caja»: el resumen con filtro de periodo y el historial con filtro por estado; cada cobro abre su detalle (`/punto/cobros/:id`) con la referencia para buscarla en la Test Wallet |
+| Pruebas | Un punto con un retiro pagado, uno rechazado y uno en curso: el resumen cuadra y los filtros funcionan |

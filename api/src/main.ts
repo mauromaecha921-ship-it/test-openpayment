@@ -5,6 +5,7 @@ import { config, rutaBaseDeDatos } from './config.js'
 import { log } from './comun/log.js'
 import { abrirBd, cerrarBd } from './db/conexion.js'
 import { migrar } from './db/migrar.js'
+import { iniciarRenovacion } from './programas/renovacion.js'
 
 const cfg = config()
 const bd = abrirBd(rutaBaseDeDatos())
@@ -17,6 +18,8 @@ const servidor = crearApp().listen(cfg.PORT, () => {
   recuperarAlArrancar()
     .then((n) => n && log.info('Recuperación al arrancar terminada', { cobrosEnPagando: n }))
     .catch((e) => log.error('Falló la recuperación al arrancar', { error: e }))
+  // D-35: el token del permiso dura 10 minutos; se renueva mientras la API esté prendida
+  iniciarRenovacion()
 })
 
 function apagar() {

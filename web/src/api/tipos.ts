@@ -48,6 +48,11 @@ export interface Programa {
   estado: EstadoPrograma
   /** Se fija al autorizar (RN-08); null en Borrador. */
   tope: string | null
+  /**
+   * D-35: el banco ya no acepta el token del permiso (la API estuvo apagada mucho tiempo).
+   * Los cobros fallan hasta que la entidad lo renueva. La API simulada no lo manda.
+   */
+  permisoVencido?: boolean
   /** Lo que recibe cada persona registrada, en unidades mínimas. */
   montoPorPersona: string
 }
@@ -250,16 +255,42 @@ export interface CuentaCreada {
   redirect: string | null
 }
 
+/** Un subsidio que la persona tiene por cobrar en un programa. */
+export interface PagoPendiente {
+  programa: { id: string; nombre: string; estado: EstadoPrograma }
+  monto: string
+  moneda: Moneda
+  /** YYYY-MM-DD */
+  vigenciaFin: string
+}
+
+export type PeriodoCaja = 'hoy' | '7d' | 'todo'
+
+/** GET /puntos/:id/resumen?desde=: la caja del punto (D-36). */
+export interface CajaPunto {
+  punto: Punto
+  periodo: PeriodoCaja
+  /** Una fila por moneda; en la demo, solo COP. Entregado = reembolsado: se entrega al ver «Pagado». */
+  totales: Array<{ moneda: Moneda; entregado: string; reembolsado: string; pendiente: string }>
+  cobros: { pagados: number; enCurso: number; rechazados: number }
+  /** Promedio de segundos del PIN al reembolso; null sin retiros pagados. */
+  reembolsoSegundos: number | null
+  giradoPorAdelantado: string
+}
+
+/** GET /puntos/:id/pagos?documento=: lo que el punto puede pagarle hoy a esa cédula. */
+export interface PagosEnPunto {
+  persona: { nombre: string; etiqueta: string; tienePin: boolean }
+  pagos: PagoPendiente[]
+}
+
 export interface ResumenBeneficiario {
   /** Sin PIN, la persona no cobra en un punto ni lo necesita para cambiar su cuenta. */
   persona: { nombre: string; documento: string; tienePin: boolean }
-  /** El pago disponible en un programa activo, o null. */
-  pago: {
-    programa: { id: string; nombre: string; estado: EstadoPrograma }
-    monto: string
-    moneda: Moneda
-    vigenciaFin: string
-  } | null
+  /** Todos los subsidios por cobrar, de todos los programas Activos o Pausados. */
+  pagos: PagoPendiente[]
+  /** El primero de `pagos`, o null (compatibilidad). */
+  pago: PagoPendiente | null
   cuenta: Cuenta | null
   ultimoCobro: CobroResumen | null
 }
