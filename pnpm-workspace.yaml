@@ -3,4 +3,5 @@ packages:
   - web
 
 allowBuilds:
+  '@scarf/scarf': true
   esbuild: true

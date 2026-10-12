@@ -31,3 +31,9 @@ herramientas de IA se usaron y para qué. El texto real de los prompts se guarda
   HU-03). No se pudieron generar con IA por la restricción del proyecto
   (Guía § Estructura del repositorio): las debe implementar y entender el equipo
   (Rol 1).
+
+### 12 de octubre de 2026 — Épica 2 (API)
+
+- **Herramienta:** OpenCode (agente de código con IA).
+- **Qué se generó:** la parte de API de la épica 2: verificación del hash del callback (HU-04) en `programas/hash.ts` y `programas/hash.test.ts` (acepta las 3 variantes base64 y rechaza hash alterado), siguiendo las fuentes (Hallazgos §3.5, RNF-01). `hash.test.ts` reemplaza los `it.todo` existentes con tests funcionales.
+- **Qué queda para escribir a mano:** las llamadas al SDK en `openPaymentsService.ts` (incluido `walletAddress.get`). No se pudieron generar con IA por la restricción del proyecto: las debe implementar y entender el equipo (Rol 1).

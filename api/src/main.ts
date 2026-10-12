@@ -21,3 +21,5 @@ app.use(extras) // /config
 app.listen(config.PORT, () => {
   console.log(`API escuchando en http://localhost:${config.PORT}`)
 })
+import { setupSwagger } from './swagger'
+setupSwagger(app)
