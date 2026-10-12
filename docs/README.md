@@ -4,7 +4,17 @@
 existe código de producto** (la estructura de código planeada está en
 [`Estructura del proyecto.md`](./Estructura%20del%20proyecto.md)).
 
-## Documentos
+## Empieza aquí
+
+**[Resumen para el equipo](./Resumen%20para%20el%20equipo.md)**: lo importante en un solo
+documento, basado en lo que se construyó y probó en la [rama `piloto`](https://github.com/mauromaecha921-ship-it/test-openpayment/tree/piloto). Qué es Tatú,
+qué ya funciona con dinero de prueba real, qué aprendimos, cómo correrlo y qué decidir antes del
+evento. Con eso basta para entender el proyecto.
+
+Los demás documentos son el **detalle y el contexto** (sobre todo para la IA que ayuda a construir):
+léelos solo cuando necesites una regla, una decisión técnica o un endpoint exacto.
+
+## Documentos de detalle y contexto
 
 | Documento | Qué es | Cuándo leerlo | Estado |
 |---|---|---|---|
