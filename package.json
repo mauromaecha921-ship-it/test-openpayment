@@ -21,6 +21,7 @@
     "check:secretos": "node scripts/check-secretos.mjs"
   },
   "devDependencies": {
-    "concurrently": "10.0.5"
+    "concurrently": "10.0.5",
+    "esbuild": "0.28.2"
   }
 }

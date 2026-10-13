@@ -124,6 +124,9 @@ function disparar(id: string) {
     .catch((e) => log.error('pagar() falló sin control', { error: e, cobro: id }))
     .finally(() => enCurso.delete(id))
   enCurso.set(id, promesa)
+  // En Vercel la función se congela al responder: waitUntil la mantiene viva hasta que el pago
+  // termine. Fuera de Vercel no hace nada (la promesa sigue igual en el proceso).
+  waitUntil(promesa)
 }
 
 /** Para pruebas y para el cierre ordenado: espera los pagos que estén en curso. */

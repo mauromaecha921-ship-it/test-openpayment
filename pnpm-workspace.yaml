@@ -1,5 +1,5 @@
 packages:
-  - api
+  - server
   - web
 
 # Versiones exactas al agregar paquetes, como pide el piloto (también en .npmrc)
