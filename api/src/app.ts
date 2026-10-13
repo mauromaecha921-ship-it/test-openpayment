@@ -1,5 +1,6 @@
 import express from 'express'
 import { rutasBeneficiarios } from './beneficiarios/rutas.js'
+import { rutasComercios } from './comercios/rutas.js'
 import { rutasCobros } from './cobros/rutas.js'
 import { manejarErrores } from './comun/errores.js'
 import { rutasCuentas } from './cuentas/rutas.js'
@@ -21,6 +22,7 @@ export function crearApp() {
   api.use('/liquidacion', routerLiquidacion())
   api.use(rutasProgramas())
   api.use(rutasPuntos())
+  api.use(rutasComercios())
   api.use(rutasBeneficiarios())
   api.use(rutasCuentas())
   api.use(rutasCobros())

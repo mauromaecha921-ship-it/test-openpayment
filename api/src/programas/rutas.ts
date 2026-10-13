@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { validar } from '../comun/errores.js'
+import { IDS_CATEGORIA } from '../comercios/categorias.js'
 import * as servicio from './servicio.js'
 
 // «2026-12-31» (día completo en Bogotá) o un instante ISO
@@ -17,6 +18,7 @@ const EntradaPrograma = z.object({
   vigenciaFin: fecha,
   tipo: z.enum(['subsidio', 'bono']).default('subsidio'),
   montoPorPersona: montoEnPesos.optional(),
+  categorias: z.array(z.enum(IDS_CATEGORIA)).max(10).optional(),
 })
 
 const EdicionPrograma = z
@@ -28,6 +30,7 @@ const EdicionPrograma = z
     vigenciaFin: fecha,
     tipo: z.enum(['subsidio', 'bono']),
     montoPorPersona: montoEnPesos,
+    categorias: z.array(z.enum(IDS_CATEGORIA)).max(10),
   })
   .partial()
 

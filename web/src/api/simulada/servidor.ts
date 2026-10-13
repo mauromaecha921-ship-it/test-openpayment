@@ -487,6 +487,12 @@ const rutas: Array<[string, string, Manejador]> = [
     extras: { bono: false, qr: false, pdf417: false, contrato: false, deploy: false },
   })],
   ['GET', '/salud', () => ({ bd: 'ok', openPayments: 'simulado', llave: 'simulada' })],
+  // § 11: los bonos y comercios solo funcionan con la API real (aquí el extra está apagado)
+  ['GET', '/categorias', () => []],
+  ['GET', '/comercios', () => []],
+  ['POST', '/comercios', () => {
+    throw new Falla(400, 'NoDisponible', 'Los comercios y los bonos solo funcionan con la API real')
+  }],
   ['GET', '/estado', (): EstadoSistema => ({
     pagosReales: false,
     faltan: ['Modo «API simulada»: todo pasa en el navegador y nada sale de la Test Wallet'],

@@ -78,7 +78,7 @@ export function rutasPuntos(): Router {
     const b = beneficiarios.porDocumento(doc)
     // Igual que un cobro con una cédula desconocida: no se dice si existe (D-26)
     if (!b) throw new ErrorApi(404, 'SinPagoDisponible', 'Esta cédula no tiene pagos disponibles')
-    const { pagos, liquidacionDisponible } = await pagosPendientes(b, { soloQueReciben: true })
+    const { pagos, liquidacionDisponible } = await pagosPendientes(b, { soloQueReciben: true, puntoId: req.params.id })
     if (!pagos.length && !liquidacionDisponible) throw new LiquidacionNoResponde()
     res.json({ persona: { ...vistaPersona(b), tienePin: datosLiquidacion.tienePin(doc) }, pagos })
   })

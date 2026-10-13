@@ -1,4 +1,4 @@
-import { Check, ChevronRight, Clock, CreditCard, Store } from 'lucide-react'
+import { Check, ChevronRight, Clock, CreditCard, ShoppingBag, Store } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
@@ -65,6 +65,14 @@ function VariosPagos({ pagos, cuentaVerificada, tienePin }: { pagos: PagoPendien
             </div>
             {p.programa.estado === 'Pausado' ? (
               <AvisoPausa />
+            ) : p.programa.tipo === 'bono' ? (
+              // § 11: un bono con destino no se cobra: se usa al pagar en un comercio autorizado
+              <Button asChild className="mt-auto">
+                <Link to={`/beneficiario/bono/${p.programa.id}`}>
+                  <ShoppingBag aria-hidden />
+                  Dónde usar el bono
+                </Link>
+              </Button>
             ) : (
               <div className="mt-auto flex flex-wrap gap-2">
                 <Button asChild className="flex-1">
@@ -116,19 +124,33 @@ export default function Inicio() {
               </section>
               {r.pago.programa.estado === 'Pausado' && <AvisoPausa />}
 
-              <h2 className="mt-1 mb-0 text-[21px] font-bold">¿Cómo lo quieres cobrar?</h2>
-              <Opcion
-                to={r.cuenta?.estado === 'Verificada' ? `/beneficiario/cobrar?programa=${r.pago.programa.id}` : '/beneficiario/cuenta'}
-                icono={<CreditCard />}
-                titulo="A mi cuenta"
-                texto={r.cuenta?.estado === 'Verificada' ? 'Llega en segundos a tu billetera' : 'Primero enlaza tu billetera'}
-              />
-              <Opcion
-                to="/beneficiario/puntos"
-                icono={<Store />}
-                titulo="En un punto"
-                texto={r.persona.tienePin ? 'En efectivo, con tu cédula y tu PIN' : 'Solo si registraste un PIN'}
-              />
+              {r.pago.programa.tipo === 'bono' ? (
+                <>
+                  <h2 className="mt-1 mb-0 text-[21px] font-bold">Es un bono con destino</h2>
+                  <Opcion
+                    to={`/beneficiario/bono/${r.pago.programa.id}`}
+                    icono={<ShoppingBag />}
+                    titulo="Úsalo en un comercio autorizado"
+                    texto={r.persona.tienePin ? 'Al pagar tu compra, con tu cédula y tu PIN' : 'Necesitas un PIN para usarlo'}
+                  />
+                </>
+              ) : (
+                <>
+                  <h2 className="mt-1 mb-0 text-[21px] font-bold">¿Cómo lo quieres cobrar?</h2>
+                  <Opcion
+                    to={r.cuenta?.estado === 'Verificada' ? `/beneficiario/cobrar?programa=${r.pago.programa.id}` : '/beneficiario/cuenta'}
+                    icono={<CreditCard />}
+                    titulo="A mi cuenta"
+                    texto={r.cuenta?.estado === 'Verificada' ? 'Llega en segundos a tu billetera' : 'Primero enlaza tu billetera'}
+                  />
+                  <Opcion
+                    to="/beneficiario/puntos"
+                    icono={<Store />}
+                    titulo="En un punto"
+                    texto={r.persona.tienePin ? 'En efectivo, con tu cédula y tu PIN' : 'Solo si registraste un PIN'}
+                  />
+                </>
+              )}
             </>
           ) : r.pagos.length > 1 ? (
             <VariosPagos pagos={r.pagos} cuentaVerificada={r.cuenta?.estado === 'Verificada'} tienePin={r.persona.tienePin} />

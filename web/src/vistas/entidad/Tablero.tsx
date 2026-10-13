@@ -1,4 +1,4 @@
-import { CreditCard, Pause, Play, RefreshCw, Store, TriangleAlert } from 'lucide-react'
+import { CreditCard, Pause, Play, RefreshCw, ShoppingBag, Store, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 
@@ -214,11 +214,13 @@ export default function Tablero({ tablero: t, error, recargar }: { tablero: Dato
         <Tarjeta className="flex-[2_1_420px] gap-3 py-5">
           <h2 className="m-0 text-lg font-bold">Cobros por canal</h2>
           <div className="flex flex-wrap gap-3">
-            {(
-              [
-                ['A la cuenta', CreditCard, t.porCanal.cuenta],
-                ['En un punto', Store, t.porCanal.retiro],
-              ] as const
+            {(p.tipo === 'bono'
+              ? // § 11: un bono solo se usa en compras de comercios autorizados
+                ([['En comercios', ShoppingBag, t.porCanal.compra ?? { cobros: 0, monto: '0' }]] as const)
+              : ([
+                  ['A la cuenta', CreditCard, t.porCanal.cuenta],
+                  ['En un punto', Store, t.porCanal.retiro],
+                ] as const)
             ).map(([nombre, Icono, d]) => (
               <div key={nombre} className="flex flex-[1_1_180px] items-center gap-3 rounded-[10px] border border-border px-3.5 py-3">
                 <Icono aria-hidden className="size-[22px]" />
@@ -310,7 +312,7 @@ export function TablaCobros({ cobros }: { cobros: CobroResumen[] }) {
             <TableRow key={c.id}>
               <TableCell className={cn('px-2 py-3', sinReferencia ? 'text-tenue' : 'mono text-sm')}>{sinReferencia ? '—' : c.referencia}</TableCell>
               <TableCell className="px-2 py-3 whitespace-normal">{personaTexto(c)}</TableCell>
-              <TableCell className="px-2 py-3">{c.canal === 'cuenta' ? 'Cuenta' : 'Punto'}</TableCell>
+              <TableCell className="px-2 py-3">{c.canal === 'cuenta' ? 'Cuenta' : c.canal === 'compra' ? 'Compra' : 'Punto'}</TableCell>
               <TableCell className="px-2 py-3">
                 {c.canal === 'retiro' ? (c.punto?.nombre.split(' — ')[0] ?? '—') : c.cuenta ? <BilleteraCorta url={c.cuenta.billetera} className="text-[13px]" /> : '—'}
               </TableCell>

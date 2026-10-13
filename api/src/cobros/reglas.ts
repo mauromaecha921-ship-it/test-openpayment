@@ -27,7 +27,9 @@ export function rn03CanalPermitido(args: {
   puntoAutorizado?: boolean
 }): Resultado {
   if (args.destino === 'libre') return args.canal === 'cuenta' || args.canal === 'retiro' ? null : 'ProgramaNoRecibe'
-  return args.canal === 'compra' && args.puntoAutorizado ? null : 'ProgramaNoRecibe'
+  // § 11 del Plan de ajustes: dos mensajes distintos (HU-21)
+  if (args.canal !== 'compra') return 'SoloEnComercios'
+  return args.puntoAutorizado ? null : 'ComercioNoAutorizado'
 }
 
 // RN-04 · el canal cuenta exige una cuenta Verificada y en la misma moneda del programa

@@ -61,6 +61,8 @@ export default function MiCaja() {
 
   const c = caja.datos
   const total = c?.totales[0]
+  // § 11: una sede de comercio no entrega efectivo; recibe el pago de los bonos
+  const comercio = c?.punto.tipo === 'compra'
   const cobros = (lista.datos ?? []).filter((x) =>
     filtro === 'pagados' ? x.estado === 'Pagado' : filtro === 'rechazados' ? x.estado === 'Rechazado' || x.estado === 'Fallido' : true,
   )
@@ -78,30 +80,35 @@ export default function MiCaja() {
       {c && (
         <>
           <div className="flex flex-wrap gap-4">
-            <CifraGrande etiqueta="Entregaste en efectivo" apoyo={plural(c.cobros.pagados, 'retiro pagado', 'retiros pagados')}>
+            <CifraGrande
+              etiqueta={comercio ? 'Vendiste con bonos' : 'Entregaste en efectivo'}
+              apoyo={comercio ? plural(c.cobros.pagados, 'compra con bono', 'compras con bono') : plural(c.cobros.pagados, 'retiro pagado', 'retiros pagados')}
+            >
               {total ? textoMonto(total.entregado, total.moneda) : '$0'}
             </CifraGrande>
             <CifraGrande
-              etiqueta="Te reembolsaron"
+              etiqueta={comercio ? 'Te pagaron los bonos' : 'Te reembolsaron'}
               destacada
               apoyo={
                 <span className="inline-flex items-center gap-1.5 text-pagado">
                   <CircleCheck aria-hidden className="size-4" />
-                  Todo lo que entregaste ya está en tu wallet
+                  {comercio ? 'Cada bono ya está en tu wallet' : 'Todo lo que entregaste ya está en tu wallet'}
                 </span>
               }
             >
               {total ? textoMonto(total.reembolsado, total.moneda) : '$0'}
             </CifraGrande>
-            <CifraGrande etiqueta="Pusiste por adelantado" apoyo="Nunca giras plata antes de que te paguen" azul>
-              {total ? textoMonto(c.giradoPorAdelantado, total.moneda) : '$0'}
-            </CifraGrande>
+            {!comercio && (
+              <CifraGrande etiqueta="Pusiste por adelantado" apoyo="Nunca giras plata antes de que te paguen" azul>
+                {total ? textoMonto(c.giradoPorAdelantado, total.moneda) : '$0'}
+              </CifraGrande>
+            )}
           </div>
 
           {total && total.pendiente !== '0' && (
             <p role="status" className="m-0 flex items-start gap-2 rounded-xl border-2 border-pagando bg-pagando-fondo px-4 py-3 font-bold text-pagando">
               <TriangleAlert aria-hidden className="mt-0.5 size-5 shrink-0" />
-              {textoMonto(total.pendiente, total.moneda)} en camino a tu wallet: no entregues ese efectivo hasta ver «Pagado».
+              {textoMonto(total.pendiente, total.moneda)} en camino a tu wallet: no entregues {comercio ? 'esa compra' : 'ese efectivo'} hasta ver «Pagado».
             </p>
           )}
 

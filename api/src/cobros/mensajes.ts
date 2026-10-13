@@ -16,6 +16,9 @@ export const MOTIVOS = {
   LiquidacionNoResponde: { mensaje: 'No pudimos consultar tu pago; intenta en un momento', estado: 'Rechazado' },
   PermisoVencido: { mensaje: 'El permiso venció: apruébalo de nuevo', estado: 'Fallido' },
   Cancelado: { mensaje: 'El cobro se canceló. No se movió dinero', estado: 'Rechazado' },
+  // Bonos con destino (HU-21, Plan de ajustes § 11)
+  ComercioNoAutorizado: { mensaje: 'Este comercio no acepta este bono', estado: 'Rechazado' },
+  SoloEnComercios: { mensaje: 'Este bono solo se usa en comercios autorizados', estado: 'Rechazado' },
   // Nuevo en el piloto: respuesta definitiva del banco que no es el tope (4xx, o failed sin
   // causa confirmada; V-15 dirá si es SinFondos). Va a Resultados del piloto.
   ErrorPago: { mensaje: 'El banco no pudo procesar el pago. No se movió dinero', estado: 'Fallido' },

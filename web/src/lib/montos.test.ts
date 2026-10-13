@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { aPesos, formatMonto, sumarMontos } from './montos'
+import { aPesos, aUnidades, formatMonto, sumarMontos } from './montos'
 
 describe('formatMonto', () => {
   it('COP con escala 2, sin centavos como en los wireframes', () => {
@@ -54,5 +54,14 @@ describe('aPesos', () => {
     expect(aPesos('1000000', 2)).toBe('10000')
     expect(aPesos('250050', 2)).toBe('2500.50')
     expect(aPesos('5', 0)).toBe('5')
+  })
+})
+
+describe('aUnidades', () => {
+  it('pasa de pesos a unidades mínimas y rechaza lo que no es un monto', () => {
+    expect(aUnidades('80000', 2)).toBe('8000000')
+    expect(aUnidades('2500,5', 2)).toBe('250050')
+    expect(aUnidades('80.000,00', 2)).toBeNull()
+    expect(aUnidades('1.234', 2)).toBeNull()
   })
 })

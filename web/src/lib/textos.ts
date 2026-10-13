@@ -42,6 +42,8 @@ export const MOTIVO_CORTO: Record<string, string> = {
   PermisoVencido: 'permiso vencido',
   Cancelado: 'cancelado',
   ErrorPago: 'error del banco',
+  ComercioNoAutorizado: 'comercio no autorizado',
+  SoloEnComercios: 'solo en comercios',
 }
 
 /** Explicación debajo del mensaje de la API (wireframes 17 a 19). */
@@ -73,6 +75,10 @@ export function explicacionMotivo(codigo: string | undefined, estado: EstadoCobr
       return 'La cuenta todavía no está verificada. No se movió dinero.'
     case 'ErrorPago':
       return 'Intenta de nuevo en unos minutos. Si se repite, avisa a la entidad.'
+    case 'ComercioNoAutorizado':
+      return 'El bono solo se acepta en comercios verificados de sus categorías. Cobra la compra completa por otro medio.'
+    case 'SoloEnComercios':
+      return 'Es un bono con destino: no se entrega en efectivo ni va a la cuenta. Se usa al pagar en un comercio autorizado.'
     case 'SinPagoDisponible':
       return 'Revisa el número de la cédula. No se creó ningún pago.'
     default:

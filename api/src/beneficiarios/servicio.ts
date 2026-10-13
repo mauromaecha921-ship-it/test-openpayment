@@ -13,6 +13,7 @@ import { billeteraCorta } from '../comun/billeteras.js'
 import { fechaBogota, moneda } from '../comun/vistas.js'
 import * as cobros from '../db/repositorios/cobros.js'
 import * as programas from '../db/repositorios/programas.js'
+import * as puntos from '../db/repositorios/puntos.js'
 import * as clienteLiquidacion from '../liquidacion/cliente.js'
 import { conflicto } from '../comun/errores.js'
 import type { Moneda } from '../comun/montos.js'
@@ -100,7 +101,7 @@ export async function registrar(e: EntradaPersona) {
 }
 
 export interface PagoPendiente {
-  programa: { id: string; nombre: string; estado: string }
+  programa: { id: string; nombre: string; estado: string; tipo: 'subsidio' | 'bono' }
   monto: string
   moneda: Moneda
   vigenciaFin: string
@@ -111,7 +112,8 @@ export interface PagoPendiente {
  * cobrado y la liquidación tiene un pago para su cédula. Con `soloQueReciben`, solo los que hoy
  * aceptan cobros (Activos y en vigencia): es lo que puede pagar un punto.
  */
-export async function pagosPendientes(b: FilaBeneficiario, { soloQueReciben = false } = {}) {
+export async function pagosPendientes(b: FilaBeneficiario, { soloQueReciben = false, puntoId }: { soloQueReciben?: boolean; puntoId?: string } = {}) {
+  const punto = puntoId ? puntos.obtener(puntoId) : undefined
   const propios = cobros.deBeneficiario(b.id)
   const ahora = new Date()
   const pagos: PagoPendiente[] = []
@@ -121,11 +123,13 @@ export async function pagosPendientes(b: FilaBeneficiario, { soloQueReciben = fa
     if (soloQueReciben && reglas.rn06ProgramaRecibe({ estado: p.estado, vigenciaInicio: p.vigencia_inicio, vigenciaFin: p.vigencia_fin, ahora })) continue
     // Con el permiso vencido (D-35) el pago fallaría: el punto no lo ofrece hasta que la entidad lo renueve
     if (soloQueReciben && p.permiso_vencido_en) continue
+    // § 11: un punto de retiro paga subsidios; una sede de comercio, los bonos que acepta
+    if (punto && (punto.tipo === 'retiro' ? p.destino !== 'libre' : p.destino !== 'restringido' || !puntos.autorizadoEnPrograma(p.id, punto.id))) continue
     try {
       const disponible = await clienteLiquidacion.pago(p.id, b.numero_documento)
       if (!disponible.disponible) continue
       pagos.push({
-        programa: { id: p.id, nombre: p.nombre, estado: p.estado },
+        programa: { id: p.id, nombre: p.nombre, estado: p.estado, tipo: p.tipo },
         monto: disponible.monto,
         moneda: moneda(p),
         vigenciaFin: fechaBogota(p.vigencia_fin),

@@ -157,7 +157,7 @@ export default function Entrada() {
                   <select className={claseSelect} value={puntoId} onChange={(e) => setPuntoId(e.target.value)} disabled={cargando}>
                     {datos?.puntos.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.nombre}
+                        {p.nombre}{p.tipo === 'compra' ? ' · comercio (bonos)' : ''}
                       </option>
                     ))}
                   </select>

@@ -16,10 +16,23 @@ import { useRol } from '@/contexto/Rol'
 import { formatHora } from '@/lib/textos'
 
 /** D-36: lo de hoy en una línea, con el enlace a «Mi caja». */
-function CajaDeHoy({ puntoId }: { puntoId: string | null }) {
+export function CajaDeHoy({ puntoId }: { puntoId: string | null }) {
   const caja = usePolling(() => api.get<CajaPunto>(`/puntos/${puntoId}/resumen?desde=hoy`), 10_000, true, { clave: puntoId })
   const t = caja.datos?.totales[0]
   if (!caja.datos) return null
+  const total = <strong>{t ? textoMonto(t.entregado, t.moneda) : '$0'}</strong>
+  if (caja.datos.punto.tipo === 'compra') {
+    // § 11: una sede de comercio no entrega efectivo; recibe el pago de los bonos
+    return (
+      <Link to="/punto/caja" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-muted px-4 py-3 text-foreground no-underline hover:text-foreground">
+        <Wallet aria-hidden className="size-5 shrink-0" />
+        <span className="flex-1">Hoy vendiste con bonos {total} · ya te pagaron todo</span>
+        <span className="inline-flex items-center gap-1 text-enlace">
+          Mi caja <ChevronRight aria-hidden className="size-4" />
+        </span>
+      </Link>
+    )
+  }
   return (
     <Link
       to="/punto/caja"
@@ -27,7 +40,7 @@ function CajaDeHoy({ puntoId }: { puntoId: string | null }) {
     >
       <Wallet aria-hidden className="size-5 shrink-0" />
       <span className="flex-1">
-        Hoy entregaste <strong>{t ? textoMonto(t.entregado, t.moneda) : '$0'}</strong> · ya te reembolsaron todo · <strong>$0</strong> por adelantado
+        Hoy entregaste {total} · ya te reembolsaron todo · <strong>$0</strong> por adelantado
       </span>
       <span className="inline-flex items-center gap-1 text-enlace">
         Mi caja <ChevronRight aria-hidden className="size-4" />

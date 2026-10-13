@@ -25,7 +25,7 @@ export function TarjetaRechazo({ cobro, paraPunto, datos }: { cobro: Cobro; para
       {paraPunto && (
         <p className="m-0 flex items-center gap-2.5 rounded-xl border-2 border-foreground px-4 py-3.5 text-lg font-bold">
           <Ban aria-hidden className="size-6 shrink-0" />
-          No entregues efectivo.
+          {cobro.canal === 'compra' ? 'El bono no se aplicó: cobra la compra completa por otro medio.' : 'No entregues efectivo.'}
         </p>
       )}
 

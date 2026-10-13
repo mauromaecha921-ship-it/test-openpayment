@@ -6,6 +6,9 @@
 import { config } from '../config.js'
 import { confirmarAntesDe } from '../cobros/reglas.js'
 import { motivoDesdeBd } from '../cobros/mensajes.js'
+import { nombreCategoria } from '../comercios/categorias.js'
+import * as comercios from '../db/repositorios/comercios.js'
+import type { FilaComercio } from '../db/repositorios/comercios.js'
 import * as beneficiarios from '../db/repositorios/beneficiarios.js'
 import type { FilaBeneficiario } from '../db/repositorios/beneficiarios.js'
 import type { FilaCobro } from '../db/repositorios/cobros.js'
@@ -45,6 +48,8 @@ export function vistaPrograma(p: FilaPrograma) {
     vigenciaFin: fechaBogota(p.vigencia_fin),
     tope: texto(p.tope_total),
     montoPorPersona: aTexto(p.monto_por_persona ?? BigInt(config().LIQUIDACION_MONTO_BASE)),
+    // § 11: las categorías de comercio que acepta un bono (vacío en un subsidio)
+    categorias: p.tipo === 'bono' ? comercios.categoriasDe(p.id) : [],
     estado: p.estado,
     permisoActivo: p.token_acceso !== null && p.permiso_vencido_en === null,
     // D-35: el banco ya no acepta el token ni su rotación; la entidad tiene que renovarlo
@@ -60,6 +65,29 @@ export function vistaPunto(p: FilaPunto) {
     tipo: p.tipo,
     billetera: p.billetera,
     billeteraCorta: billeteraCorta(p.billetera),
+    // § 11: la sede de un comercio (bonos); null en los puntos de retiro
+    comercio: p.comercio_id ? vistaComercioCorta(p.comercio_id) : null,
+  }
+}
+
+function vistaComercioCorta(id: string) {
+  const c = comercios.obtener(id)
+  if (!c) return null
+  return { id: c.id, razonSocial: c.razon_social, categoria: c.categoria, categoriaNombre: nombreCategoria(c.categoria), verificado: c.verificado_en !== null }
+}
+
+/** § 11: el comercio con su NIT, su actividad y sus sedes. */
+export function vistaComercio(c: FilaComercio) {
+  return {
+    id: c.id,
+    nit: c.nit,
+    razonSocial: c.razon_social,
+    ciiu: c.ciiu,
+    categoria: c.categoria,
+    categoriaNombre: nombreCategoria(c.categoria),
+    verificado: c.verificado_en !== null,
+    verificadoEn: c.verificado_en,
+    sedes: puntos.sedesDe(c.id).map(vistaPunto),
   }
 }
 

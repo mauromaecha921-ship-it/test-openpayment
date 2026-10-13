@@ -55,6 +55,8 @@ export interface Programa {
   permisoVencido?: boolean
   /** Lo que recibe cada persona registrada, en unidades mínimas. */
   montoPorPersona: string
+  /** § 11: las categorías de comercio que acepta un bono; vacío en un subsidio. */
+  categorias?: string[]
 }
 
 export interface ProgramaEntrada {
@@ -67,6 +69,8 @@ export interface ProgramaEntrada {
   vigenciaFin: string
   /** En pesos, como lo escribe la entidad («10000»); la API lo pasa a unidades mínimas. */
   montoPorPersona?: string
+  /** Solo en un bono: las categorías de comercio que lo aceptan. */
+  categorias?: string[]
 }
 
 export interface Liquidacion {
@@ -96,6 +100,45 @@ export interface Punto {
   billeteraCorta: string
   /** La BD no la guarda: puede no venir. La API revisa la moneda al registrar el punto (HU-03). */
   moneda?: Moneda
+  /** «retiro»: entrega efectivo de subsidios. «compra»: sede de un comercio que acepta bonos (§ 11). */
+  tipo?: 'retiro' | 'compra'
+  comercio?: ComercioCorto | null
+}
+
+export interface ComercioCorto {
+  id: string
+  razonSocial: string
+  categoria: string
+  categoriaNombre: string
+  verificado: boolean
+}
+
+// ── Comercios y bonos (Plan de ajustes § 11) ───────────────────────────────────
+
+export interface Categoria {
+  id: string
+  nombre: string
+  actividades: Array<{ ciiu: string; nombre: string }>
+}
+
+export interface Comercio extends ComercioCorto {
+  nit: string
+  ciiu: string
+  verificadoEn: string | null
+  sedes: Punto[]
+}
+
+export interface SedeEntrada {
+  nombre: string
+  direccion?: string
+  billetera: string
+}
+
+export interface ComercioEntrada {
+  nit: string
+  razonSocial: string
+  ciiu: string
+  sede: SedeEntrada
 }
 
 export interface PuntoEntrada {
@@ -116,7 +159,7 @@ export type EstadoCobro =
   | 'Rechazado'
   | 'Fallido'
 
-export type Canal = 'cuenta' | 'retiro'
+export type Canal = 'cuenta' | 'retiro' | 'compra'
 
 export type CodigoMotivo =
   | 'YaCobrado'
@@ -157,6 +200,8 @@ export interface Cobro {
   persona: { nombre: string | null; etiqueta: string; novedad?: boolean }
   /** null en un Rechazado que se cortó antes de calcular el monto (p. ej. SinPagoDisponible). */
   monto: string | null
+  /** Solo en una compra con bono: el total de la compra; el cliente paga la diferencia con `monto`. */
+  totalCompra?: string | null
   moneda: Moneda
   estado: EstadoCobro
   motivo: Motivo | null
@@ -191,7 +236,7 @@ export interface Tablero {
   fuente: 'banco' | 'plataforma'
   noHaSalido: string
   cobrosPagados: number
-  porCanal: { cuenta: { cobros: number; monto: string }; retiro: { cobros: number; monto: string } }
+  porCanal: { cuenta: { cobros: number; monto: string }; retiro: { cobros: number; monto: string }; compra?: { cobros: number; monto: string } }
   /** Promedio de segundos del PIN a Pagado en los retiros. */
   reembolsoSegundos: number | null
   giradoPorAdelantado: string
@@ -257,7 +302,7 @@ export interface CuentaCreada {
 
 /** Un subsidio que la persona tiene por cobrar en un programa. */
 export interface PagoPendiente {
-  programa: { id: string; nombre: string; estado: EstadoPrograma }
+  programa: { id: string; nombre: string; estado: EstadoPrograma; tipo?: TipoPrograma }
   monto: string
   moneda: Moneda
   /** YYYY-MM-DD */

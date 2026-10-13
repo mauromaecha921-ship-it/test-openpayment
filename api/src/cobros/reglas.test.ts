@@ -28,8 +28,8 @@ describe('RN-03 · canal según el destino', () => {
   })
   it('restringido: solo compra en comercio autorizado', () => {
     expect(r.rn03CanalPermitido({ destino: 'restringido', canal: 'compra', puntoAutorizado: true })).toBeNull()
-    expect(r.rn03CanalPermitido({ destino: 'restringido', canal: 'compra', puntoAutorizado: false })).toBe('ProgramaNoRecibe')
-    expect(r.rn03CanalPermitido({ destino: 'restringido', canal: 'cuenta' })).toBe('ProgramaNoRecibe')
+    expect(r.rn03CanalPermitido({ destino: 'restringido', canal: 'compra', puntoAutorizado: false })).toBe('ComercioNoAutorizado')
+    expect(r.rn03CanalPermitido({ destino: 'restringido', canal: 'cuenta' })).toBe('SoloEnComercios')
   })
 })
 

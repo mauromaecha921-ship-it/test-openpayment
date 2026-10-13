@@ -9,6 +9,7 @@ import { RolProvider, useRol } from '@/contexto/Rol'
 import CobrarCuenta from '@/vistas/beneficiario/CobrarCuenta'
 import CobroPagado from '@/vistas/beneficiario/CobroPagado'
 import DondeCobrar from '@/vistas/beneficiario/DondeCobrar'
+import DondeUsarBono from '@/vistas/beneficiario/DondeUsarBono'
 import EnlazarCuenta from '@/vistas/beneficiario/EnlazarCuenta'
 import Historial from '@/vistas/beneficiario/Historial'
 import Inicio from '@/vistas/beneficiario/Inicio'
@@ -22,7 +23,7 @@ import Equipo from '@/vistas/Equipo'
 import Estado from '@/vistas/Estado'
 import CobroEnPunto from '@/vistas/punto/CobroEnPunto'
 import MiCaja from '@/vistas/punto/MiCaja'
-import NuevoCobro from '@/vistas/punto/NuevoCobro'
+import InicioPunto from '@/vistas/punto/InicioPunto'
 
 // Solo existe en el modo «API simulada»: hace las veces de la Test Wallet.
 const BancoSimulado = lazy(() => import('@/api/simulada/BancoSimulado'))
@@ -63,9 +64,10 @@ export default function App() {
         <Route path="/beneficiario/cobrar" element={<ConRol rol="beneficiario"><CobrarCuenta /></ConRol>} />
         <Route path="/beneficiario/cobros/:id" element={<ConRol rol="beneficiario"><CobroPagado /></ConRol>} />
         <Route path="/beneficiario/puntos" element={<ConRol rol="beneficiario"><DondeCobrar /></ConRol>} />
+        <Route path="/beneficiario/bono/:programaId" element={<ConRol rol="beneficiario"><DondeUsarBono /></ConRol>} />
         <Route path="/beneficiario/historial" element={<ConRol rol="beneficiario"><Historial /></ConRol>} />
 
-        <Route path="/punto" element={<ConRol rol="punto"><NuevoCobro /></ConRol>} />
+        <Route path="/punto" element={<ConRol rol="punto"><InicioPunto /></ConRol>} />
         <Route path="/punto/caja" element={<ConRol rol="punto"><MiCaja /></ConRol>} />
         <Route path="/punto/cobros/:id" element={<ConRol rol="punto"><CobroEnPunto /></ConRol>} />
 

@@ -5,7 +5,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { resolverBilletera, type EstadoBilletera } from '@/api/billeteras'
 import { api, mensajeDeError } from '@/api/client'
 import { useConfig } from '@/api/config'
-import type { Billetera, Liquidacion, Programa, ProgramaEntrada, Punto } from '@/api/tipos'
+import type { Billetera, Categoria, Comercio, Liquidacion, Programa, ProgramaEntrada, Punto } from '@/api/tipos'
 import { BilleteraCorta } from '@/componentes/BilleteraCorta'
 import { Campo } from '@/componentes/Campo'
 import { Cargando, ErrorCarga, MensajeError, Pastilla, Tarjeta } from '@/componentes/Comun'
@@ -54,14 +54,28 @@ export default function ConectarPrograma() {
   const [billetera, setBilletera] = useState<EstadoBilletera>({ estado: 'vacia' })
   const [liquidacion, setLiquidacion] = useState<Liquidacion | null>(null)
   const [puntos, setPuntos] = useState<Punto[]>([])
+  // § 11: para un bono, las categorías y los comercios que las tienen
+  const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [comercios, setComercios] = useState<Comercio[]>([])
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
 
+  // § 11: las categorías y los comercios, solo si los bonos están prendidos (EXTRA_BONO)
+  useEffect(() => {
+    if (!config.extras.bono) return
+    let vivo = true
+    void api.get<Categoria[]>('/categorias').then((c) => vivo && setCategorias(c)).catch(() => undefined)
+    void api.get<Comercio[]>('/comercios').then((c) => vivo && setComercios(c)).catch(() => undefined)
+    return () => {
+      vivo = false
+    }
+  }, [config.extras.bono])
+
   // Al editar, se carga el borrador; cualquier otro estado tiene su propia pantalla.
   useEffect(() => {
     let vivo = true
-    void api.get<Punto[]>('/puntos').then((p) => vivo && setPuntos(p)).catch(() => undefined)
+    void api.get<Punto[]>('/puntos').then((p) => vivo && setPuntos(p.filter((x) => x.tipo !== 'compra'))).catch(() => undefined)
     if (!id) return
     ;(async () => {
       try {
@@ -80,6 +94,7 @@ export default function ConectarPrograma() {
           vigenciaInicio: p.vigenciaInicio,
           vigenciaFin: p.vigenciaFin,
           montoPorPersona: aPesos(p.montoPorPersona, p.moneda.escala),
+          categorias: p.categorias ?? [],
         })
         setBilletera({ estado: 'encontrada', billetera: { id: p.billetera, moneda: p.moneda } })
         setLiquidacion(await api.get<Liquidacion>(`/programas/${id}/liquidacion`))
@@ -114,6 +129,7 @@ export default function ConectarPrograma() {
     if (billetera.estado !== 'encontrada') return 'Escribe la wallet del programa y espera a que aparezca «Cuenta encontrada».'
     const monto = form.montoPorPersona?.trim() ?? ''
     if (!MONTO_VALIDO.test(monto) || !/[1-9]/.test(monto)) return 'Escribe el monto por persona en pesos, sin puntos de miles (por ejemplo, 10000).'
+    if (form.tipo === 'bono' && !form.categorias?.length) return 'Elige al menos una categoría de comercio que acepte el bono.'
     return null
   }
 
@@ -262,7 +278,7 @@ export default function ConectarPrograma() {
 
             <Tarjeta className="gap-3.5">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="m-0 text-xl font-bold">3. Personas y monto</h2>
+                <h2 className="m-0 text-xl font-bold">{form.tipo === 'bono' ? '3. Personas y valor del bono' : '3. Personas y monto'}</h2>
                 <Link to="/equipo" className="inline-flex min-h-11 items-center text-[15px]">
                   Registrar personas
                 </Link>
@@ -274,7 +290,7 @@ export default function ConectarPrograma() {
               <div className="flex flex-wrap items-end gap-3">
                 <Campo
                   className="flex-[1_1_200px]"
-                  etiqueta={`Monto por persona${moneda ? ` (${moneda.codigo})` : ''}`}
+                  etiqueta={`${form.tipo === 'bono' ? 'Valor del bono por persona' : 'Monto por persona'}${moneda ? ` (${moneda.codigo})` : ''}`}
                   inputMode="decimal"
                   placeholder="10000"
                   value={form.montoPorPersona ?? ''}
@@ -300,7 +316,16 @@ export default function ConectarPrograma() {
               </div>
             </Tarjeta>
 
-            <SeccionPuntos programaId={id ?? null} moneda={moneda} puntos={puntos} alAgregar={(p) => setPuntos((l) => [...l, p])} />
+            {form.tipo === 'bono' ? (
+              <SeccionCategorias
+                categorias={categorias}
+                comercios={comercios}
+                elegidas={form.categorias ?? []}
+                cambiar={(c) => cambiar('categorias', c)}
+              />
+            ) : (
+              <SeccionPuntos programaId={id ?? null} moneda={moneda} puntos={puntos} alAgregar={(p) => setPuntos((l) => [...l, p])} />
+            )}
           </div>
 
           <Tarjeta as="aside" className="flex-[1_1_300px]" aria-labelledby="titulo-resumen">
@@ -315,9 +340,9 @@ export default function ConectarPrograma() {
               <dt className="text-tenue">Personas</dt>
               <dd className="m-0 text-right">{liquidacion?.cedulas ?? '—'}</dd>
               <dt className="text-tenue">Canales</dt>
-              <dd className="m-0 text-right">Cuenta y punto</dd>
-              <dt className="text-tenue">Puntos</dt>
-              <dd className="m-0 text-right">{puntos.length}</dd>
+              <dd className="m-0 text-right">{form.tipo === 'bono' ? 'Compra en comercios' : 'Cuenta y punto'}</dd>
+              <dt className="text-tenue">{form.tipo === 'bono' ? 'Categorías' : 'Puntos'}</dt>
+              <dd className="m-0 text-right">{form.tipo === 'bono' ? (form.categorias?.length ?? 0) : puntos.length}</dd>
             </dl>
             <MensajeError>{error}</MensajeError>
             {aviso && (
@@ -335,6 +360,63 @@ export default function ConectarPrograma() {
         </div>
       )}
     </MarcoEntidad>
+  )
+}
+
+/** § 11: un bono no se cobra en puntos de retiro: lo aceptan los comercios verificados de sus categorías. */
+function SeccionCategorias({
+  categorias,
+  comercios,
+  elegidas,
+  cambiar,
+}: {
+  categorias: Categoria[]
+  comercios: Comercio[]
+  elegidas: string[]
+  cambiar: (c: string[]) => void
+}) {
+  const sedesVerificadas = (categoria: string) =>
+    comercios.filter((c) => c.categoria === categoria && c.verificado).reduce((n, c) => n + c.sedes.length, 0)
+  return (
+    <Tarjeta className="gap-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="m-0 text-xl font-bold">4. Dónde se usa el bono</h2>
+        <Link to="/equipo" className="inline-flex min-h-11 items-center text-[15px]">
+          Registrar comercios
+        </Link>
+      </div>
+      <p className="m-0 text-[15px] text-muted-foreground">
+        El bono no se cobra en efectivo ni a la cuenta: se usa como parte del pago de una compra. Lo aceptan las sedes de comercios
+        verificados (con el RUT y el RUES) cuya actividad está en las categorías que elijas.
+      </p>
+      <fieldset className="m-0 flex flex-col gap-2.5 border-0 p-0">
+        <legend className="sr-only">Categorías que aceptan el bono</legend>
+        {categorias.map((c) => {
+          const marcada = elegidas.includes(c.id)
+          const sedes = sedesVerificadas(c.id)
+          return (
+            <label
+              key={c.id}
+              className={cn('flex items-start gap-3 rounded-[10px] px-3.5 py-3 text-[15px]', marcada ? 'border-2 border-foreground' : 'border border-control')}
+            >
+              <input
+                type="checkbox"
+                className="mt-1 size-5 accent-foreground"
+                checked={marcada}
+                onChange={(e) => cambiar(e.target.checked ? [...elegidas, c.id] : elegidas.filter((x) => x !== c.id))}
+              />
+              <span className="flex flex-col gap-0.5">
+                <strong>{c.nombre}</strong>
+                <span className="text-muted-foreground">{c.actividades.map((a) => a.nombre).join(' · ')}</span>
+                <span className={cn('text-sm', sedes ? 'text-pagado' : 'text-tenue')}>
+                  {sedes ? `${sedes} ${sedes === 1 ? 'sede verificada' : 'sedes verificadas'}` : 'Todavía no hay comercios verificados en esta categoría'}
+                </span>
+              </span>
+            </label>
+          )
+        })}
+      </fieldset>
+    </Tarjeta>
   )
 }
 

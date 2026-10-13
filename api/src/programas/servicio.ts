@@ -10,6 +10,7 @@ import { aTexto, desdeDecimal, deTexto } from '../comun/montos.js'
 import { moneda, vistaCobro, vistaPrograma } from '../comun/vistas.js'
 import { ahoraIso, transaccion } from '../db/conexion.js'
 import * as cobros from '../db/repositorios/cobros.js'
+import * as comercios from '../db/repositorios/comercios.js'
 import * as eventos from '../db/repositorios/eventos.js'
 import * as repo from '../db/repositorios/programas.js'
 import type { FilaPrograma, NuevoPrograma } from '../db/repositorios/programas.js'
@@ -81,6 +82,8 @@ export interface EntradaPrograma {
   tipo: 'subsidio' | 'bono'
   /** En pesos («10000»); se guarda en unidades mínimas con la escala de la wallet. */
   montoPorPersona?: string
+  /** § 11: las categorías de comercio que acepta un bono. */
+  categorias?: string[]
 }
 
 const SOLO_FECHA = /^\d{4}-\d{2}-\d{2}$/
@@ -139,6 +142,7 @@ export async function crear(entrada: EntradaPrograma) {
   const datos = await datosDesdeEntrada(entrada)
   const p = transaccion(() => {
     const nuevo = repo.crear(datos)
+    if (nuevo.tipo === 'bono') comercios.ponerCategorias(nuevo.id, entrada.categorias ?? [])
     eventos.registrar({ tipo: 'programa', id: nuevo.id, hacia: 'Borrador', detalle: { texto: 'Programa creado en borrador.' } })
     return nuevo
   })
@@ -169,6 +173,10 @@ export async function editar(id: string, entrada: Partial<EntradaPrograma>) {
   }
   if (Object.keys(campos).length && !repo.actualizar(id, campos, 'Borrador')) {
     throw conflicto('EstadoNoPermite', 'El programa ya no está en Borrador')
+  }
+  if (entrada.categorias !== undefined || entrada.tipo !== undefined) {
+    const actual = exigir(id)
+    comercios.ponerCategorias(id, actual.tipo === 'bono' ? (entrada.categorias ?? comercios.categoriasDe(id)) : [])
   }
   return vistaPrograma(exigir(id))
 }
@@ -220,6 +228,10 @@ export async function autorizar(id: string) {
   // RN-08: el tope es el total de la liquidación al pedir la aprobación, y queda fijo.
   const tope = deTexto((await liquidacion.resumen(p.id)).total)
   if (tope <= 0) throw conflicto('SinLiquidacion', 'La liquidación no tiene cédulas para este programa')
+  // § 11: un bono sin categorías no lo acepta ningún comercio
+  if (p.tipo === 'bono' && !comercios.categoriasDe(p.id).length) {
+    throw conflicto('BonoSinCategorias', 'Elige al menos una categoría de comercio que acepte el bono')
+  }
 
   const nonce = randomUUID()
   let pendiente: op.PermisoPendiente
@@ -627,7 +639,7 @@ export async function tablero(id: string) {
     sinCobrar = null
   }
 
-  const porCanal = (canal: 'cuenta' | 'retiro') => {
+  const porCanal = (canal: 'cuenta' | 'retiro' | 'compra') => {
     const deCanal = pagados.filter((c) => c.canal === canal)
     return { cobros: deCanal.length, monto: aTexto(sumar(deCanal)) }
   }
@@ -641,7 +653,7 @@ export async function tablero(id: string) {
     fuente,
     noHaSalido: aTexto(Math.max(0, autorizado - valor)),
     cobrosPagados: pagados.length,
-    porCanal: { cuenta: porCanal('cuenta'), retiro: porCanal('retiro') },
+    porCanal: { cuenta: porCanal('cuenta'), retiro: porCanal('retiro'), compra: porCanal('compra') },
     reembolsoSegundos,
     // El modelo no gira nada antes del cobro: cada pago sale cuando la persona cobra
     giradoPorAdelantado: '0',

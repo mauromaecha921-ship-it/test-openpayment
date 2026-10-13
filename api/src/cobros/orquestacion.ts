@@ -35,6 +35,12 @@ import * as reglas from './reglas.js'
 function textoEvento(c: Pick<FilaCobro, 'canal'>, hacia: EstadoCobro, punto?: FilaPunto, motivo?: Motivo): string {
   if (motivo) return MOTIVOS[motivo].mensaje
   const enCuenta = c.canal === 'cuenta'
+  if (c.canal === 'compra') {
+    // § 11: una compra con bono en un comercio
+    if (hacia === 'Solicitado') return `${punto?.nombre ?? 'El comercio'} registró una compra con bono.`
+    if (hacia === 'Pagando') return 'PIN correcto. Pagando el bono al comercio.'
+    if (hacia === 'Pagado') return 'Pago recibido. El bono quedó aplicado a la compra.'
+  }
   switch (hacia) {
     case 'Solicitado':
       return enCuenta ? 'Solicitaste el cobro a tu cuenta.' : `${punto?.nombre ?? 'El punto'} digitó la cédula.`
@@ -131,11 +137,16 @@ const PRIORIDAD: Record<string, number> = { Activo: 0, Pausado: 1, Cerrado: 2 }
  * disponible para esa cédula; si ninguno, el más relevante (activo, pausado o cerrado) para
  * que el rechazo quede en su tablero.
  */
-export async function resolverPrograma(documento: string): Promise<{ programa: FilaPrograma; pago?: PagoConsultado }> {
-  const candidatos = programas
+export async function resolverPrograma(documento: string, canal?: Canal): Promise<{ programa: FilaPrograma; pago?: PagoConsultado }> {
+  const todos = programas
     .listar()
     .filter((p) => p.estado in PRIORIDAD)
     .sort((a, b) => PRIORIDAD[a.estado]! - PRIORIDAD[b.estado]!)
+  // § 11: en un comercio se buscan primero los bonos; en un punto de retiro, los subsidios. Así el
+  // rechazo habla del programa que corresponde («Este comercio no acepta este bono»).
+  const destino = canal === 'compra' ? 'restringido' : canal === 'retiro' ? 'libre' : undefined
+  const delCanal = destino ? todos.filter((p) => p.destino === destino) : todos
+  const candidatos = delCanal.length ? delCanal : todos
   if (!candidatos.length) throw conflicto('SinProgramas', 'No hay programas recibiendo cobros')
   const ahora = new Date()
   for (const p of candidatos) {
@@ -172,7 +183,7 @@ export async function solicitar(e: EntradaCobro) {
     if (!p) throw noEncontrado('Ese programa no existe')
     programa = p
   } else {
-    ;({ programa, pago } = await resolverPrograma(e.documento))
+    ;({ programa, pago } = await resolverPrograma(e.documento, e.canal))
   }
 
   // La persona: una cédula que no existe no deja cobro, solo un evento con la cédula enmascarada

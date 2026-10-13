@@ -19,7 +19,7 @@ export const SECCIONES_BENEFICIARIO: Seccion[] = [
 
 /** D-36: el punto también tiene secciones: cobrar y ver su caja. */
 export const SECCIONES_PUNTO: Seccion[] = [
-  { to: '/punto', texto: 'Nuevo cobro', Icono: ScanLine, fin: true },
+  { to: '/punto', texto: 'Cobrar', Icono: ScanLine, fin: true },
   { to: '/punto/caja', texto: 'Mi caja', Icono: Wallet, fin: false },
 ]
 

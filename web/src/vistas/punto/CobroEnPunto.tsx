@@ -43,6 +43,13 @@ export default function CobroEnPunto() {
   )
 }
 
+/** § 11: en una compra con bono, cuánto paga el cliente por fuera (total − lo que cubre el bono). */
+function textoCompra(c: Cobro): string {
+  if (!c.totalCompra || !c.monto) return 'compra con bono'
+  const resto = (BigInt(c.totalCompra) - BigInt(c.monto)).toString()
+  return resto === '0' ? 'el cliente no paga nada más' : `cobra ${textoMonto(resto, c.moneda)} al cliente`
+}
+
 function NuevoCobroBoton() {
   return (
     <Button asChild size="lg" className="mt-auto min-h-[60px] text-xl md:mt-2">
@@ -90,10 +97,12 @@ function ConfirmarPin({ cobro: c, consulta }: { cobro: Cobro; consulta: Consulta
   return (
     <>
       <section className="flex flex-col gap-0.5 rounded-[14px] border border-control px-4 py-3.5">
-        <span className="text-[15px] text-muted-foreground">Pago disponible</span>
+        <span className="text-[15px] text-muted-foreground">{c.canal === 'compra' ? 'El bono cubre' : 'Pago disponible'}</span>
         <span className="text-[36px] leading-[1.1] font-bold">{textoMonto(c.monto, c.moneda)}</span>
         <span className="text-[15px]">{personaTexto(c)}</span>
-        <span className="text-sm text-tenue">{c.programa.nombre} · se entrega el valor completo</span>
+        <span className="text-sm text-tenue">
+          {c.canal === 'compra' ? `${c.programa.nombre} · ${textoCompra(c)}` : `${c.programa.nombre} · se entrega el valor completo`}
+        </span>
       </section>
 
       <div className="flex flex-col items-center gap-2 pt-1 text-center">
@@ -149,7 +158,7 @@ function Pagado({ cobro: c }: { cobro: Cobro }) {
         </span>
         <Titulo className="text-[34px]">Pagado</Titulo>
         <p className="m-0 text-[26px] leading-tight font-bold">
-          Entrega {monto} a {c.persona.nombre ?? 'la persona'}
+          {c.canal === 'compra' ? `El bono cubrió ${monto}. ${textoCompra(c)}` : `Entrega ${monto} a ${c.persona.nombre ?? 'la persona'}`}
         </p>
         <span className="mono text-muted-foreground">Ref. {c.referencia}</span>
       </div>
@@ -159,7 +168,7 @@ function Pagado({ cobro: c }: { cobro: Cobro }) {
           <Wallet className="size-[22px]" />
         </span>
         <div className="flex min-w-0 flex-col gap-1">
-          <strong className="text-lg">Tu reembolso ya llegó</strong>
+          <strong className="text-lg">{c.canal === 'compra' ? 'El pago del bono ya llegó' : 'Tu reembolso ya llegó'}</strong>
           <span className="text-muted-foreground">
             Recibiste {monto} en tu billetera
             {c.segundosHastaPagado !== null ? ` ${formatSegundos(c.segundosHastaPagado)} después del PIN` : ''}.
