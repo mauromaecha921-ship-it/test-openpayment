@@ -76,3 +76,17 @@ Logos: `claro` (sobre arena), `oscuro` (sobre noche), `tierra` (sobre arcilla), 
 `pnpm typecheck`, `pnpm test` y `pnpm build` en `web/`; abrir el piloto (API simulada) en PC y en
 celular (375 px), recorrer Entrada, Entidad, Beneficiario y Punto, revisar contrastes y foco, y
 dejar capturas.
+
+## 5. El tatú animado (13 oct 2026)
+
+Se probaron dos variantes en `/demo/tatu` y se eligió la **B**:
+
+- **Pagando…** (`EsperaPagando`, en el punto y el beneficiario): el tatú del ícono rueda sobre un
+  suelo de rayitas y la cerradura late. Reemplaza el círculo que giraba.
+- **Pagado** (`TatuPagado`, en `CobroEnPunto` y `CobroPagado`): el tatú quieto, la cerradura pasa
+  de ámbar a verde con un salto corto y un halo, y un chulito verde al lado para que el cajero no
+  dude.
+- Con «reducir movimiento» del sistema, el tatú queda quieto y la cerradura cambia sin animación.
+  El estado siempre lo dice el texto; el tatú es decorativo (`aria-hidden`).
+- Límite: cabeza y caparazón son un solo trazo; para animarlos aparte u otras poses de mascota hace
+  falta redibujar el logo (Rol 5).

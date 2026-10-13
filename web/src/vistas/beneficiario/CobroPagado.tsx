@@ -1,4 +1,3 @@
-import { Check } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 
 import { api } from '@/api/client'
@@ -11,6 +10,7 @@ import { EsperaPagando } from '@/componentes/EsperaPagando'
 import { MarcoBeneficiario } from '@/componentes/Marcos'
 import { textoMonto } from '@/componentes/Monto'
 import { PasosDelPago } from '@/componentes/PasosDelPago'
+import { TatuPagado } from '@/componentes/TatuAnimado'
 import { TarjetaRechazo } from '@/componentes/TarjetaRechazo'
 import { Titulo } from '@/componentes/Titulo'
 import { Button } from '@/componentes/ui/button'
@@ -45,9 +45,7 @@ export default function CobroPagado() {
         {c?.estado === 'Pagado' && (
           <>
             <div role="status" className="flex flex-col items-center gap-2.5 pt-1 text-center">
-              <span aria-hidden className="flex size-24 items-center justify-center rounded-full bg-pagado-relleno text-primary-foreground">
-                <Check className="size-12" strokeWidth={3} />
-              </span>
+              <TatuPagado className="size-28" />
               <Titulo className="text-[32px]">Pagado</Titulo>
               <p className="m-0 text-xl">{textoMonto(c.monto, c.moneda)} llegaron a tu cuenta</p>
             </div>

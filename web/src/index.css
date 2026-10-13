@@ -148,6 +148,26 @@
   line-height: 1;
 }
 
+/* TatuAnimado: el suelo por el que rueda y el halo verde al quedar pagado. */
+.tatu-suelo {
+  background-image: repeating-linear-gradient(90deg, var(--control) 0 14px, transparent 14px 24px);
+}
+.tatu-halo {
+  translate: -50% -50%;
+  background: var(--pagado-relleno);
+  animation: tatu-halo 900ms ease-out 250ms both;
+}
+@keyframes tatu-halo {
+  from {
+    opacity: 0.35;
+    scale: 0.6;
+  }
+  to {
+    opacity: 0;
+    scale: 2.2;
+  }
+}
+
 @utility mono {
   font-family: var(--font-mono);
 }

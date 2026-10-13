@@ -1,5 +1,6 @@
-import { LoaderCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
+
+import { TatuAnimado } from './TatuAnimado'
 
 /** Segundos que lleva el cobro en Pagando, contados desde `desde` (ISO). */
 function useSegundosDesde(desde: string | null) {
@@ -15,7 +16,7 @@ function useSegundosDesde(desde: string | null) {
 }
 
 /**
- * «Pagando…». Pasados 10 s, avisa que tarda más de lo normal (P-18, RNF-02). En el punto, siempre
+ * «Pagando…», con el tatú rodando y la cerradura latiendo (variante B de /demo/tatu). Pasados 10 s, avisa que tarda más de lo normal (P-18, RNF-02). En el punto, siempre
  * recuerda que no se entrega el efectivo todavía.
  */
 export function EsperaPagando({ desde, paraPunto }: { desde: string | null; paraPunto: boolean }) {
@@ -24,9 +25,7 @@ export function EsperaPagando({ desde, paraPunto }: { desde: string | null; para
 
   return (
     <div className="flex flex-col items-center gap-3 text-center">
-      <span className="flex size-24 items-center justify-center rounded-full border-4 border-pagando bg-pagando-fondo text-pagando">
-        <LoaderCircle aria-hidden className="size-12 animate-spin motion-reduce:animate-none" strokeWidth={2.5} />
-      </span>
+      <TatuAnimado estado="pagando" variante="cerradura" className="size-28" />
       <p className="m-0 text-[28px] leading-tight font-bold">Pagando…</p>
       {paraPunto && <p className="m-0 text-lg font-bold">No entregues el efectivo todavía.</p>}
       {tarda && (
