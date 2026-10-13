@@ -63,7 +63,8 @@ Las direcciones de las wallets y la llave quedan fuera del repo (convención del
   adelantado $0».
 - ✅ Rechazos claros: ya cobrado, PIN errado, programa pausado o cerrado, permiso vencido.
 - ✅ Vistas que se adaptan a **PC y celular**.
-- ✅ 147 pruebas automáticas de la API y 19 de la web, en verde.
+- ✅ **Bonos con destino** en comercios verificados por categoría (construido; falta probarlo con la Test Wallet).
+- ✅ 158 pruebas automáticas de la API y 20 de la web, en verde.
 
 ---
 
@@ -115,8 +116,9 @@ Los cinco primeros pueden tumbar la demo si no se conocen.
    tienen: registrar al equipo, ver si los pagos son reales, la caja del punto. *(D-30, D-36)*
 9. **Una persona puede tener subsidios en varios programas.** Los documentos suponen uno; la app
    ahora los muestra todos y el punto elige cuál pagar. *(D-21)*
-10. **Faltaban rutas.** Las 9 rutas de la API de la Guía no alcanzan para las pantallas: el piloto
-    usa unas 30. *(D-05)*
+10. **Faltaban rutas.** Las 9 rutas de la API de la Guía no alcanzan: el piloto usa **43** (21 para
+    las pantallas y 13 que salieron de probar). Lista completa, con qué hace cada una y de dónde salió:
+    [API del piloto](./piloto/API%20del%20piloto.md). *(D-05)*
 
 ### Contradicciones en los documentos que conviene resolver
 
@@ -160,14 +162,28 @@ Más detalle: [`api/README.md`](../api/README.md).
 - [ ] **Decidir qué entra:** las 18 historias obligatorias ya se probaron en el piloto. Proponemos
       sumar al backlog **«Mi caja» del punto** (HU-26 propuesta), **varios subsidios por persona** y
       **«Renovar permiso»**, que salieron de probar.
+- [ ] **Decidir qué pasa con quien no cobra a tiempo** (D-37): ¿se le explica que cerró?, ¿lo no
+      cobrado pasa al siguiente ciclo o nunca sale? Hoy no se acumula. Prueba en
+      `piloto/Plan de ajustes.md` § 9.
 - [ ] **Base de datos:** el evento usa Supabase (PostgreSQL). El esquema está en `db/` de `main`
       (`001` a `003`: beneficiario mínimo, bloqueo por PIN y RLS). Falta sumar lo que el piloto
       necesitó: la liquidación con PIN opcional, el monto por persona y la renovación del permiso
       (`api/src/db/migraciones/003` y `004` de la rama `piloto`).
+- [ ] **Actualizar la API de la Guía** con las rutas que de verdad hacen falta: la lista está en
+      [API del piloto](./piloto/API%20del%20piloto.md) (§ 9: pendientes que tocan la API).
 - [ ] **Reescribir en el evento** lo que haga falta: el piloto **no se copia** (regla de la Guía). Lo
       que se reutiliza son los aprendizajes de este documento.
 - [ ] **Extras** (solo si el flujo principal pasa el viernes a las 17:15): bono en comercio, QR del
       beneficiario, leer el código de barras de la cédula.
+- [ ] **Bonos con destino** (extra 1): **ya construidos en el piloto**, falta probarlos con la Test
+      Wallet. Un comercio se registra con su NIT y su actividad del RUT (que define la categoría:
+      alimentos, salud, educación), la entidad lo verifica (en producción, con el RUT de la DIAN y el
+      RUES) y cada sede tiene su wallet; una cadena como Éxito tiene varias sedes. El bono acepta
+      **categorías**, se gasta en una sola compra y el cliente paga el resto. **Decidir con la
+      entidad:** la lista de categorías y si el bono se puede gastar en varias compras. Detalle en
+      `piloto/Plan de ajustes.md` § 11 (D-38).
+- [ ] **«Activa tu ubicación» para el punto o comercio más cercano** (no está en los documentos):
+      extra pequeño, de 2 a 3 h. Necesita HTTPS en el celular, como la cámara del QR. Mismo § 10.
 
 ---
 
@@ -180,6 +196,7 @@ Más detalle: [`api/README.md`](../api/README.md).
 | Las reglas de negocio en corto | `Reglas de negocio.md` |
 | Las decisiones técnicas | `Documento de Arquitectura — Hackathon Open Payments.md` |
 | Cómo hablar con Open Payments | `Hallazgos — Investigación de Fuentes.md` y `ENDPOINTS.md` |
+| Todos los endpoints de la API del piloto (43) y los pendientes que la tocan | [`piloto/API del piloto.md`](./piloto/API%20del%20piloto.md) |
 | Todo lo que hizo y encontró el piloto (D-01 a D-36) | `piloto/Resultados del piloto.md` y `piloto/Plan de ajustes.md` |
 | Correr la API del piloto | `api/README.md` |
 

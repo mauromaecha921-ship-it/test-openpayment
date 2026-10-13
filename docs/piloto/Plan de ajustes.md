@@ -174,3 +174,106 @@ justo lo que prueba el beneficio del punto. Historia propuesta para el equipo:
 | API | `GET /puntos/:id/resumen?desde=hoy\|7d\|todo`: entregado (retiros Pagados, que son a la vez lo reembolsado a su wallet), pendiente (en Pagando: todavía no se entrega), cobros pagados, rechazados y en curso, promedio de segundos del PIN al reembolso y girado por adelantado ($0). `GET /puntos/:id/cobros` acepta también `desde=7d` y `desde=todo` |
 | Web | Navegación del punto (como la del beneficiario): **Nuevo cobro** y **Mi caja**. En «Nuevo cobro», una franja con lo de hoy. «Mi caja»: el resumen con filtro de periodo y el historial con filtro por estado; cada cobro abre su detalle (`/punto/cobros/:id`) con la referencia para buscarla en la Test Wallet |
 | Pruebas | Un punto con un retiro pagado, uno rechazado y uno en curso: el resumen cuadra y los filtros funcionan |
+
+---
+
+## 9. Prueba del 13 de octubre: alguien que no cobra a tiempo
+
+**Pregunta:** si una persona no cobra antes de que el programa cierre (o venza), ¿le sigue
+apareciendo?, ¿la deja cobrar?, ¿lo puede cobrar en el próximo ciclo? Lo que hace la app hoy está
+comprobado con pruebas automáticas (`api/src/programas/no-cobrado.test.ts`); mañana se confirma con
+la Test Wallet.
+
+**Preparación (hoy):** en «Equipo de prueba», **Poner PIN** a Juan Pablo (para probar el punto). Si
+se quiere probar el caso B, crear hoy un programa «Prueba vencimiento» con **vigencia fin = hoy**,
+$10.000 por persona, y aprobarlo; mañana ya estará vencido sin que nadie lo cierre.
+
+| Caso | Pasos | Qué debería pasar (comportamiento actual) |
+|---|---|---|
+| **A · Se cierra sin que cobre** | Juan Pablo no cobra en «programa 4» ($20.000). La entidad lo cierra (escribe CERRAR) | Tablero: «Nunca salió de tu cuenta: $20.000». Juan Pablo **ya no lo ve** en su inicio (solo los programas abiertos). En el punto, «programa 4» ya no aparece; si no queda ningún programa abierto, el retiro sale rechazado: «El programa está cerrado y ya no recibe cobros» |
+| **B · Vence la vigencia sin cerrar** | Al día siguiente de «Prueba vencimiento», Juan Pablo entra y el punto digita su cédula | Juan Pablo **todavía lo ve** («hasta el 12 de octubre»), pero al cobrar sale «El programa no está recibiendo cobros». El punto no lo ofrece |
+| **C · Próximo ciclo** | Después del caso A, la entidad crea un programa nuevo (otro ciclo) | Juan Pablo solo ve el monto del ciclo nuevo: **lo no cobrado no se acumula**. Ese dinero nunca salió de la cuenta de la entidad |
+
+**Vacíos y decisiones para el equipo (D-37):**
+
+1. **Tras el cierre, la persona no recibe ninguna explicación:** el subsidio simplemente desaparece.
+   Propuesta: en su historial, «No alcanzaste a cobrar $20.000 de programa 4: cerró el 13 de octubre».
+2. **Con la vigencia vencida se muestra como si se pudiera cobrar.** Propuesta: mostrarlo como
+   «venció» y no ofrecer «Cobrar», o cerrar el programa solo al vencer la vigencia.
+3. **¿Lo no cobrado pasa al siguiente ciclo?** Los documentos no lo definen (la Guía solo menciona
+   que hoy existen «prórrogas o ciclos acumulados»). Opciones: (a) no se acumula: lo no cobrado nunca
+   salió y el ciclo nuevo trae su propio monto; (b) la entidad lo incluye en el siguiente ciclo como
+   novedad, sumado al tope que aprueba; (c) prórroga: extender la vigencia del mismo programa. La app
+   hoy hace (a). Es una decisión de negocio con la entidad, no técnica.
+
+---
+
+## 10. Pendiente (para no olvidar): bonos con destino y el punto más cercano
+
+**Estado: sin empezar; solo anotado el 12 de octubre de 2026.** Los dos son extras: según la Guía,
+solo se empiezan si el flujo principal pasa la puerta del viernes a las 17:15.
+
+### A · Bonos con destino (HU-21, extra 1, wireframe 20)
+
+**Qué es:** un programa tipo **bono** que no se cobra a la cuenta ni en efectivo: se **redime en
+comercios autorizados** como parte del pago de una compra. Ejemplo de las Historias: compra de
+$80.000, bono de $60.000 → el comercio recibe $60.000 del programa y el cliente paga $20.000.
+
+| Ya existe en el piloto | Falta |
+|---|---|
+| Tipo `bono` y destino `restringido` en el programa (apagado con `EXTRA_BONO`) | **Elegir los comercios autorizados** al crear el bono: pantalla y endpoint para llenar `programa_punto` (hoy la tabla existe, pero nada la llena) |
+| Canal `compra` en los cobros, con `totalCompra` | **Vista del comercio** (wireframe 20): total de la compra → cédula → «el bono cubre $60.000, cobra $20.000 al cliente» → PIN → Pagado |
+| Regla RN-03: un bono solo se paga en un comercio autorizado, nunca a la cuenta ni en retiro | **Beneficiario:** «Dónde puedo usar mi bono», con la lista de comercios autorizados (no todos los puntos) |
+| Regla RN-05: el bono paga `min(valor del bono, total de la compra)` | Registrar comercios como tipo `compra` en «Equipo de prueba» (el campo `tipo` ya existe) |
+| Tabla `programa_punto` (comercios por programa) | Pruebas de punta a punta y el rechazo «Este comercio no acepta este bono» |
+
+**Decisiones para el equipo:**
+
+1. **¿Qué comercios?** Para la demo, uno o dos de prueba (por ejemplo, «Tienda de alimentos» y
+   «Droguería») con wallets del equipo. En la historia real: ¿la entidad elige comercios uno por uno,
+   o por categoría (alimentos, medicamentos, útiles)? Por categoría escala mejor, pero es más trabajo.
+2. **¿Un bono se gasta de una vez o en varias compras?** Las Historias suponen una sola compra
+   (`min(bono, total)`); si sobra, se pierde. Gastarlo por partes cambia el modelo (saldo por persona).
+3. **¿Quién pone el resto de la compra?** El cliente, en efectivo o con su tarjeta, por fuera de Tatú.
+
+**Esfuerzo estimado:** medio día (backend 2 a 3 h; vistas del comercio, del beneficiario y de la
+entidad 4 a 5 h), porque las reglas ya están.
+
+### B · «Activa tu ubicación» para ver el punto o comercio más cercano
+
+**No está en los documentos** (la vista «Dónde cobrar» dice «Puntos cerca», pero solo es la lista de
+todos). **No escapa al alcance: es un extra pequeño**, y queda bien en el pitch («Ana ve que el
+punto más cercano está a 300 m»).
+
+| Parte | Qué haría falta | Esfuerzo |
+|---|---|---|
+| Ubicación de cada punto | Dos columnas (`latitud`, `longitud`) en `punto`. Al registrar el punto, un botón «Usar mi ubicación actual» (el tendero está en su tienda). Sin servicios externos de mapas | 1 h |
+| Ubicación de la persona | Botón «Activar mi ubicación» en «Dónde cobrar» (y en «Dónde usar mi bono»): la API de geolocalización del navegador, que pide permiso | 30 min |
+| Ordenar por cercanía | La distancia se calcula **en el navegador** (fórmula de Haversine): «a 350 m», «a 2,1 km». La ubicación de la persona **nunca sale de su celular** ni se guarda | 1 h |
+| Mapa (opcional) | Un mapa con los puntos (Leaflet con OpenStreetMap). Más vistoso, pero suma una dependencia externa | 2 a 3 h |
+
+**Ojo:** el navegador solo da la ubicación en **HTTPS** o en `localhost`. En el PC funciona; en un
+celular conectado por la red local (`http://192.168…`) no. Es el mismo requisito de la cámara para el
+QR (HU-22), así que se resuelve igual: el despliegue público con HTTPS (HU-25) o un túnel.
+
+**Sin la ubicación, nada se rompe:** si la persona no da permiso, la lista sale como hoy.
+
+---
+
+## 11. Bonos con destino y comercios verificados (fases 1 y 2, 12 de octubre)
+
+**Estado: construido el 12 de octubre** (158 pruebas de la API en verde; falta probarlo con la Test Wallet). **Decidido:** fases 1 y 2 juntas; la ubicación (fase 3) queda para después. Con las recomendaciones:
+el bono se gasta en **una sola compra** (Historias, RN-05) y el modelo es **comercio → sedes**
+desde el inicio. Idea de Sebastián: el gobierno entrega los datos de los beneficiarios y **verifica
+los comercios** cruzando lo que registran con el RUT (DIAN) y el RUES (Cámaras de Comercio). En el
+piloto esa verificación se **simula** con un botón de la entidad: la DIAN no tiene una API abierta.
+
+| Parte | Qué |
+|---|---|
+| Comercio | NIT, razón social y actividad económica (código CIIU del RUT) → **categoría** (alimentos, salud, educación…). Queda «por verificar» hasta que la entidad lo verifica |
+| Sede | Cada tienda del comercio es un punto de tipo `compra`, con su nombre, su dirección y **su propia wallet**. Una cadena (Éxito) tiene varias sedes; en la Test Wallet sus wallets pueden estar en la misma cuenta, así el dinero de todas las tiendas llega a un solo saldo |
+| Bono | Programa tipo `bono` con las **categorías** que acepta (por ejemplo, alimentos). Lo aceptan las sedes de comercios **verificados** de esas categorías. El monto por persona es el valor del bono |
+| Compra | El comercio digita el total y la cédula → «el bono cubre $X, cobra $Y al cliente» → PIN → Pagado: el programa le paga $X a la wallet de la sede |
+| Rechazos | «Este comercio no acepta este bono» (no verificado o de otra categoría) y «Este bono solo se usa en comercios autorizados» (a la cuenta o en retiro) |
+| Beneficiario | En su inicio, el bono dice «Úsalo en un comercio autorizado» y lleva a la lista de sedes donde se acepta |
+| API | `GET /categorias`, `GET` y `POST /comercios`, `POST /comercios/:id/sedes`, `POST /comercios/:id/verificar`, `GET /programas/:id/comercios`; `categorias` en el programa; el tablero cuenta el canal «compra» |

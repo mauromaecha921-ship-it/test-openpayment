@@ -11,7 +11,7 @@
 > `db/` y `wireframe/`, con **SQLite en lugar de Supabase**, para comprobar qué de la
 > documentación está claro y funciona, y qué hay que revisar.
 >
-> **Planes detallados:** [Plan backend](./Plan%20backend.md) · [Plan frontend](./Plan%20frontend.md) · [Plan de ajustes](./Plan%20de%20ajustes.md) (vistas para PC y celular, registro del equipo y pagos reales)
+> **Planes detallados:** [Plan backend](./Plan%20backend.md) · [Plan frontend](./Plan%20frontend.md) · [Plan de ajustes](./Plan%20de%20ajustes.md) (vistas para PC y celular, registro del equipo y pagos reales) · [API del piloto](./API%20del%20piloto.md) (los 43 endpoints)
 
 ---
 
