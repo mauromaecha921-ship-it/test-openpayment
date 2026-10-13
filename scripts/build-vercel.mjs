@@ -55,6 +55,11 @@ const swaggerUiDist = realpathSync(
 )
 cpSync(swaggerUiDist, path.join(funcion, 'node_modules/swagger-ui-dist'), { recursive: true, dereference: true })
 
+// @interledger/open-payments lee sus specs OpenAPI (.yaml) desde `__dirname/specs` al crear el
+// cliente; con el bundle de esbuild ese __dirname es la carpeta de la función
+const openPayments = realpathSync(path.dirname(requireServer.resolve('@interledger/open-payments/package.json')))
+cpSync(path.join(openPayments, 'dist/openapi/specs'), path.join(funcion, 'specs'), { recursive: true })
+
 writeFileSync(
   path.join(funcion, '.vc-config.json'),
   JSON.stringify(
