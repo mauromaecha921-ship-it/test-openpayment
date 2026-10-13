@@ -16,11 +16,13 @@
   "scripts": {
     "dev": "concurrently -k -n api,web -c blue,green \"pnpm --filter api dev\" \"pnpm --filter web dev\"",
     "dev:web": "pnpm --filter web dev",
+    "build:vercel": "pnpm --filter web build && node scripts/build-vercel.mjs",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "check:secretos": "node scripts/check-secretos.mjs"
   },
   "devDependencies": {
-    "concurrently": "10.0.5"
+    "concurrently": "10.0.5",
+    "esbuild": "0.28.2"
   }
 }

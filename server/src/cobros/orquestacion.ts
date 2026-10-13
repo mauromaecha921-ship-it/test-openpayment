@@ -2,6 +2,7 @@
  * Orquestación del cobro (P-20, Plan backend § 8.2 a § 8.6):
  * liquidación → transición → pagar → guardar. Las rutas solo reciben y validan.
  */
+import { waitUntil } from '@vercel/functions'
 import { config } from '../config.js'
 import { conflicto, ErrorApi, noEncontrado } from '../comun/errores.js'
 import { enmascararDocumento, log } from '../comun/log.js'
@@ -124,6 +125,9 @@ function disparar(id: string) {
     .catch((e) => log.error('pagar() falló sin control', { error: e, cobro: id }))
     .finally(() => enCurso.delete(id))
   enCurso.set(id, promesa)
+  // En Vercel la función se congela al responder: waitUntil la mantiene viva hasta que el pago
+  // termine. Fuera de Vercel no hace nada (la promesa sigue igual en el proceso).
+  waitUntil(promesa)
 }
 
 /** Para pruebas y para el cierre ordenado: espera los pagos que estén en curso. */

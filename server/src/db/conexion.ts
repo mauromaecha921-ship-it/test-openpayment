@@ -1,8 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { mkdirSync } from 'node:fs'
-import { PGlite } from '@electric-sql/pglite'
 import type { PgAsyncDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
-import { drizzle as drizzlePglite } from 'drizzle-orm/pglite'
 import { drizzle as drizzlePostgres } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import type { BaseDeDatos } from '../config.js'
@@ -34,12 +32,23 @@ interface Conexion {
   script(sql: string): Promise<void>
   /** Una consulta suelta con parámetros $1, $2…; devuelve las filas. */
   filas<T>(sql: string, parametros?: unknown[]): Promise<T[]>
+  /**
+   * Corre `fn` solo si nadie más tiene el candado `clave` (pg_try_advisory_lock). En Vercel hay
+   * varias instancias de la API a la vez: así una sola renueva los tokens en cada vuelta.
+   * Devuelve `undefined` si el candado estaba tomado.
+   */
+  conCandado<T>(clave: number, fn: () => Promise<T>): Promise<T | undefined>
   cerrar(): Promise<void>
 }
 
 let actual: Conexion | undefined
 
 async function abrirPglite(base: Extract<BaseDeDatos, { tipo: 'pglite' }>): Promise<Conexion> {
+  // Import dinámico: PGlite solo existe en desarrollo y pruebas; el paquete de Vercel no lo lleva
+  const [{ PGlite }, { drizzle: drizzlePglite }] = await Promise.all([
+    import('@electric-sql/pglite'),
+    import('drizzle-orm/pglite'),
+  ])
   if (base.ruta) mkdirSync(base.ruta, { recursive: true })
   const cliente = base.ruta ? new PGlite(base.ruta) : new PGlite()
   await cliente.waitReady
@@ -54,6 +63,8 @@ async function abrirPglite(base: Extract<BaseDeDatos, { tipo: 'pglite' }>): Prom
 ${sql}`)
     },
     filas: async <T>(sql: string, parametros: unknown[] = []) => (await cliente.query<T>(sql, parametros)).rows,
+    // Un solo proceso con una sola conexión: no hay con quién competir
+    conCandado: (_clave, fn) => fn(),
     cerrar: () => cliente.close(),
   }
 }
@@ -69,8 +80,9 @@ function abrirPostgres(base: Extract<BaseDeDatos, { tipo: 'postgres' }>): Conexi
     // pooler de Supabase las admite en modo «Session» (5432); en modo «Transaction» (6543) no, y
     // ahí se apagan, como hace la rama de Pablo.
     prepare: url.port !== '6543',
-    // Pocas conexiones: el pooler gratuito tiene un límite y la API es un solo proceso (§ 12)
-    max: 5,
+    // Pocas conexiones: el pooler gratuito tiene un límite (§ 12). En Vercel cada instancia abre las
+    // suyas, así que se usan menos (y conviene el pooler en modo «Transaction», puerto 6543).
+    max: process.env.VERCEL ? 3 : 5,
     idle_timeout: 30,
     connect_timeout: 15,
     onnotice: () => {},
@@ -92,6 +104,21 @@ ${sql}`).simple()
     },
     filas: async <T>(sql: string, parametros: unknown[] = []) =>
       (await cliente.unsafe(sql, parametros as postgres.ParameterOrJSON<never>[])) as unknown as T[],
+    conCandado: async (clave, fn) => {
+      // El candado vive en la sesión: hay que tomarlo y soltarlo en la misma conexión
+      const reservada = await cliente.reserve()
+      try {
+        const [f] = await reservada<{ ok: boolean }[]>`SELECT pg_try_advisory_lock(${clave}) AS ok`
+        if (!f?.ok) return undefined
+        try {
+          return await fn()
+        } finally {
+          await reservada`SELECT pg_advisory_unlock(${clave})`
+        }
+      } finally {
+        reservada.release()
+      }
+    },
     cerrar: () => cliente.end({ timeout: 5 }),
   }
 }
