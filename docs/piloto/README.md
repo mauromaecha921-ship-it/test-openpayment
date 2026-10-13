@@ -190,7 +190,7 @@ excepción es Vite: el 6 de octubre salió un parche en todas sus ramas a la vez
 | Build | `vite` · `@vitejs/plugin-react` | 8.3.4 · 6.1.1 | |
 | Estilos | `tailwindcss` · `@tailwindcss/vite` · `tw-animate-css` | 4.3.3 · 4.3.3 · 1.4.0 | |
 | Componentes | CLI `shadcn` · `lucide-react` · `clsx` · `tailwind-merge` · `class-variance-authority` | 4.21.0 · 1.48.0 · 2.1.1 · 3.7.0 · 0.7.1 | El CLI agrega las dependencias de cada componente; se fijan exactas |
-| Fuentes | `@fontsource/atkinson-hyperlegible` · `@fontsource/ibm-plex-mono` | 5.3.0 · 5.3.0 | Las de los wireframes, servidas en local |
+| Fuentes | `@fontsource-variable/archivo` · `@fontsource/ibm-plex-mono` | 5.3.0 · 5.3.0 | Archivo es la de la identidad visual; ambas servidas en local |
 | Raíz | `concurrently` | 10.0.5 | Un solo `npm run dev` |
 | Extras (no se instalan sin bandera) | `qrcode.react` · `html5-qrcode` | 4.2.0 · 2.3.8 | Guía § Stack |
 | Después | Vercel CLI | 62.2.0 | Ya instalado (§ 11) |

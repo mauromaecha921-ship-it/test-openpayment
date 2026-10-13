@@ -2,9 +2,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Tema del piloto: la misma paleta neutra de los wireframes (Plan frontend § 6). La identidad visual
-   sigue pendiente (P-17). Contrastes sobre blanco: #4D4D4D 8,5:1 · #6B6B6B 5,3:1 · #1F55C6 6,6:1.
-   #8C8C88 (3,4:1) es solo para bordes y controles, nunca para texto. */
+/* Tema del piloto: la identidad visual de Tatú (docs/piloto/Plan identidad visual.md). Noche
+   #13203A sobre Arena #F5F0E6; Azul vivo #2E5FE0 para acciones; Ámbar #F6A623 solo de acento.
+   Contrastes sobre arena y sobre #EDE5D3: #4A5468 6,7 / 6,1 · #5A657A 5,2 / 4,7 · #1E4FC8 6,2 / 5,6.
+   #847A66 (3,7 / 3,4) es solo para bordes y controles, nunca para texto. */
 
 /* El piloto solo tiene tema claro, como los wireframes: `dark:` de shadcn queda atado a una clase
    que no se usa, para que el modo oscuro del sistema no mezcle colores. */
@@ -14,7 +15,7 @@
 }
 
 @theme inline {
-  --font-sans: 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-sans: 'Archivo Variable', 'Helvetica Neue', Arial, sans-serif;
   --font-heading: var(--font-sans);
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
@@ -48,6 +49,10 @@
   --color-pagando-fondo: var(--pagando-fondo);
   --color-rechazo: var(--rechazo);
   --color-rechazo-fondo: var(--rechazo-fondo);
+  --color-pagado-relleno: var(--pagado-relleno);
+  --color-noche: var(--noche);
+  --color-ambar: var(--ambar);
+  --color-arcilla: var(--arcilla);
 
   --radius-sm: calc(var(--radius) * 0.5);
   --radius-md: calc(var(--radius) * 0.67);
@@ -59,37 +64,45 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #1c1c1c;
-  --card: #ffffff;
-  --card-foreground: #1c1c1c;
-  --popover: #ffffff;
-  --popover-foreground: #1c1c1c;
-  --primary: #1c1c1c;
+  --background: #f5f0e6;
+  --foreground: #13203a;
+  --card: #fffdf8;
+  --card-foreground: #13203a;
+  --popover: #fffdf8;
+  --popover-foreground: #13203a;
+  --primary: #2e5fe0;
   --primary-foreground: #ffffff;
-  --secondary: #e6e6e3;
-  --secondary-foreground: #1c1c1c;
-  --muted: #f5f5f3;
-  --muted-foreground: #4d4d4d;
-  --tenue: #6b6b6b;
-  --accent: #f5f5f3;
-  --accent-foreground: #1c1c1c;
-  --destructive: #a2231d;
-  --border: #d4d4d0;
-  --input: #8c8c88;
-  --control: #8c8c88;
-  --ring: #1f55c6;
-  --enlace: #1f55c6;
-  --enlace-hover: #163f94;
-  --radius: 12px;
+  --secondary: #ede5d3;
+  --secondary-foreground: #13203a;
+  --muted: #ede5d3;
+  --muted-foreground: #4a5468;
+  --tenue: #5a657a;
+  --accent: #ede5d3;
+  --accent-foreground: #13203a;
+  --destructive: #a3261c;
+  --border: #e2d8c4;
+  --input: #847a66;
+  --control: #847a66;
+  --ring: #2e5fe0;
+  --enlace: #1e4fc8;
+  --enlace-hover: #13203a;
+  --radius: 14px;
 
-  /* Estados del cobro: siempre con ícono y texto, nunca solo color. Todos ≥ 4,5:1 sobre su fondo. */
-  --pagado: #17612c;
-  --pagado-fondo: #e3f1e6;
-  --pagando: #7a4b00;
-  --pagando-fondo: #fdf1dc;
-  --rechazo: #a2231d;
-  --rechazo-fondo: #fbe7e6;
+  /* Colores de marca para íconos y acentos, no para texto. */
+  --noche: #13203a;
+  --ambar: #f6a623;
+  --arcilla: #6e4630;
+
+  /* Estados del cobro: siempre con ícono y texto, nunca solo color. Todos ≥ 4,5:1 sobre su fondo.
+     #1B7F4B (Pagado) da 4,4:1 sobre arena: se usa en rellenos con texto blanco (5,0:1) y #17703F
+     cuando va como texto. */
+  --pagado: #17703f;
+  --pagado-relleno: #1b7f4b;
+  --pagado-fondo: #e3efe6;
+  --pagando: #6e4630;
+  --pagando-fondo: #fce3b4;
+  --rechazo: #a3261c;
+  --rechazo-fondo: #f8e4df;
 }
 
 @layer base {
@@ -104,6 +117,7 @@
     @apply bg-background text-foreground;
     font-size: 16px;
     line-height: 1.4;
+    font-variant-numeric: tabular-nums;
     margin: 0;
   }
   a {
@@ -123,6 +137,34 @@
   }
   h1:focus {
     outline: none;
+  }
+}
+
+/* Logotipo «Tatú»: Archivo 800 al 125 % de ancho, como en el manual. */
+@utility marca {
+  font-weight: 800;
+  font-stretch: 125%;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+/* TatuAnimado: el suelo por el que rueda y el halo verde al quedar pagado. */
+.tatu-suelo {
+  background-image: repeating-linear-gradient(90deg, var(--control) 0 14px, transparent 14px 24px);
+}
+.tatu-halo {
+  translate: -50% -50%;
+  background: var(--pagado-relleno);
+  animation: tatu-halo 900ms ease-out 250ms both;
+}
+@keyframes tatu-halo {
+  from {
+    opacity: 0.35;
+    scale: 0.6;
+  }
+  to {
+    opacity: 0;
+    scale: 2.2;
   }
 }
 

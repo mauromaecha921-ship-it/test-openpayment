@@ -152,29 +152,33 @@ recargo de página o un doble clic siempre muestran la verdad que tiene la API. 
 
 ---
 
-## 6. Sistema visual (sale de los wireframes)
+## 6. Sistema visual (identidad de Tatú)
 
-Los wireframes son de baja fidelidad y en escala de grises; la identidad visual sigue pendiente
-(P-17). El piloto usa esa misma paleta neutra como tema de shadcn/ui.
+Los wireframes eran de baja fidelidad y en escala de grises. La identidad visual (P-17) ya está
+aplicada: paleta, logo y tipografía salen del manual y del prototipo del equipo (detalle y hallazgos
+en [Plan identidad visual](./Plan%20identidad%20visual.md)).
 
 | Uso | Valor | Variable del tema |
 |---|---|---|
-| Texto principal y botón primario | `#1C1C1C` | `--foreground`, `--primary` |
-| Fondo de la vista y de las tarjetas | `#FFFFFF` | `--background`, `--card` |
-| Fondo de la entidad, teclas y franjas | `#F5F5F3` | `--muted` |
-| Íconos y fondos suaves | `#E6E6E3` | `--secondary` |
-| Texto secundario | `#4D4D4D` y `#6B6B6B` | `--muted-foreground` |
-| Bordes | `#D4D4D0`; de controles `#8C8C88` | `--border`, `--input` |
-| Enlaces | `#1F55C6`; al pasar el mouse `#163F94` | `--ring` y enlaces |
-| Radios | 12 px en tarjetas y botones, 999 px en etiquetas, 10 px en las teclas | `--radius` |
-| Tipografía | Atkinson Hyperlegible en la interfaz; IBM Plex Mono en direcciones de wallet y referencias (`SUB-0002`) | `--font-sans`, `--font-mono` |
+| Texto principal | Noche `#13203A` | `--foreground` |
+| Botón primario, foco | Azul vivo `#2E5FE0` (texto blanco, 5,5:1); al pasar el mouse `#1E4FC8` | `--primary`, `--ring` |
+| Fondo de las vistas | Arena `#F5F0E6` | `--background` |
+| Tarjetas | `#FFFDF8` | `--card` |
+| Avisos, teclas y fondos suaves | `#EDE5D3` | `--muted`, `--secondary` |
+| Texto secundario | `#4A5468` y `#5A657A` | `--muted-foreground`, `--tenue` |
+| Bordes | `#E2D8C4`; de controles `#847A66` | `--border`, `--input` |
+| Enlaces | `#1E4FC8`; al pasar el mouse Noche | `--enlace` |
+| Acentos de marca (íconos, no texto) | Noche, Ámbar `#F6A623`, Arcilla `#6E4630` | `--noche`, `--ambar`, `--arcilla` |
+| Radios | 14 px en tarjetas y botones, 999 px en etiquetas | `--radius` |
+| Tipografía | Archivo (variable, con eje de ancho; el logotipo en 800 al 125 %) y cifras tabulares; IBM Plex Mono en direcciones de wallet y referencias (`SUB-0002`) | `--font-sans`, `--font-mono`, utilidad `marca` |
 
-Contrastes medidos sobre blanco: `#4D4D4D` 8,5:1, `#6B6B6B` 5,3:1 y `#1F55C6` 6,6:1, todos AA.
-`#8C8C88` da 3,4:1: sirve para bordes y controles (3:1), **nunca para texto**.
+Contrastes sobre arena / sobre `#EDE5D3`: `#4A5468` 6,7 / 6,1, `#5A657A` 5,2 / 4,7 y `#1E4FC8`
+6,2 / 5,6, todos AA. `#847A66` da 3,7 / 3,4: sirve para bordes y controles (3:1), **nunca para
+texto**.
 
-Los estados del cobro no tienen color en los wireframes. Se agrega uno discreto por estado
-(Pagado verde, Pagando ámbar, Rechazado y Fallido rojo), siempre con ícono y texto, nunca solo color,
-y se verifica que llegue a 4,5:1 con Lighthouse.
+Estados del cobro, siempre con ícono y texto, nunca solo color: **Pagado** sólido en `#1B7F4B` con
+texto blanco (5,0:1; como texto verde se usa `#17703F`, 5,4:1); **Pagando** en Arcilla sobre
+`#FCE3B4` (6,5:1); **Rechazado** y **Fallido** en `#A3261C` sobre `#F8E4DF` (6,0:1).
 
 **Tamaños (RNF-04):** texto base de 16 px; montos principales de 36 a 40 px (nunca menos de 24 px);
 botón primario de 19 px en negrita con 16 px de relleno; teclas del PIN de 60 px de alto; todo lo

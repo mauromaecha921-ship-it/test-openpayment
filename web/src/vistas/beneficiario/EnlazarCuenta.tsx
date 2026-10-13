@@ -194,7 +194,7 @@ export default function EnlazarCuenta() {
 
         {estado === 'Verificada' && cuenta && (
           <div role="status" className="flex flex-col items-center gap-4 pt-3 text-center">
-            <span aria-hidden className="flex size-[88px] items-center justify-center rounded-full bg-pagado text-primary-foreground">
+            <span aria-hidden className="flex size-[88px] items-center justify-center rounded-full bg-pagado-relleno text-primary-foreground">
               <Check className="size-12" strokeWidth={2.5} />
             </span>
             <strong className="text-2xl leading-tight">Tu cuenta está lista para recibir pagos</strong>

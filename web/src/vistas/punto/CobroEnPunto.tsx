@@ -1,4 +1,4 @@
-import { Check, Wallet } from 'lucide-react'
+import { Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
@@ -12,6 +12,7 @@ import { EsperaPagando } from '@/componentes/EsperaPagando'
 import { MarcoPunto } from '@/componentes/Marcos'
 import { textoMonto } from '@/componentes/Monto'
 import { PasosDelPago } from '@/componentes/PasosDelPago'
+import { TatuPagado } from '@/componentes/TatuAnimado'
 import { TarjetaRechazo } from '@/componentes/TarjetaRechazo'
 import { PuntosPin, TecladoPin } from '@/componentes/TecladoPin'
 import { Titulo } from '@/componentes/Titulo'
@@ -153,9 +154,7 @@ function Pagado({ cobro: c }: { cobro: Cobro }) {
   return (
     <>
       <div role="status" className="flex flex-col items-center gap-2.5 pt-1 text-center">
-        <span aria-hidden className="flex size-24 items-center justify-center rounded-full bg-pagado text-primary-foreground">
-          <Check className="size-12" strokeWidth={3} />
-        </span>
+        <TatuPagado className="size-28" />
         <Titulo className="text-[34px]">Pagado</Titulo>
         <p className="m-0 text-[26px] leading-tight font-bold">
           {c.canal === 'compra' ? `El bono cubrió ${monto}. ${textoCompra(c)}` : `Entrega ${monto} a ${c.persona.nombre ?? 'la persona'}`}

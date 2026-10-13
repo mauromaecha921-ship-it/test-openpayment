@@ -27,6 +27,8 @@ import InicioPunto from '@/vistas/punto/InicioPunto'
 
 // Solo existe en el modo «API simulada»: hace las veces de la Test Wallet.
 const BancoSimulado = lazy(() => import('@/api/simulada/BancoSimulado'))
+// Demo del tatú animado, para decidir la variante (no está enlazada desde ninguna vista).
+const DemoTatu = lazy(() => import('@/vistas/DemoTatu'))
 
 /** Las vistas del beneficiario y del punto necesitan la cédula o el punto elegidos en la entrada. */
 function ConRol({ rol, children }: { rol: 'beneficiario' | 'punto'; children: ReactNode }) {
@@ -81,6 +83,14 @@ export default function App() {
             }
           />
         )}
+        <Route
+          path="/demo/tatu"
+          element={
+            <Suspense fallback={<Cargando />}>
+              <DemoTatu />
+            </Suspense>
+          }
+        />
         <Route path="*" element={<NoExiste />} />
       </Routes>
     </RolProvider>
