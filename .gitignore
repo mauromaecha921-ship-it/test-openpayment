@@ -14,3 +14,6 @@ api/data/
 node_modules/
 dist/
 coverage/
+
+# Salida del build de Vercel (se genera en cada despliegue)
+.vercel/
