@@ -2,7 +2,7 @@ import request from 'supertest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { app, IDS, prepararBd, PROGRAMA, programaActivo } from '../../test/ayuda.js'
 import { esperarPagos } from '../cobros/orquestacion.js'
-import { ejecutar } from '../db/conexion.js'
+import * as programas from '../db/repositorios/programas.js'
 import * as op from '../openPaymentsService.js'
 import { TOKEN_FALSO } from '../salud.js'
 
@@ -18,8 +18,8 @@ const CAMILA = { documento: '1020304050', billetera: '$ilp.interledger-test.dev/
 
 const registrar = (cuerpo: object) => request(a).post('/api/beneficiarios').send(cuerpo)
 
-beforeEach(() => {
-  prepararBd()
+beforeEach(async () => {
+  await prepararBd()
 })
 
 describe('registro del equipo: cédula y wallet (Plan de ajustes § 2)', () => {
@@ -127,10 +127,10 @@ describe('GET /estado (pagos reales o simulados)', () => {
 
   it('un programa con el token falso de la semilla «solo UI» los vuelve simulados', async () => {
     const id = await programaActivo()
-    ejecutar('UPDATE programa SET token_acceso = :t WHERE id = :id', { t: TOKEN_FALSO, id })
+    await programas.actualizar(id, { token_acceso: TOKEN_FALSO })
     const e = (await request(a).get('/api/estado').expect(200)).body
     expect(e.pagosReales).toBe(false)
-    expect(e.faltan[0]).toMatch(/npm run db:reset -w api/)
+    expect(e.faltan[0]).toMatch(/pnpm --filter api db:reset/)
   })
 
   it('sin la llave configurada dice qué falta', async () => {

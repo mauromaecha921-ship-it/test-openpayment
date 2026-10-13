@@ -1,4 +1,4 @@
-// npm run check:secretos — busca llaves privadas en los archivos que git vería (Plan backend § 12).
+// pnpm check:secretos — busca llaves privadas en los archivos que git vería (Plan backend § 12).
 // Revisa el encabezado PEM en texto y codificado en base64, y una OP_PRIVATE_KEY_* con valor.
 // Los patrones se arman aquí adentro para que el script no se detecte a sí mismo.
 import { execFileSync } from 'node:child_process'

@@ -12,7 +12,7 @@ const retiro = (documento: string) =>
   request(a).post('/api/cobros').send({ documento, canal: 'retiro', puntoId: IDS.punto, llaveIdempotencia: `llave-caja-${++n}` }).expect(201)
 
 beforeEach(async () => {
-  prepararBd()
+  await prepararBd()
   await programaActivo()
 })
 

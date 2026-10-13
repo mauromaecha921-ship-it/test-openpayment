@@ -1,4 +1,4 @@
-// API simulada en el navegador (modo `npm run dev:simulada -w web`). Responde con el contrato del
+// API simulada en el navegador (modo `pnpm --filter web dev:simulada`). Responde con el contrato del
 // Plan backend § 7 para ver y recorrer las pantallas mientras api/ no está lista. Imita las reglas
 // principales (RN-01 a RN-07, RN-12, el tope del banco) de forma simplificada: no es la fuente de
 // verdad del negocio, solo un doble de pruebas. Nunca se usa con dinero ni con Open Payments.

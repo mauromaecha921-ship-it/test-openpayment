@@ -54,12 +54,12 @@ export default function Estado() {
         {API_SIMULADA && (
           <p className="m-0 rounded-xl border-2 border-dashed border-control p-4">
             Estás en el modo «API simulada»: todo pasa en el navegador y nada sale de la Test Wallet. Para pagar de verdad, arranca la API
-            con <Cmd>npm run dev</Cmd>.
+            con <Cmd>pnpm dev</Cmd>.
           </p>
         )}
         {!API_SIMULADA && estado === undefined && <Cargando texto="Revisando…" />}
         {!API_SIMULADA && estado === null && (
-          <ErrorCarga mensaje="La API no responde. Arráncala con «npm run dev» en la raíz del proyecto." reintentar={() => void revisar()} />
+          <ErrorCarga mensaje="La API no responde. Arráncala con «pnpm dev» en la raíz del proyecto." reintentar={() => void revisar()} />
         )}
 
         {estado && (
@@ -114,7 +114,7 @@ export default function Estado() {
                 <Paso estado={estado.programasConTokenFalso ? 'falla' : 'ok'} titulo="Sin programas de la semilla «solo UI»">
                   {estado.programasConTokenFalso ? (
                     <>
-                      La BD tiene datos de mentira con un permiso falso. Apaga la API, corre <Cmd>npm run db:reset -w api</Cmd> y vuelve a
+                      La BD tiene datos de mentira con un permiso falso. Apaga la API, corre <Cmd>pnpm --filter api db:reset</Cmd> y vuelve a
                       arrancarla.
                     </>
                   ) : (
@@ -149,7 +149,7 @@ export default function Estado() {
               <Cmd>OP_PRIVATE_KEY_PATH</Cmd> con la ruta del archivo de la llave.
             </li>
             <li>
-              Corre <Cmd>npm run db:reset -w api</Cmd> (BD limpia) y arranca todo con <Cmd>npm run dev</Cmd>.
+              Corre <Cmd>pnpm --filter api db:reset</Cmd> (BD limpia) y arranca todo con <Cmd>pnpm dev</Cmd>.
             </li>
             <li>Registren a las personas en «Equipo de prueba», creen el programa con la wallet de quien paga y apruébenlo en su Test Wallet.</li>
           </ol>

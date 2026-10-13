@@ -1,68 +1,90 @@
-import type { SQLInputValue } from 'node:sqlite'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import type { EstadoCuenta } from '../../programas/estados.js'
-import { ejecutar, uno } from '../conexion.js'
-import { asignaciones } from './comun.js'
+import { ejecutor, esUuid } from '../conexion.js'
+import { cuenta_beneficiario as cuenta } from '../schema.js'
 
-export interface FilaCuenta {
-  id: string
-  beneficiario_id: string
-  billetera: string
-  estado: EstadoCuenta
-  nonce_cliente: string | null
-  nonce_cierre: string | null
-  verificada_en: string | null
-  uri_continuacion: string | null
-  token_continuacion: string | null
+export type FilaCuenta = typeof cuenta.$inferSelect
+
+export type NuevaCuenta = Pick<FilaCuenta, 'id' | 'beneficiario_id' | 'billetera' | 'estado'> &
+  Partial<Pick<FilaCuenta, 'verificada_en' | 'nonce_cliente' | 'nonce_cierre' | 'uri_continuacion' | 'token_continuacion'>>
+
+const VIGENTE = ['PorVerificar', 'Verificada'] as const
+
+export async function obtener(id: string): Promise<FilaCuenta | undefined> {
+  if (!esUuid(id)) return undefined
+  const [c] = await ejecutor().select().from(cuenta).where(eq(cuenta.id, id)).limit(1)
+  return c
 }
 
-export function obtener(id: string): FilaCuenta | undefined {
-  return uno<FilaCuenta>('SELECT * FROM cuenta_beneficiario WHERE id = :id', { id })
+/** Varias cuentas en una sola consulta (las vistas por lote, D-43). */
+export async function deIds(ids: string[]): Promise<Map<string, FilaCuenta>> {
+  const validos = [...new Set(ids)].filter(esUuid)
+  if (!validos.length) return new Map()
+  const filas = await ejecutor().select().from(cuenta).where(inArray(cuenta.id, validos))
+  return new Map(filas.map((c) => [c.id, c]))
 }
 
 /** La cuenta vigente (PorVerificar o Verificada) de la persona, si tiene. */
-export function vigenteDe(beneficiarioId: string): FilaCuenta | undefined {
-  return uno<FilaCuenta>(
-    `SELECT * FROM cuenta_beneficiario WHERE beneficiario_id = :b AND estado IN ('PorVerificar', 'Verificada')`,
-    { b: beneficiarioId },
-  )
+export async function vigenteDe(beneficiarioId: string): Promise<FilaCuenta | undefined> {
+  const [c] = await ejecutor()
+    .select()
+    .from(cuenta)
+    .where(and(eq(cuenta.beneficiario_id, beneficiarioId), inArray(cuenta.estado, [...VIGENTE])))
+    .limit(1)
+  return c
 }
 
 /** La vigente o, si no hay, la más reciente (para mostrar el estado). */
-export function ultimaDe(beneficiarioId: string): FilaCuenta | undefined {
-  return (
-    vigenteDe(beneficiarioId) ??
-    uno<FilaCuenta>('SELECT * FROM cuenta_beneficiario WHERE beneficiario_id = :b ORDER BY rowid DESC LIMIT 1', {
-      b: beneficiarioId,
-    })
-  )
+export async function ultimaDe(beneficiarioId: string): Promise<FilaCuenta | undefined> {
+  const vigente = await vigenteDe(beneficiarioId)
+  if (vigente) return vigente
+  const [c] = await ejecutor()
+    .select()
+    .from(cuenta)
+    .where(eq(cuenta.beneficiario_id, beneficiarioId))
+    .orderBy(desc(cuenta.creado_en))
+    .limit(1)
+  return c
 }
 
-export function crear(datos: Omit<FilaCuenta, 'verificada_en'> & { verificada_en?: string | null }) {
-  ejecutar(
-    `INSERT INTO cuenta_beneficiario (id, beneficiario_id, billetera, estado, nonce_cliente, nonce_cierre,
-                                      verificada_en, uri_continuacion, token_continuacion)
-     VALUES (:id, :beneficiario_id, :billetera, :estado, :nonce_cliente, :nonce_cierre,
-             :verificada_en, :uri_continuacion, :token_continuacion)`,
-    { verificada_en: null, ...datos },
-  )
+/** La última cuenta de cada persona (la lista del equipo), en una sola consulta. */
+export async function ultimasDe(beneficiarioIds: string[]): Promise<Map<string, FilaCuenta>> {
+  const mapa = new Map<string, FilaCuenta>()
+  if (!beneficiarioIds.length) return mapa
+  const filas = await ejecutor()
+    .select()
+    .from(cuenta)
+    .where(inArray(cuenta.beneficiario_id, [...new Set(beneficiarioIds)]))
+    .orderBy(desc(cuenta.creado_en))
+  for (const c of filas) {
+    const actual = mapa.get(c.beneficiario_id)
+    // La vigente gana; si no hay, la más reciente (la primera en llegar)
+    const esVigente = (x: FilaCuenta) => (VIGENTE as readonly string[]).includes(x.estado)
+    if (!actual || (!esVigente(actual) && esVigente(c))) mapa.set(c.beneficiario_id, c)
+  }
+  return mapa
 }
 
-export function actualizar(id: string, campos: Partial<Omit<FilaCuenta, 'id'>>, estadoEsperado?: EstadoCuenta): boolean {
-  const { sql, parametros } = asignaciones(campos as Record<string, SQLInputValue | undefined>)
-  const condicion = estadoEsperado ? ' AND estado = :estado_esperado' : ''
-  return (
-    ejecutar(`UPDATE cuenta_beneficiario SET ${sql} WHERE id = :id${condicion}`, {
-      ...parametros,
-      id,
-      ...(estadoEsperado ? { estado_esperado: estadoEsperado } : {}),
-    }) === 1
-  )
+export async function crear(datos: NuevaCuenta) {
+  await ejecutor().insert(cuenta).values(datos)
+}
+
+export async function actualizar(
+  id: string,
+  campos: Partial<Omit<FilaCuenta, 'id' | 'creado_en'>>,
+  estadoEsperado?: EstadoCuenta,
+): Promise<boolean> {
+  const condicion = estadoEsperado ? and(eq(cuenta.id, id), eq(cuenta.estado, estadoEsperado)) : eq(cuenta.id, id)
+  const filas = await ejecutor().update(cuenta).set(campos).where(condicion).returning({ id: cuenta.id })
+  return filas.length === 1
 }
 
 /** La cuenta vigente que ya usa esa wallet, de cualquier persona. */
-export function vigentePorBilletera(billetera: string): FilaCuenta | undefined {
-  return uno<FilaCuenta>(
-    `SELECT * FROM cuenta_beneficiario WHERE billetera = :billetera AND estado IN ('PorVerificar', 'Verificada') LIMIT 1`,
-    { billetera },
-  )
+export async function vigentePorBilletera(billetera: string): Promise<FilaCuenta | undefined> {
+  const [c] = await ejecutor()
+    .select()
+    .from(cuenta)
+    .where(and(eq(cuenta.billetera, billetera), inArray(cuenta.estado, [...VIGENTE])))
+    .limit(1)
+  return c
 }

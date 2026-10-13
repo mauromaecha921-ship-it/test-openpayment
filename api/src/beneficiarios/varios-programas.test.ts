@@ -16,7 +16,7 @@ async function programaPequeno(): Promise<string> {
   const id = (await request(a).post('/api/programas').send({ ...PROGRAMA, nombre: 'Bono pequeño', montoPorPersona: '10000' }).expect(201)).body.id
   await request(a).post(`/api/programas/${id}/autorizar`).expect(200)
   const ref = 'ref-pequeno'
-  await request(a).get(`/api/callback/${id}`).query({ interact_ref: ref, hash: hashValido(id, ref) }).expect(302)
+  await request(a).get(`/api/callback/${id}`).query({ interact_ref: ref, hash: await hashValido(id, ref) }).expect(302)
   return id
 }
 
@@ -27,7 +27,7 @@ let pequeno: string
 let grande: string
 
 beforeEach(async () => {
-  prepararBd()
+  await prepararBd()
   // El falso del banco guarda un solo tope: el último aprobado es el grande y cubre los dos cobros
   pequeno = await programaPequeno()
   grande = await programaActivo()

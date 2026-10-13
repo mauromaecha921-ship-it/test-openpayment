@@ -2,9 +2,9 @@
  * Fase 1 (Plan backend § 10): el hito crítico de la Guía en un script, contra la Test Wallet.
  * Responde las preguntas que pueden cambiar el diseño antes de construir la API.
  *
- *   npm run primer-cobro -w api                 pasos 1 a 11
- *   npm run primer-cobro -w api -- --rotar      también rota el token (paso 10)
- *   npm run primer-cobro -w api -- --cancelar   también prueba grant.cancel (paso 12)
+ *   pnpm --filter api primer-cobro                 pasos 1 a 11
+ *   pnpm --filter api primer-cobro --rotar      también rota el token (paso 10)
+ *   pnpm --filter api primer-cobro --cancelar   también prueba grant.cancel (paso 12)
  *
  * Usa el adaptador openPaymentsService.ts (AD-07: el SDK se importa solo allí). Imprime una
  * tabla de resultados y la guarda en api/data/primer-cobro-<fecha>.json, SIN tokens.

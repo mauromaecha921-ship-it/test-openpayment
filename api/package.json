@@ -12,6 +12,7 @@
     "db:reset": "tsx src/db/migrar.ts limpia",
     "db:reset:demo": "tsx src/db/migrar.ts demo",
     "db:semilla:ui": "tsx src/db/migrar.ts semilla-ui",
+    "db:pull": "tsx scripts/esquema.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "dev:3100": "tsx watch --env-file=config/puerto-3100.env src/main.ts",
@@ -19,8 +20,11 @@
     "guion": "tsx scripts/guion.ts"
   },
   "dependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@interledger/open-payments": "7.4.0",
+    "drizzle-orm": "1.0.0-rc.4",
     "express": "5.2.1",
+    "postgres": "3.4.9",
     "swagger-ui-express": "5.0.1",
     "zod": "4.6.5"
   },
@@ -29,6 +33,7 @@
     "@types/node": "24.19.0",
     "@types/supertest": "7.2.1",
     "@types/swagger-ui-express": "4.1.8",
+    "drizzle-kit": "1.0.0-rc.4",
     "supertest": "7.2.2",
     "tsx": "4.23.15",
     "typescript": "6.0.3",

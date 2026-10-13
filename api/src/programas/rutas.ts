@@ -83,12 +83,12 @@ export function rutasProgramas(): Router {
     res.json(await servicio.tablero(req.params.id))
   })
 
-  r.post('/programas/:id/pausar', (req, res) => {
-    res.json(servicio.pausar(req.params.id))
+  r.post('/programas/:id/pausar', async (req, res) => {
+    res.json(await servicio.pausar(req.params.id))
   })
 
-  r.post('/programas/:id/reanudar', (req, res) => {
-    res.json(servicio.reanudar(req.params.id))
+  r.post('/programas/:id/reanudar', async (req, res) => {
+    res.json(await servicio.reanudar(req.params.id))
   })
 
   r.post('/programas/:id/cerrar', async (req, res) => {

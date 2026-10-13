@@ -12,7 +12,7 @@ const resumenLuis = async () => (await request(a).get('/api/beneficiarios/900000
 
 let programaId: string
 beforeEach(async () => {
-  prepararBd()
+  await prepararBd()
   programaId = await programaActivo()
 })
 

@@ -7,17 +7,14 @@
  */
 import { config } from '../config.js'
 import { log } from '../comun/log.js'
-import { varios } from '../db/conexion.js'
+import * as programas from '../db/repositorios/programas.js'
 import { PermisoVencido, rotarPermiso } from './servicio.js'
 
 /** Una vuelta: rota el token de cada programa Activo o Pausado con permiso vigente. */
 export async function renovarTodos(): Promise<{ renovados: number; vencidos: number; fallidos: number }> {
-  const programas = varios<{ id: string }>(
-    `SELECT id FROM programa
-     WHERE estado IN ('Activo', 'Pausado') AND token_acceso IS NOT NULL AND permiso_vencido_en IS NULL`,
-  )
+  const vigentes = await programas.conPermisoVigente()
   const r = { renovados: 0, vencidos: 0, fallidos: 0 }
-  for (const { id } of programas) {
+  for (const { id } of vigentes) {
     try {
       await rotarPermiso(id)
       r.renovados += 1

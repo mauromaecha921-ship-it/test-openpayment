@@ -1,31 +1,48 @@
 /**
- * Ayuda común de las pruebas de integración: BD en memoria con la semilla base, la app y un
- * programa ya Activo creado por la API (con un callback de hash válido).
+ * Ayuda común de las pruebas de integración: PostgreSQL en memoria (PGlite) con las migraciones
+ * de verdad, la semilla base, la app y un programa ya Activo creado por la API (con un callback de
+ * hash válido).
  */
 import { createHash } from 'node:crypto'
 import request from 'supertest'
 import { crearApp } from '../src/app.js'
-import { abrirBd, cerrarBd } from '../src/db/conexion.js'
-import { migrar } from '../src/db/migrar.js'
+import { baseDeDatos } from '../src/config.js'
+import { abrirBd, conexion } from '../src/db/conexion.js'
+import { migrar, vaciar } from '../src/db/migrar.js'
 import { IDS, sembrarBase } from '../src/db/semillas/base.js'
 import * as programas from '../src/db/repositorios/programas.js'
 import { AUTH, reiniciarEstado } from './falsos.js'
 
 export { IDS }
 
-export function prepararBd() {
-  cerrarBd()
-  const bd = abrirBd(':memory:')
-  migrar(bd)
-  sembrarBase(bd)
+function bdAbierta(): boolean {
+  try {
+    conexion()
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Cada archivo de pruebas abre su propia base en memoria y la migra una vez (vitest corre cada
+ * archivo en su proceso); entre caso y caso la vacía, que es mucho más rápido que migrar otra vez.
+ */
+export async function prepararBd() {
+  if (!bdAbierta()) {
+    await abrirBd(baseDeDatos())
+    await migrar()
+  } else {
+    await vaciar()
+  }
+  await sembrarBase()
   reiniciarEstado()
-  return bd
 }
 
 export const app = () => crearApp()
 
-export function hashValido(programaId: string, interactRef: string) {
-  const p = programas.obtener(programaId)!
+export async function hashValido(programaId: string, interactRef: string) {
+  const p = (await programas.obtener(programaId))!
   const base = `${p.nonce_cliente}\n${p.nonce_cierre}\n${interactRef}\n${AUTH}`
   return createHash('sha256').update(base).digest('base64')
 }
@@ -47,7 +64,7 @@ export async function programaActivo(): Promise<string> {
   const ref = 'interact-ref-de-prueba'
   await request(a)
     .get(`/api/callback/${id}`)
-    .query({ interact_ref: ref, hash: hashValido(id, ref) })
+    .query({ interact_ref: ref, hash: await hashValido(id, ref) })
     .expect(302)
   return id
 }

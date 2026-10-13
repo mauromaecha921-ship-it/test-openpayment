@@ -24,7 +24,7 @@ function bancoRechazaRotacion() {
 }
 
 beforeEach(async () => {
-  prepararBd()
+  await prepararBd()
   vi.mocked(op.rotarToken).mockClear()
   vi.mocked(op.pedirPermisoPrograma).mockClear()
   programaId = await programaActivo()
@@ -41,7 +41,7 @@ describe('renovación del token en segundo plano (D-35)', () => {
   it('sin respuesta del banco no marca el permiso como vencido: se reintenta después', async () => {
     vi.mocked(op.rotarToken).mockRejectedValueOnce(new ErrorOP('SinRespuesta'))
     expect(await renovarTodos()).toEqual({ renovados: 0, vencidos: 0, fallidos: 1 })
-    expect(programas.obtener(programaId)!.permiso_vencido_en).toBeNull()
+    expect((await programas.obtener(programaId))!.permiso_vencido_en).toBeNull()
   })
 
   it('si el banco ya no acepta la rotación, el permiso queda vencido y los cobros fallan sin llamar al banco', async () => {
@@ -77,7 +77,7 @@ describe('«Renovar permiso» (D-35)', () => {
     expect(op.pedirPermisoPrograma).toHaveBeenLastCalledWith(expect.objectContaining({ tope: 46000000 }))
 
     const ref = 'interact-ref-renovacion'
-    const vuelta = await request(a).get(`/api/callback/${programaId}`).query({ interact_ref: ref, hash: hashValido(programaId, ref) }).expect(302)
+    const vuelta = await request(a).get(`/api/callback/${programaId}`).query({ interact_ref: ref, hash: await hashValido(programaId, ref) }).expect(302)
     expect(vuelta.headers.location).toBe(`http://localhost:5173/entidad/programas/${programaId}?renovacion=aprobada`)
     expect((await request(a).get(`/api/programas/${programaId}`)).body).toMatchObject({ estado: 'Activo', permisoActivo: true, permisoVencido: false })
 

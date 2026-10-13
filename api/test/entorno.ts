@@ -5,7 +5,7 @@ Object.assign(process.env, {
   APP_BASE_URL: 'http://localhost:5173',
   API_BASE_URL: 'http://localhost:3999/api',
   LIQUIDACION_URL: 'http://localhost:3999/api/liquidacion',
-  DATABASE_URL: 'file::memory:',
+  DATABASE_URL: 'pglite:memoria',
   OP_CLIENT_WALLET_ADDRESS: 'https://ilp.interledger-test.dev/prueba-cliente',
   OP_KEY_ID: 'llave-de-prueba',
   DEMO_WALLET_PROGRAMA: 'https://ilp.interledger-test.dev/prueba-programa',

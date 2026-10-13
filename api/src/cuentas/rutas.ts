@@ -31,8 +31,8 @@ export function rutasCuentas(): Router {
     res.redirect(302, await servicio.callback(req.params.id, q.success ? q.data : {}))
   })
 
-  r.get('/cuentas/:documento', (req, res) => {
-    res.json(servicio.estado(validar(documento, req.params.documento)))
+  r.get('/cuentas/:documento', async (req, res) => {
+    res.json(await servicio.estado(validar(documento, req.params.documento)))
   })
 
   return r

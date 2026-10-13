@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { app, hashValido, IDS, prepararBd, PROGRAMA } from '../test/ayuda.js'
 import { SECRETOS } from '../test/falsos.js'
 import { esperarPagos } from './cobros/orquestacion.js'
-import { bd } from './db/conexion.js'
+import { conexion } from './db/conexion.js'
 import * as programas from './db/repositorios/programas.js'
 
 vi.mock('./openPaymentsService.js', async (orig) => (await import('../test/falsos.js')).falsoOP(await orig()))
@@ -24,13 +24,13 @@ async function guardar<T extends { text: string }>(p: Promise<T>): Promise<T> {
 }
 
 beforeAll(async () => {
-  prepararBd()
+  await prepararBd()
   const id = (await guardar(request(a).post('/api/programas').send(PROGRAMA))).text && JSON.parse(cuerpos.at(-1)!).id
   await guardar(request(a).post(`/api/programas/${id}/autorizar`))
-  nonceCliente = programas.obtener(id)!.nonce_cliente!
+  nonceCliente = (await programas.obtener(id))!.nonce_cliente!
   await guardar(request(a).get(`/api/programas/${id}`))
   await guardar(request(a).get('/api/programas'))
-  await request(a).get(`/api/callback/${id}`).query({ interact_ref: 'ref-seguridad', hash: hashValido(id, 'ref-seguridad') })
+  await request(a).get(`/api/callback/${id}`).query({ interact_ref: 'ref-seguridad', hash: await hashValido(id, 'ref-seguridad') })
 
   const c = JSON.parse(
     (await guardar(request(a).post('/api/cobros').send({ documento: '900000003', canal: 'retiro', puntoId: IDS.punto, llaveIdempotencia: 'seguridad-1' })))
@@ -63,8 +63,8 @@ describe('cero secretos (V-20)', () => {
     }
   })
 
-  it('ningún evento guarda tokens, nonces, PIN ni la cédula completa', () => {
-    const filas = bd().prepare('SELECT detalle FROM evento').all() as { detalle: string }[]
+  it('ningún evento guarda tokens, nonces, PIN ni la cédula completa', async () => {
+    const filas = await conexion().filas<{ detalle: string }>('SELECT detalle::text AS detalle FROM evento')
     expect(filas.length).toBeGreaterThan(10)
     for (const { detalle } of filas) {
       for (const secreto of prohibidos()) expect(detalle).not.toContain(secreto)
@@ -72,8 +72,8 @@ describe('cero secretos (V-20)', () => {
     }
   })
 
-  it('al cerrar, el programa ya no guarda el token', () => {
-    const p = bd().prepare('SELECT token_acceso, url_gestion FROM programa').get() as Record<string, unknown>
+  it('al cerrar, el programa ya no guarda el token', async () => {
+    const [p] = await conexion().filas<Record<string, unknown>>('SELECT token_acceso, url_gestion FROM programa')
     expect(p).toEqual({ token_acceso: null, url_gestion: null })
   })
 })

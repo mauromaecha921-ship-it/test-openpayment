@@ -39,7 +39,7 @@ async function bonoAlimentos(): Promise<string> {
   const id = (await request(a).post('/api/programas').send({ ...PROGRAMA, nombre: 'Bono de alimentación', tipo: 'bono', montoPorPersona: '60000', categorias: ['alimentos'] }).expect(201)).body.id
   await request(a).post(`/api/programas/${id}/autorizar`).expect(200)
   const ref = 'ref-bono'
-  await request(a).get(`/api/callback/${id}`).query({ interact_ref: ref, hash: hashValido(id, ref) }).expect(302)
+  await request(a).get(`/api/callback/${id}`).query({ interact_ref: ref, hash: await hashValido(id, ref) }).expect(302)
   return id
 }
 
@@ -47,7 +47,7 @@ const compra = (documento: string, puntoId: string, totalCompra: string, program
   request(a).post('/api/cobros').send({ programaId, documento, canal: 'compra', puntoId, totalCompra, llaveIdempotencia: llave() }).expect(201)
 
 beforeEach(async () => {
-  prepararBd()
+  await prepararBd()
   sedeSuper = await comercio(SUPER, true)
   sedeDrogueria = await comercio(DROGUERIA, false)
   bono = await bonoAlimentos()

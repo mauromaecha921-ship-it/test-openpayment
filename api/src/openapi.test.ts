@@ -41,8 +41,8 @@ describe('Swagger (OpenAPI)', () => {
     const documentadas = RUTAS.map((r) => `${r.metodo.toUpperCase()} ${r.ruta}`)
     expect([...documentadas].sort()).toEqual(montadas().sort())
     expect(new Set(documentadas).size).toBe(documentadas.length)
-    // docs/piloto/API del piloto.md: el catálogo dice 43
-    expect(documentadas).toHaveLength(43)
+    // docs/piloto/API del piloto.md: 43 del piloto más 3 del gobierno simulado en piloto-v2 (nombres y PIN)
+    expect(documentadas).toHaveLength(46)
   })
 
   it('arma un OpenAPI 3.1 con el cuerpo que validan las rutas', () => {

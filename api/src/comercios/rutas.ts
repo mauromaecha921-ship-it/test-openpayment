@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { conflicto, ErrorApi, noEncontrado, validar } from '../comun/errores.js'
-import { vistaComercio, vistaPunto } from '../comun/vistas.js'
+import { vistaComercioDe, vistasComercios, vistasPuntos } from '../comun/vistas.js'
 import { esRestriccion, transaccion } from '../db/conexion.js'
 import * as repo from '../db/repositorios/comercios.js'
 import * as programas from '../db/repositorios/programas.js'
@@ -26,9 +26,15 @@ export const EntradaComercio = z.object({
 async function walletDeSede(direccion: string): Promise<string> {
   const w = await resolverWallet(direccion)
   const billetera = w.id.replace(/\/+$/, '')
-  const existente = puntos.porBilletera(billetera)
+  const existente = await puntos.porBilletera(billetera)
   if (existente) throw conflicto('PuntoExiste', `Esa wallet ya es de «${existente.nombre}»`)
   return billetera
+}
+
+async function exigirComercio(id: string) {
+  const c = await repo.obtener(id)
+  if (!c) throw noEncontrado('Ese comercio no existe')
+  return c
 }
 
 /**
@@ -43,23 +49,23 @@ export function rutasComercios(): Router {
     res.json(CATEGORIAS)
   })
 
-  r.get('/comercios', (_req, res) => {
-    res.json(repo.listar().map(vistaComercio))
+  r.get('/comercios', async (_req, res) => {
+    res.json(await vistasComercios(await repo.listar()))
   })
 
   r.post('/comercios', async (req, res) => {
     const e = validar(EntradaComercio, req.body)
     const categoria = categoriaDe(e.ciiu)
     if (!categoria) throw new ErrorApi(400, 'ActividadSinCategoria', 'Esa actividad no está en ninguna categoría de bono')
-    if (repo.porNit(e.nit)) throw conflicto('ComercioExiste', 'Ya hay un comercio con ese NIT: agrégale una sede')
+    if (await repo.porNit(e.nit)) throw conflicto('ComercioExiste', 'Ya hay un comercio con ese NIT: agrégale una sede')
     const billetera = await walletDeSede(e.sede.billetera)
     try {
-      const c = transaccion(() => {
-        const nuevo = repo.crear({ nit: e.nit, razon_social: e.razonSocial, ciiu: e.ciiu, categoria: categoria.id })
-        puntos.crear({ nombre: e.sede.nombre, direccion: e.sede.direccion, billetera, tipo: 'compra', comercio_id: nuevo.id })
+      const c = await transaccion(async () => {
+        const nuevo = await repo.crear({ nit: e.nit, razon_social: e.razonSocial, ciiu: e.ciiu, categoria: categoria.id })
+        await puntos.crear({ nombre: e.sede.nombre, direccion: e.sede.direccion, billetera, tipo: 'compra', comercio_id: nuevo.id })
         return nuevo
       })
-      res.status(201).json(vistaComercio(c))
+      res.status(201).json(await vistaComercioDe(c))
     } catch (err) {
       if (esRestriccion(err)) throw conflicto('ComercioExiste', 'Ese NIT o esa wallet ya están registrados')
       throw err
@@ -67,26 +73,24 @@ export function rutasComercios(): Router {
   })
 
   r.post('/comercios/:id/sedes', async (req, res) => {
-    const c = repo.obtener(req.params.id)
-    if (!c) throw noEncontrado('Ese comercio no existe')
+    const c = await exigirComercio(req.params.id)
     const e = validar(EntradaSede, req.body)
     const billetera = await walletDeSede(e.billetera)
-    puntos.crear({ nombre: e.nombre, direccion: e.direccion, billetera, tipo: 'compra', comercio_id: c.id })
-    res.status(201).json(vistaComercio(c))
+    await puntos.crear({ nombre: e.nombre, direccion: e.direccion, billetera, tipo: 'compra', comercio_id: c.id })
+    res.status(201).json(await vistaComercioDe(c))
   })
 
   // Simulación de la verificación del gobierno (RUT y RUES): en el piloto, la entidad pulsa un botón
-  r.post('/comercios/:id/verificar', (req, res) => {
-    const c = repo.obtener(req.params.id)
-    if (!c) throw noEncontrado('Ese comercio no existe')
-    repo.verificar(c.id)
-    res.json(vistaComercio(repo.obtener(c.id)!))
+  r.post('/comercios/:id/verificar', async (req, res) => {
+    const c = await exigirComercio(req.params.id)
+    await repo.verificar(c.id)
+    res.json(await vistaComercioDe((await repo.obtener(c.id))!))
   })
 
   // Dónde se puede usar un bono: las sedes autorizadas (lo ve el beneficiario)
-  r.get('/programas/:id/comercios', (req, res) => {
-    if (!programas.obtener(req.params.id)) throw noEncontrado('Ese programa no existe')
-    res.json(puntos.autorizadosEnPrograma(req.params.id).map(vistaPunto))
+  r.get('/programas/:id/comercios', async (req, res) => {
+    if (!(await programas.obtener(req.params.id))) throw noEncontrado('Ese programa no existe')
+    res.json(await vistasPuntos(await puntos.autorizadosEnPrograma(req.params.id)))
   })
 
   return r

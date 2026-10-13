@@ -2,9 +2,9 @@
  * Guion de la demo, pasos 2 a 7 (Guía § Guion del video), por HTTP contra la API que está
  * corriendo. Sirve para las puertas de las Fases 3 y 4 y para V-02, V-14 y V-18 con pagos reales.
  *
- *   npm run db:reset:demo -w api       semilla base con las wallets del .env
- *   npm run start:3100 -w api          la API (o npm run dev -w api en el 3000)
- *   npm run guion -w api               este script; pide aprobar el permiso en la Test Wallet
+ *   pnpm --filter api db:reset:demo       semilla base con las wallets del .env
+ *   pnpm --filter api start:3100          la API (o pnpm --filter api dev en el 3000)
+ *   pnpm --filter api guion               este script; pide aprobar el permiso en la Test Wallet
  *
  * GUION_API cambia la URL (por defecto http://localhost:3100/api). Gasta 2 × el monto base de la
  * liquidación (Ana y Jorge); bájalo con LIQUIDACION_MONTO_BASE si falta saldo.
@@ -68,13 +68,13 @@ async function main() {
   if (!cfg.DEMO_WALLET_PROGRAMA) throw new Error('Falta DEMO_WALLET_PROGRAMA en api/.env')
 
   const salud = await llamar('GET', '/salud').catch(() => null)
-  if (!salud) throw new Error(`No hay API en ${API}. Arráncala con npm run start:3100 -w api`)
+  if (!salud) throw new Error(`No hay API en ${API}. Arráncala con pnpm --filter api start:3100`)
   if (salud.json.openPayments?.coincide !== true) {
     throw new Error(`La API no está lista para pagar: ${salud.json.openPayments?.detalle ?? 'sin diagnóstico'}`)
   }
   const puntos = (await llamar('GET', '/puntos')).json as unknown as Json[]
   const punto = puntos[0]
-  if (!punto) throw new Error('No hay puntos: corre npm run db:reset:demo -w api')
+  if (!punto) throw new Error('No hay puntos: corre pnpm --filter api db:reset:demo')
 
   // Paso 2 · la entidad conecta el programa y lo aprueba una vez en su banco (O1, O2)
   const hoy = new Date().toISOString().slice(0, 10)

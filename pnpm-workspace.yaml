@@ -1,0 +1,14 @@
+packages:
+  - api
+  - web
+
+# Versiones exactas al agregar paquetes, como pide el piloto (también en .npmrc)
+saveExact: true
+engineStrict: true
+
+# Paquetes a los que se les deja (o no) correr su script de instalación. esbuild lo necesita.
+# @scarf/scarf llega con swagger-ui-express y su script solo manda telemetría: se rechaza
+# (la rama de Pablo lo permite).
+allowBuilds:
+  esbuild: true
+  '@scarf/scarf': false

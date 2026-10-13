@@ -3,34 +3,53 @@
   "configurations": [
     {
       "name": "api-3100",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:3100", "-w", "api"],
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "api", "dev:3100"],
       "port": 3100
     },
     {
       "name": "web-api-3100",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "web"],
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "web", "dev"],
       "env": { "API_PROXY": "http://localhost:3100" },
       "port": 5173
     },
     {
       "name": "web-simulada",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:simulada", "-w", "web"],
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "web", "dev:simulada"],
       "port": 5173
     },
     {
       "name": "web-simulada-5174",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:simulada", "-w", "web", "--", "--port", "5174"],
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "web", "dev:simulada", "--port", "5174"],
       "port": 5174
     },
     {
       "name": "web",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "web"],
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "web", "dev"],
       "port": 5173
+    },
+    {
+      "name": "api-v2-3101",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "api", "dev"],
+      "env": {
+        "PORT": "3101",
+        "API_BASE_URL": "http://localhost:3101/api",
+        "LIQUIDACION_URL": "http://localhost:3101/api/liquidacion",
+        "APP_BASE_URL": "http://localhost:5175"
+      },
+      "port": 3101
+    },
+    {
+      "name": "web-v2-5175",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "web", "dev", "--port", "5175"],
+      "env": { "API_PROXY": "http://localhost:3101" },
+      "port": 5175
     }
   ]
 }

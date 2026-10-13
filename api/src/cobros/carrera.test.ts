@@ -12,7 +12,7 @@ const a = app()
 let programaId: string
 
 beforeEach(async () => {
-  prepararBd()
+  await prepararBd()
   programaId = await programaActivo()
   vi.mocked(op.crearPagoSaliente).mockClear()
 })
@@ -32,7 +32,7 @@ describe('carreras (V-17, HU-14, RNF-11)', () => {
     expect(estados.filter((e) => e === 'Rechazado')).toHaveLength(9)
     expect(respuestas.filter((r) => r.body.motivo?.codigo === 'EnProceso')).toHaveLength(9)
 
-    const vivos = cobros.dePrograma(programaId).filter((c) => ['Solicitado', 'PorConfirmar', 'Pagando', 'Pagado'].includes(c.estado))
+    const vivos = (await cobros.dePrograma(programaId)).filter((c) => ['Solicitado', 'PorConfirmar', 'Pagando', 'Pagado'].includes(c.estado))
     expect(vivos).toHaveLength(1)
   })
 
@@ -59,6 +59,6 @@ describe('carreras (V-17, HU-14, RNF-11)', () => {
     await esperarPagos()
     expect([r1.status, r2.status].sort()).toEqual([200, 202])
     expect(op.crearPagoSaliente).toHaveBeenCalledTimes(1)
-    expect(cobros.obtener(c.id)!.estado).toBe('Pagado')
+    expect((await cobros.obtener(c.id))!.estado).toBe('Pagado')
   })
 })

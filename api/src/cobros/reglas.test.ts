@@ -79,12 +79,12 @@ describe('RN-07 · PIN con intentos y bloqueo', () => {
     expect(r.rn07EvaluarPin({ valido: false, intentosPrevios: 1, maxIntentos: 3 })).toEqual({ resultado: 'incorrecto', intentos: 2, restantes: 1 })
     expect(r.rn07EvaluarPin({ valido: false, intentosPrevios: 2, maxIntentos: 3 })).toEqual({ resultado: 'bloqueado', intentos: 3 })
   })
-  it('bloqueo de 15 minutos (D-17)', () => {
-    const hace10 = new Date(ahora.getTime() - 10 * 60_000).toISOString()
-    const hace20 = new Date(ahora.getTime() - 20 * 60_000).toISOString()
-    expect(r.rn07Bloqueada({ ultimoBloqueo: hace10, ahora, bloqueoMin: 15 })).toBe(true)
-    expect(r.rn07Bloqueada({ ultimoBloqueo: hace20, ahora, bloqueoMin: 15 })).toBe(false)
-    expect(r.rn07Bloqueada({ ultimoBloqueo: null, ahora, bloqueoMin: 15 })).toBe(false)
+  it('bloqueado mientras no pase bloqueado_hasta (tabla bloqueo_pin de db/003)', () => {
+    const enCinco = new Date(ahora.getTime() + 5 * 60_000).toISOString()
+    const haceUno = new Date(ahora.getTime() - 60_000).toISOString()
+    expect(r.rn07Bloqueada({ bloqueadoHasta: enCinco, ahora })).toBe(true)
+    expect(r.rn07Bloqueada({ bloqueadoHasta: haceUno, ahora })).toBe(false)
+    expect(r.rn07Bloqueada({ bloqueadoHasta: null, ahora })).toBe(false)
   })
 })
 

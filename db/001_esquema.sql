@@ -18,28 +18,6 @@ CREATE TYPE estado_cuenta      AS ENUM ('SinEnlazar', 'PorVerificar', 'Verificad
 CREATE TYPE canal_cobro        AS ENUM ('cuenta', 'retiro', 'compra');
 CREATE TYPE estado_cobro       AS ENUM ('Solicitado', 'PorConfirmar', 'Pagando', 'Pagado', 'Rechazado', 'Fallido');
 CREATE TYPE tipo_doc           AS ENUM ('CC', 'TI', 'CE', 'PPT', 'PA');
-CREATE TYPE sexo_registro      AS ENUM ('F', 'M', 'NoInformado');
-CREATE TYPE categoria_caja     AS ENUM ('A', 'B', 'C');
-CREATE TYPE estado_beneficiario AS ENUM ('Activo', 'Anonimizado');
-
--- ---------------------------------------------------------------------
--- Función común: actualiza actualizado_en
--- ---------------------------------------------------------------------
-CREATE FUNCTION fn_marcar_actualizacion() RETURNS trigger AS $$
-BEGIN
-  NEW.actualizado_en := now();
-  RETURN NEW;
-END $$ LANGUAGE plpgsql;
-
--- ---------------------------------------------------------------------
--- municipio: catálogo DANE (el departamento depende del municipio, no
--- de la persona; por eso vive aquí y no en beneficiario)
--- ---------------------------------------------------------------------
-CREATE TABLE municipio (
-  codigo_dane   char(5) PRIMARY KEY CHECK (codigo_dane ~ '^[0-9]{5}$'),
-  nombre        text    NOT NULL,
-  departamento  text    NOT NULL
-);
 
 -- ---------------------------------------------------------------------
 -- programa: reglas del programa + permiso de Open Payments
@@ -114,65 +92,20 @@ CREATE TABLE programa_punto (
 );
 
 -- ---------------------------------------------------------------------
--- beneficiario: la persona. Los datos los entrega Colsubsidio.
+-- beneficiario: solo lo que se verifica para la transacción.
+-- Somos pasarela: nombre, contacto y demás datos de la persona viven en
+-- Colsubsidio (la liquidación) y no se copian aquí. La fila nace la primera
+-- vez que la persona enlaza una cuenta o cobra, nunca por carga masiva.
+-- En producción: numero_documento como HMAC (búsqueda) + valor cifrado.
 -- ---------------------------------------------------------------------
 CREATE TABLE beneficiario (
-  id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tipo_documento    tipo_doc NOT NULL,
+  numero_documento  text NOT NULL CHECK (numero_documento ~ '^[A-Za-z0-9]{3,20}$'),
+  creado_en         timestamptz NOT NULL DEFAULT now(),
 
-  -- identificación
-  tipo_documento        tipo_doc NOT NULL,
-  numero_documento      text NOT NULL CHECK (numero_documento ~ '^[A-Za-z0-9]{3,20}$'),
-  fecha_expedicion      date NOT NULL,
-
-  -- nombre
-  primer_nombre         text NOT NULL,
-  segundo_nombre        text,
-  primer_apellido       text NOT NULL,
-  segundo_apellido      text,
-
-  -- datos demográficos (la edad no se guarda: ver vista beneficiario_con_edad)
-  fecha_nacimiento      date NOT NULL CHECK (fecha_nacimiento > DATE '1900-01-01'),
-  sexo                  sexo_registro NOT NULL DEFAULT 'NoInformado',
-  nacionalidad          char(2) NOT NULL DEFAULT 'CO' CHECK (nacionalidad ~ '^[A-Z]{2}$'),
-
-  -- contacto y ubicación
-  celular               text CHECK (celular ~ '^\+?[0-9]{7,15}$'),
-  correo                text CHECK (correo ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
-  municipio_id          char(5) REFERENCES municipio (codigo_dane),
-  direccion             text,
-  estrato               smallint CHECK (estrato BETWEEN 1 AND 6),
-
-  -- afiliación (por confirmar con Colsubsidio)
-  categoria_afiliacion  categoria_caja,
-
-  -- tratamiento de datos (Ley 1581 de 2012)
-  autoriza_datos        boolean NOT NULL DEFAULT false,
-  fecha_autorizacion    timestamptz,
-  version_politica      text,
-
-  -- control
-  estado                estado_beneficiario NOT NULL DEFAULT 'Activo',
-  creado_en             timestamptz NOT NULL DEFAULT now(),
-  actualizado_en        timestamptz NOT NULL DEFAULT now(),
-
-  CONSTRAINT documento_unico      UNIQUE (tipo_documento, numero_documento),
-  CONSTRAINT expedicion_posterior CHECK (fecha_expedicion >= fecha_nacimiento),
-  CONSTRAINT autorizacion_completa CHECK (
-        (autoriza_datos     AND fecha_autorizacion IS NOT NULL AND version_politica IS NOT NULL)
-     OR (NOT autoriza_datos AND fecha_autorizacion IS NULL     AND version_politica IS NULL))
+  CONSTRAINT documento_unico UNIQUE (tipo_documento, numero_documento)
 );
-
-CREATE INDEX beneficiario_municipio_idx ON beneficiario (municipio_id);
-
-CREATE TRIGGER beneficiario_actualizado
-  BEFORE UPDATE ON beneficiario
-  FOR EACH ROW EXECUTE FUNCTION fn_marcar_actualizacion();
-
--- La edad cambia sola cada año: se calcula, no se guarda.
-CREATE VIEW beneficiario_con_edad AS
-SELECT b.*,
-       date_part('year', age(current_date, b.fecha_nacimiento))::int AS edad
-FROM beneficiario b;
 
 -- ---------------------------------------------------------------------
 -- cuenta_beneficiario: billeteras enlazadas (con historial)

@@ -24,7 +24,7 @@ async function retiroPagando(documento: string, pin: string) {
 }
 
 beforeEach(async () => {
-  prepararBd()
+  await prepararBd()
   await programaActivo()
   vi.mocked(op.crearPagoEntrante).mockClear()
   vi.mocked(op.crearPagoSaliente).mockClear()
@@ -34,21 +34,21 @@ describe('recuperar al arrancar (V-06, RNF-05, P-08)', () => {
   it('con el pago saliente guardado: se consulta y queda Pagado, sin otro pago', async () => {
     estado.salientesLentos = true
     const id = await retiroPagando('900000003', '3333')
-    expect(cobros.obtener(id)).toMatchObject({ estado: 'Pagando' })
-    expect(cobros.obtener(id)!.url_pago_saliente).not.toBeNull()
+    expect((await cobros.obtener(id))).toMatchObject({ estado: 'Pagando' })
+    expect((await cobros.obtener(id))!.url_pago_saliente).not.toBeNull()
 
     expect(await recuperarAlArrancar()).toBe(1)
-    expect(cobros.obtener(id)!.estado).toBe('Pagado')
+    expect((await cobros.obtener(id))!.estado).toBe('Pagado')
     expect(op.crearPagoSaliente).toHaveBeenCalledTimes(1)
   })
 
   it('sin nada guardado (no se movió dinero): se vuelve a pagar', async () => {
     vi.mocked(op.crearPagoEntrante).mockRejectedValueOnce(new op.ErrorOP('SinRespuesta'))
     const id = await retiroPagando('900000003', '3333')
-    expect(cobros.obtener(id)).toMatchObject({ estado: 'Pagando', url_pago_entrante: null })
+    expect((await cobros.obtener(id))).toMatchObject({ estado: 'Pagando', url_pago_entrante: null })
 
     await recuperarAlArrancar()
-    expect(cobros.obtener(id)!.estado).toBe('Pagado')
+    expect((await cobros.obtener(id))!.estado).toBe('Pagado')
     expect(op.crearPagoSaliente).toHaveBeenCalledTimes(1)
     expect(estado.gastado).toBe(23000000)
   })
@@ -56,15 +56,15 @@ describe('recuperar al arrancar (V-06, RNF-05, P-08)', () => {
   it('solo con el pago entrante: queda en Pagando con «requiere conciliación» (D-23), una sola vez', async () => {
     vi.mocked(op.crearPagoSaliente).mockRejectedValueOnce(new op.ErrorOP('SinRespuesta'))
     const id = await retiroPagando('900000003', '3333')
-    const c = cobros.obtener(id)!
+    const c = (await cobros.obtener(id))!
     expect(c.estado).toBe('Pagando')
     expect(c.url_pago_entrante).not.toBeNull()
     expect(c.url_pago_saliente).toBeNull()
 
     await recuperarAlArrancar()
     await recuperarAlArrancar()
-    expect(cobros.obtener(id)!.estado).toBe('Pagando')
-    const notas = eventos.deEntidad('cobro', id).filter((e) => eventos.detalleDe(e).conciliacion === true)
+    expect((await cobros.obtener(id))!.estado).toBe('Pagando')
+    const notas = (await eventos.deEntidad('cobro', id)).filter((e) => eventos.detalleDe(e).conciliacion === true)
     expect(notas).toHaveLength(1)
     // Nunca se reintenta el saliente a ciegas: V-06 dirá si es seguro contra el mismo entrante
     expect(op.crearPagoSaliente).toHaveBeenCalledTimes(1)

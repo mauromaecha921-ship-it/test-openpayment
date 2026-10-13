@@ -4,25 +4,26 @@
  * en el banco (HU-07) sigue disponible en «Mi cuenta». El PIN es opcional: sin él la persona solo
  * cobra a su cuenta.
  *
- * Atajo del piloto: escribe directo en la liquidación simulada (misma BD y misma transacción). En
- * producción la liquidación es el sistema de la entidad (AD-12) y la inscripción pasaría por ella.
+ * Tatú guarda lo mínimo (Plan Supabase y pnpm § 3): la cédula y la wallet. El nombre y el PIN los
+ * inscribe «Equipo de prueba» en el gobierno (la liquidación simulada), por HTTP.
  */
 import { randomUUID } from 'node:crypto'
 import * as reglas from '../cobros/reglas.js'
 import { billeteraCorta } from '../comun/billeteras.js'
-import { fechaBogota, moneda } from '../comun/vistas.js'
-import * as cobros from '../db/repositorios/cobros.js'
-import * as programas from '../db/repositorios/programas.js'
-import * as puntos from '../db/repositorios/puntos.js'
-import * as clienteLiquidacion from '../liquidacion/cliente.js'
 import { conflicto } from '../comun/errores.js'
 import type { Moneda } from '../comun/montos.js'
+import { fechaBogota, moneda, nombresDe, nombrePersona } from '../comun/vistas.js'
 import { ahoraIso, esRestriccion, transaccion } from '../db/conexion.js'
 import * as repo from '../db/repositorios/beneficiarios.js'
 import type { FilaBeneficiario } from '../db/repositorios/beneficiarios.js'
+import * as cobros from '../db/repositorios/cobros.js'
 import * as cuentas from '../db/repositorios/cuentas.js'
+import type { FilaCuenta } from '../db/repositorios/cuentas.js'
 import * as eventos from '../db/repositorios/eventos.js'
-import * as liquidacion from '../liquidacion/datos.js'
+import * as programas from '../db/repositorios/programas.js'
+import * as puntos from '../db/repositorios/puntos.js'
+import * as liquidacion from '../liquidacion/cliente.js'
+import type { Persona } from '../liquidacion/contrato.js'
 import * as op from '../openPaymentsService.js'
 import { resolverWallet } from '../programas/servicio.js'
 
@@ -36,68 +37,61 @@ export interface EntradaPersona {
 
 const YA_EXISTE = 'Esa cédula ya está registrada'
 
-/** «Ana María Pérez» → Ana · María Pérez. Sin nombre, «Persona 1234». */
-function partirNombre(nombre: string | undefined, documento: string) {
-  const partes = (nombre ?? '').trim().split(/\s+/).filter(Boolean)
-  if (!partes.length) return { primer_nombre: `Persona ${documento.slice(-4)}`, primer_apellido: '' }
-  return { primer_nombre: partes[0]!.slice(0, 40), primer_apellido: partes.slice(1).join(' ').slice(0, 80) }
+/** El nombre que se inscribe: el escrito, el público de la wallet o «Persona 1234». */
+function nombreParaInscribir(nombre: string | undefined, documento: string): string {
+  const limpio = (nombre ?? '').trim().replace(/\s+/g, ' ').slice(0, 120)
+  return limpio || `Persona ${documento.slice(-4)}`
 }
 
-function vista(b: FilaBeneficiario, moneda: Moneda | null) {
-  const c = cuentas.ultimaDe(b.id)
+function vista(b: FilaBeneficiario, c: FilaCuenta | undefined, enGobierno: Map<string, Persona>, monedaCuenta: Moneda | null) {
   return {
     documento: b.numero_documento,
-    nombre: [b.primer_nombre, b.primer_apellido].filter(Boolean).join(' '),
+    nombre: nombrePersona(b.numero_documento, enGobierno),
     billetera: c?.billetera ?? null,
     billeteraCorta: c ? billeteraCorta(c.billetera) : null,
-    moneda,
+    moneda: monedaCuenta,
     estadoCuenta: c?.estado ?? null,
-    tienePin: liquidacion.tienePin(b.numero_documento),
-    registrado: repo.creadoEn(b.id),
+    tienePin: enGobierno.get(b.numero_documento)?.tienePin ?? false,
+    registrado: b.creado_en,
   }
 }
 
 export async function registrar(e: EntradaPersona) {
-  if (repo.porDocumento(e.documento) || liquidacion.existe(e.documento)) throw conflicto('PersonaExiste', YA_EXISTE)
-
+  if (await repo.porDocumento(e.documento)) throw conflicto('PersonaExiste', YA_EXISTE)
   const w = await resolverWallet(e.billetera)
   const billetera = w.id.replace(/\/+$/, '')
-  const otra = cuentas.vigentePorBilletera(billetera)
+  const otra = await cuentas.vigentePorBilletera(billetera)
   if (otra) {
-    const duena = repo.obtener(otra.beneficiario_id)
-    throw conflicto('BilleteraEnUso', `Esa wallet ya está registrada para ${duena?.primer_nombre ?? 'otra persona'}`)
+    const duena = await repo.obtener(otra.beneficiario_id)
+    const nombres = duena ? await nombresDe([duena.numero_documento]) : new Map<string, Persona>()
+    throw conflicto('BilleteraEnUso', `Esa wallet ya está registrada para ${duena ? nombrePersona(duena.numero_documento, nombres) : 'otra persona'}`)
   }
 
-  const id = randomUUID()
-  const cuentaId = randomUUID()
+  // 1. El gobierno (por HTTP). Inscribir es idempotente: si lo que sigue falla, se puede repetir.
+  const inscrita = await liquidacion.inscribir(e.documento, nombreParaInscribir(e.nombre || w.nombre, e.documento), e.pin)
+
+  // 2. Tatú: solo la cédula y la cuenta
+  let b: FilaBeneficiario
   try {
-    transaccion(() => {
-      repo.crear({ id, numero_documento: e.documento, ...partirNombre(e.nombre || w.nombre, e.documento) })
-      cuentas.crear({
-        id: cuentaId,
-        beneficiario_id: id,
-        billetera,
-        estado: 'Verificada',
-        verificada_en: ahoraIso(),
-        nonce_cliente: null,
-        nonce_cierre: null,
-        uri_continuacion: null,
-        token_continuacion: null,
-      })
-      eventos.registrar({
+    b = await transaccion(async () => {
+      const nueva = await repo.crear({ numero_documento: e.documento })
+      const cuentaId = randomUUID()
+      await cuentas.crear({ id: cuentaId, beneficiario_id: nueva.id, billetera, estado: 'Verificada', verificada_en: ahoraIso() })
+      await eventos.registrar({
         tipo: 'cuenta',
         id: cuentaId,
         hacia: 'Verificada',
         detalle: { texto: 'Registrada por el equipo con la wallet de la persona; no se pidió confirmación al banco.', registro: true },
+        actor: 'entidad',
       })
-      liquidacion.registrar(e.documento, e.pin)
+      return nueva
     })
   } catch (err) {
-    // Dos registros de la misma cédula al mismo tiempo: la BD deja pasar solo uno
+    // Dos registros de la misma cédula (o la misma wallet) al mismo tiempo: la BD deja pasar solo uno
     if (esRestriccion(err)) throw conflicto('PersonaExiste', YA_EXISTE)
     throw err
   }
-  return vista(repo.obtener(id)!, { codigo: w.codigoMoneda, escala: w.escala })
+  return vista(b, await cuentas.ultimaDe(b.id), new Map([[inscrita.documento, inscrita]]), { codigo: w.codigoMoneda, escala: w.escala })
 }
 
 export interface PagoPendiente {
@@ -113,30 +107,44 @@ export interface PagoPendiente {
  * aceptan cobros (Activos y en vigencia): es lo que puede pagar un punto.
  */
 export async function pagosPendientes(b: FilaBeneficiario, { soloQueReciben = false, puntoId }: { soloQueReciben?: boolean; puntoId?: string } = {}) {
-  const punto = puntoId ? puntos.obtener(puntoId) : undefined
-  const propios = cobros.deBeneficiario(b.id)
+  const [punto, propios, todos] = await Promise.all([
+    puntoId ? puntos.obtener(puntoId) : Promise.resolve(undefined),
+    cobros.deBeneficiario(b.id),
+    programas.listar(),
+  ])
   const ahora = new Date()
-  const pagos: PagoPendiente[] = []
-  let liquidacionDisponible = true
-  for (const p of programas.listar().filter((x) => x.estado === 'Activo' || x.estado === 'Pausado')) {
+  const candidatos = []
+  for (const p of todos.filter((x) => x.estado === 'Activo' || x.estado === 'Pausado')) {
     if (propios.some((c) => c.programa_id === p.id && c.estado === 'Pagado')) continue
     if (soloQueReciben && reglas.rn06ProgramaRecibe({ estado: p.estado, vigenciaInicio: p.vigencia_inicio, vigenciaFin: p.vigencia_fin, ahora })) continue
     // Con el permiso vencido (D-35) el pago fallaría: el punto no lo ofrece hasta que la entidad lo renueve
     if (soloQueReciben && p.permiso_vencido_en) continue
     // § 11: un punto de retiro paga subsidios; una sede de comercio, los bonos que acepta
-    if (punto && (punto.tipo === 'retiro' ? p.destino !== 'libre' : p.destino !== 'restringido' || !puntos.autorizadoEnPrograma(p.id, punto.id))) continue
-    try {
-      const disponible = await clienteLiquidacion.pago(p.id, b.numero_documento)
-      if (!disponible.disponible) continue
-      pagos.push({
-        programa: { id: p.id, nombre: p.nombre, estado: p.estado, tipo: p.tipo },
-        monto: disponible.monto,
-        moneda: moneda(p),
-        vigenciaFin: fechaBogota(p.vigencia_fin),
-      })
-    } catch {
-      liquidacionDisponible = false
-    }
+    if (punto && (punto.tipo === 'retiro' ? p.destino !== 'libre' : p.destino !== 'restringido' || !(await puntos.autorizadoEnPrograma(p.id, punto.id)))) continue
+    candidatos.push(p)
+  }
+
+  // La liquidación de cada programa, en paralelo
+  let liquidacionDisponible = true
+  const consultas = await Promise.all(
+    candidatos.map(async (p) => {
+      try {
+        return { p, pago: await liquidacion.pago(p.id, b.numero_documento) }
+      } catch {
+        liquidacionDisponible = false
+        return { p, pago: null }
+      }
+    }),
+  )
+  const pagos: PagoPendiente[] = []
+  for (const { p, pago } of consultas) {
+    if (!pago?.disponible) continue
+    pagos.push({
+      programa: { id: p.id, nombre: p.nombre, estado: p.estado, tipo: p.tipo },
+      monto: pago.monto,
+      moneda: moneda(p),
+      vigenciaFin: fechaBogota(p.vigencia_fin),
+    })
   }
   return { pagos, liquidacionDisponible }
 }
@@ -159,10 +167,15 @@ async function monedaDe(billetera: string): Promise<Moneda | null> {
 }
 
 export async function listar() {
+  const lista = await repo.listar()
+  const [ultimas, enGobierno] = await Promise.all([
+    cuentas.ultimasDe(lista.map((b) => b.id)),
+    nombresDe(lista.map((b) => b.numero_documento)),
+  ])
   return Promise.all(
-    repo.listar().map(async (b) => {
-      const c = cuentas.ultimaDe(b.id)
-      return vista(b, c ? await monedaDe(c.billetera) : null)
+    lista.map(async (b) => {
+      const c = ultimas.get(b.id)
+      return vista(b, c, enGobierno, c ? await monedaDe(c.billetera) : null)
     }),
   )
 }

@@ -6,7 +6,7 @@ import { Confirmacion, EntradaCobro } from './cobros/rutas.js'
 import { ESTADOS_COBRO } from './cobros/estados.js'
 import { EntradaComercio, EntradaSede } from './comercios/rutas.js'
 import { EntradaCuenta } from './cuentas/rutas.js'
-import { PagoDisponible, PedidoPin, Resumen, RespuestaPin, SinPago } from './liquidacion/contrato.js'
+import { Inscripcion, NuevoPin, PagoDisponible, PedidoPin, Persona as PersonaDelGobierno, Personas, Resumen, RespuestaPin, SinPago } from './liquidacion/contrato.js'
 import { ESTADOS_PROGRAMA } from './programas/estados.js'
 import { Callback, Cierre, EdicionPrograma, EntradaPrograma } from './programas/rutas.js'
 import { EntradaPunto, Periodo } from './puntos/rutas.js'
@@ -506,6 +506,32 @@ export const RUTAS: Ruta[] = [
     cuerpo: PedidoPin,
     respuestas: { 200: ok('El resultado', RespuestaPin), 503: 'LIQUIDACION_SIMULAR_FALLA=true' },
   },
+  {
+    metodo: 'get',
+    ruta: '/liquidacion/personas',
+    etiqueta: LIQUIDACION,
+    resumen: 'Nombre y si tiene PIN de varias cédulas',
+    descripcion: 'Tatú no guarda nombres ni PIN: los pide aquí, en una sola consulta por pantalla. Las cédulas que no están, no vienen.',
+    consulta: z.object({ documentos: z.string().meta({ example: '900000001,900000002' }).describe('Hasta 500, separados por coma') }),
+    respuestas: { 200: ok('Las personas inscritas', Personas), 400: 'Documentos inválidos', 503: 'LIQUIDACION_SIMULAR_FALLA=true' },
+  },
+  {
+    metodo: 'post',
+    ruta: '/liquidacion/personas',
+    etiqueta: LIQUIDACION,
+    resumen: 'Inscribe a una persona en el gobierno (o la actualiza)',
+    descripcion: '«Equipo de prueba» hace el papel del gobierno. Repetirlo no falla: cambia el nombre (y el PIN, si llega).',
+    cuerpo: Inscripcion,
+    respuestas: { 200: ok('La persona', PersonaDelGobierno), 400: 'Entrada inválida', 503: 'LIQUIDACION_SIMULAR_FALLA=true' },
+  },
+  {
+    metodo: 'post',
+    ruta: '/liquidacion/personas/:documento/pin',
+    etiqueta: LIQUIDACION,
+    resumen: 'Pone o cambia el PIN de una persona inscrita',
+    cuerpo: NuevoPin,
+    respuestas: { 200: ok('Tiene PIN', z.object({ documento: z.string(), tienePin: z.literal(true) })), 400: 'Entrada inválida', 404: 'Esa cédula no está en la liquidación', 503: 'LIQUIDACION_SIMULAR_FALLA=true' },
+  },
 
   // 7. Salud, estado y configuración
   {
@@ -513,6 +539,7 @@ export const RUTAS: Ruta[] = [
     ruta: '/salud',
     etiqueta: SALUD,
     resumen: 'La BD responde y la llave coincide con la publicada',
+    descripcion: '`bd.donde` dice si los datos están en Supabase o en la base local (PGlite), sin la contraseña.',
     respuestas: { 200: ok('Todo bien', z.object({}).loose()), 503: ok('Algo falla (mismo cuerpo, con ok: false)', z.object({}).loose()) },
   },
   {
@@ -524,7 +551,7 @@ export const RUTAS: Ruta[] = [
     respuestas: {
       200: ok(
         'El estado',
-        z.object({ pagosReales: z.boolean(), faltan: z.array(z.string()), openPayments: z.object({}).loose(), programasConTokenFalso: z.number().int(), verificacionCuenta: z.enum(['subject', 'simulada']) }),
+        z.object({ pagosReales: z.boolean(), faltan: z.array(z.string()), openPayments: z.object({}).loose(), programasConTokenFalso: z.number().int(), verificacionCuenta: z.enum(['subject', 'simulada']), baseDeDatos: z.object({ tipo: z.enum(['postgres', 'pglite']), donde: z.string().describe('Servidor y base, nunca la contraseña') }) }),
       ),
     },
   },
@@ -625,10 +652,10 @@ export function documentoOpenApi(): Json {
       title: 'API del piloto (Tatú)',
       version: 'piloto',
       description:
-        'Piloto 1: subsidios y bonos con Open Payments sobre la Test Wallet. Rama `piloto`, desechable.\n\n' +
+        'Piloto 1: subsidios y bonos con Open Payments sobre la Test Wallet. Rama `piloto-v2` (PostgreSQL: Supabase o PGlite), desechable.\n\n' +
         'Los montos van en **unidades mínimas** y como texto (`"23000000"` con escala 2 = $230.000). ' +
         'Todo error responde `{ "error": { "codigo", "mensaje" } }`.\n\n' +
-        '⚠️ «Try it out» llama a la API de verdad: con `api/.env` lleno, los cobros mueven dinero de prueba en la Test Wallet.',
+        '⚠️ «Try it out» llama a la API de verdad: con el `.env` lleno, los cobros mueven dinero de prueba en la Test Wallet.',
     },
     servers: [{ url: '/api' }],
     tags: [PROGRAMAS, PERSONAS, COBROS, PUNTOS, COMERCIOS, LIQUIDACION, SALUD].map((name) => ({ name })),

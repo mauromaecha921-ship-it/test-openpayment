@@ -4,14 +4,16 @@
  * `--minutos`, y después de cada rotación lee lo gastado del permiso para confirmar que el
  * token nuevo sirve. Guarda el token nuevo en la BD, así que la API que está corriendo lo usa.
  *
- *   npx tsx scripts/mantener-permiso.ts [programaId] [--minutos 20] [--cada 120]
+ *   pnpm --filter api exec tsx scripts/mantener-permiso.ts [programaId] [--minutos 20] [--cada 120]
  *
- * Sin programaId toma el programa Activo más reciente. Nunca imprime tokens.
+ * Sin programaId toma el programa Activo más reciente. Nunca imprime tokens. Con la base local
+ * (PGlite) la API tiene que estar apagada: dos procesos no pueden abrir la misma carpeta.
  */
 import '../src/certificados.js'
-import { rutaBaseDeDatos } from '../src/config.js'
-import { abrirBd, uno } from '../src/db/conexion.js'
+import { baseDeDatos } from '../src/config.js'
+import { abrirBd } from '../src/db/conexion.js'
 import * as eventos from '../src/db/repositorios/eventos.js'
+import * as programas from '../src/db/repositorios/programas.js'
 import * as op from '../src/openPaymentsService.js'
 import { conToken, rotarPermiso } from '../src/programas/servicio.js'
 
@@ -23,13 +25,9 @@ const opcion = (nombre: string, porDefecto: number) => {
 const minutos = opcion('minutos', 20)
 const cadaFijo = args.includes('--cada') ? opcion('cada', 120) : null
 
-abrirBd(rutaBaseDeDatos())
+await abrirBd(baseDeDatos())
 const programaId =
-  args.find((a) => !a.startsWith('--') && !/^\d+$/.test(a)) ??
-  uno<{ id: string }>(
-    `SELECT p.id FROM programa p JOIN evento e ON e.tipo_entidad = 'programa' AND e.id_entidad = p.id
-     WHERE p.estado = 'Activo' AND e.estado_nuevo = 'Activo' ORDER BY e.id DESC LIMIT 1`,
-  )?.id
+  args.find((a) => !a.startsWith('--') && !/^\d+$/.test(a)) ?? (await programas.listar()).find((p) => p.estado === 'Activo')?.id
 if (!programaId) throw new Error('No hay un programa Activo')
 
 const hora = () => new Date().toLocaleTimeString('es-CO')
@@ -47,7 +45,7 @@ while (Date.now() < fin) {
   try {
     await rotarPermiso(programaId)
     n += 1
-    const detalle = eventos.detalleDe(eventos.deEntidad('programa', programaId).at(-1)!)
+    const detalle = eventos.detalleDe((await eventos.deEntidad('programa', programaId)).at(-1)!)
     const dura = Number(detalle.expiresIn) || null
     const g = await gastado()
     console.log(`[${hora()}] Rotación ${n} ✅ · el token nuevo dura ${dura ?? '?'} s · gastado del permiso: ${g}`)
@@ -62,7 +60,7 @@ console.log(`[${hora()}] Listo: ${n} rotaciones seguidas y el permiso sigue vivo
 
 // --probar-vencido: deja vencer el token y prueba si todavía se puede rotar (¿hace falta mantenerlo vivo?)
 if (args.includes('--probar-vencido')) {
-  const dura = Number(eventos.detalleDe(eventos.deEntidad('programa', programaId).at(-1)!).expiresIn) || 600
+  const dura = Number(eventos.detalleDe((await eventos.deEntidad('programa', programaId)).at(-1)!).expiresIn) || 600
   console.log(`[${hora()}] Esperando ${dura + 60} s a que el token venza…`)
   await espera(dura + 60)
   try {

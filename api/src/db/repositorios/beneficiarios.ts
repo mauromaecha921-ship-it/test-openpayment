@@ -1,57 +1,47 @@
-import { ejecutar, uno, varios } from '../conexion.js'
-
-export interface FilaBeneficiario {
-  id: string
-  tipo_documento: string
-  numero_documento: string
-  primer_nombre: string
-  primer_apellido: string
-  estado: 'Activo' | 'Anonimizado'
-}
-
-const COLUMNAS = 'id, tipo_documento, numero_documento, primer_nombre, primer_apellido, estado'
-
-/** La persona por su cédula. Los anonimizados no cobran. */
-export function porDocumento(documento: string): FilaBeneficiario | undefined {
-  return uno<FilaBeneficiario>(
-    `SELECT ${COLUMNAS} FROM beneficiario
-     WHERE numero_documento = :documento AND estado = 'Activo'
-     ORDER BY tipo_documento = 'CC' DESC LIMIT 1`,
-    { documento },
-  )
-}
-
-export function obtener(id: string): FilaBeneficiario | undefined {
-  return uno<FilaBeneficiario>(`SELECT ${COLUMNAS} FROM beneficiario WHERE id = :id`, { id })
-}
-
-export function listar(): FilaBeneficiario[] {
-  return varios<FilaBeneficiario>(`SELECT ${COLUMNAS} FROM beneficiario WHERE estado = 'Activo' ORDER BY numero_documento`)
-}
-
-export interface NuevaPersona {
-  id: string
-  numero_documento: string
-  primer_nombre: string
-  primer_apellido: string
-}
+import { asc, desc, eq, inArray, sql } from 'drizzle-orm'
+import { ejecutor, esUuid } from '../conexion.js'
+import { beneficiario } from '../schema.js'
 
 /**
- * Registro del equipo (Plan de ajustes § 2): solo llegan la cédula y la wallet. El esquema pide más
- * campos (fechas, autorización de datos); van con valores fijos del piloto (hallazgo D-31).
+ * La persona en Tatú: solo tipo y número de documento (`beneficiario` de db/001, «somos
+ * pasarela»). El nombre y el PIN son del gobierno: se piden a la liquidación (D-01, D-31).
  */
-export function crear(p: NuevaPersona) {
-  ejecutar(
-    `INSERT INTO beneficiario (id, tipo_documento, numero_documento, fecha_expedicion, primer_nombre,
-                               primer_apellido, fecha_nacimiento, autoriza_datos, fecha_autorizacion,
-                               version_politica)
-     VALUES (:id, 'CC', :numero_documento, '2000-01-01', :primer_nombre, :primer_apellido, '1970-01-01',
-             1, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), 'piloto-equipo')`,
-    { ...p },
-  )
+export type FilaBeneficiario = typeof beneficiario.$inferSelect
+
+/** La persona por su cédula. */
+export async function porDocumento(documento: string): Promise<FilaBeneficiario | undefined> {
+  const [b] = await ejecutor()
+    .select()
+    .from(beneficiario)
+    .where(eq(beneficiario.numero_documento, documento))
+    .orderBy(desc(sql`${beneficiario.tipo_documento} = 'CC'`))
+    .limit(1)
+  return b
 }
 
-/** Fecha de registro, para la lista del equipo. */
-export function creadoEn(id: string): string {
-  return uno<{ creado_en: string }>('SELECT creado_en FROM beneficiario WHERE id = :id', { id })!.creado_en
+export async function obtener(id: string): Promise<FilaBeneficiario | undefined> {
+  if (!esUuid(id)) return undefined
+  const [b] = await ejecutor().select().from(beneficiario).where(eq(beneficiario.id, id)).limit(1)
+  return b
+}
+
+/** Varias personas en una sola consulta (las vistas por lote, D-43). */
+export async function deIds(ids: string[]): Promise<Map<string, FilaBeneficiario>> {
+  const validos = [...new Set(ids)].filter(esUuid)
+  if (!validos.length) return new Map()
+  const filas = await ejecutor().select().from(beneficiario).where(inArray(beneficiario.id, validos))
+  return new Map(filas.map((b) => [b.id, b]))
+}
+
+export async function listar(): Promise<FilaBeneficiario[]> {
+  return ejecutor().select().from(beneficiario).orderBy(asc(beneficiario.numero_documento))
+}
+
+/** Registro del equipo: la cédula (como C.C.); el id lo puede fijar la semilla. */
+export async function crear(p: { id?: string; numero_documento: string }): Promise<FilaBeneficiario> {
+  const [b] = await ejecutor()
+    .insert(beneficiario)
+    .values({ ...(p.id ? { id: p.id } : {}), tipo_documento: 'CC', numero_documento: p.numero_documento })
+    .returning()
+  return b!
 }

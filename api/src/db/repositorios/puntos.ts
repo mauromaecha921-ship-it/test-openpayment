@@ -1,69 +1,82 @@
-import { randomUUID } from 'node:crypto'
-import { ejecutar, uno, varios } from '../conexion.js'
+import { and, asc, eq, exists, inArray, isNotNull, or, sql } from 'drizzle-orm'
+import { ejecutor, esUuid } from '../conexion.js'
+import { comercio, programa_categoria, programa_punto, punto } from '../schema.js'
 
-export interface FilaPunto {
-  id: string
-  nombre: string
-  direccion: string
-  billetera: string
-  tipo: 'retiro' | 'compra'
-  /** Migración 005: la sede de un comercio (tipo compra); null en los puntos de retiro. */
-  comercio_id: string | null
+export type FilaPunto = typeof punto.$inferSelect
+
+export async function crear(datos: Omit<FilaPunto, 'id' | 'comercio_id'> & { id?: string; comercio_id?: string | null }): Promise<FilaPunto> {
+  const [p] = await ejecutor().insert(punto).values(datos).returning()
+  return p!
 }
 
-export function crear(datos: Omit<FilaPunto, 'id' | 'comercio_id'> & { comercio_id?: string | null }): FilaPunto {
-  const id = randomUUID()
-  ejecutar(
-    `INSERT INTO punto (id, nombre, direccion, billetera, tipo, comercio_id)
-     VALUES (:id, :nombre, :direccion, :billetera, :tipo, :comercio_id)`,
-    { id, comercio_id: null, ...datos },
-  )
-  return obtener(id)!
+export async function obtener(id: string): Promise<FilaPunto | undefined> {
+  if (!esUuid(id)) return undefined
+  const [p] = await ejecutor().select().from(punto).where(eq(punto.id, id)).limit(1)
+  return p
 }
 
-export function obtener(id: string): FilaPunto | undefined {
-  return uno<FilaPunto>('SELECT * FROM punto WHERE id = :id', { id })
+/** Varios puntos en una sola consulta (las vistas por lote, D-43). */
+export async function deIds(ids: string[]): Promise<Map<string, FilaPunto>> {
+  const validos = [...new Set(ids)].filter(esUuid)
+  if (!validos.length) return new Map()
+  const filas = await ejecutor().select().from(punto).where(inArray(punto.id, validos))
+  return new Map(filas.map((p) => [p.id, p]))
 }
 
-export function porBilletera(billetera: string): FilaPunto | undefined {
-  return uno<FilaPunto>('SELECT * FROM punto WHERE billetera = :billetera', { billetera })
+export async function porBilletera(billetera: string): Promise<FilaPunto | undefined> {
+  const [p] = await ejecutor().select().from(punto).where(eq(punto.billetera, billetera)).limit(1)
+  return p
 }
 
-export function listar(): FilaPunto[] {
-  return varios<FilaPunto>('SELECT * FROM punto ORDER BY nombre')
+export async function listar(): Promise<FilaPunto[]> {
+  return ejecutor().select().from(punto).orderBy(asc(punto.nombre))
 }
 
-export function sedesDe(comercioId: string): FilaPunto[] {
-  return varios<FilaPunto>('SELECT * FROM punto WHERE comercio_id = :c ORDER BY nombre', { c: comercioId })
+/** Las sedes de varios comercios, en una sola consulta. */
+export async function sedesDe(comercioIds: string[]): Promise<Map<string, FilaPunto[]>> {
+  const mapa = new Map<string, FilaPunto[]>()
+  const validos = [...new Set(comercioIds)].filter(esUuid)
+  if (!validos.length) return mapa
+  const filas = await ejecutor().select().from(punto).where(inArray(punto.comercio_id, validos)).orderBy(asc(punto.nombre))
+  for (const p of filas) mapa.set(p.comercio_id!, [...(mapa.get(p.comercio_id!) ?? []), p])
+  return mapa
 }
+
+/** El punto está en la lista de comercios del bono (`programa_punto`, extra HU-21). */
+const enLista = (programaId: string) =>
+  ejecutor()
+    .select({ si: sql`1` })
+    .from(programa_punto)
+    .where(and(eq(programa_punto.programa_id, programaId), eq(programa_punto.punto_id, punto.id)))
+
+/** § 11: la sede es de un comercio verificado cuya categoría acepta el bono (D-38, D-39). */
+const porCategoria = (programaId: string) =>
+  ejecutor()
+    .select({ si: sql`1` })
+    .from(comercio)
+    .innerJoin(programa_categoria, and(eq(programa_categoria.programa_id, programaId), eq(programa_categoria.categoria, comercio.categoria)))
+    .where(and(eq(comercio.id, punto.comercio_id), isNotNull(comercio.verificado_en)))
 
 /**
- * ¿Este punto puede cobrar este bono? Por la lista de comercios del extra (HU-21, `programa_punto`)
- * o, desde el § 11 del Plan de ajustes, por categoría: la sede es de un comercio verificado cuya
- * categoría acepta el bono.
+ * ¿Este punto puede cobrar este bono? Por la lista de comercios o por categoría. Es la misma
+ * regla que hace cumplir el trigger `fn_cobro_reglas` (010_piloto.sql).
  */
-export function autorizadoEnPrograma(programaId: string, puntoId: string): boolean {
-  return !!uno(
-    `SELECT 1 AS si FROM programa_punto WHERE programa_id = :p AND punto_id = :q
-     UNION ALL
-     SELECT 1 FROM punto s
-       JOIN comercio c ON c.id = s.comercio_id AND c.verificado_en IS NOT NULL
-       JOIN programa_categoria pc ON pc.programa_id = :p AND pc.categoria = c.categoria
-     WHERE s.id = :q AND s.tipo = 'compra'
-     LIMIT 1`,
-    { p: programaId, q: puntoId },
-  )
+export async function autorizadoEnPrograma(programaId: string, puntoId: string): Promise<boolean> {
+  if (!esUuid(programaId) || !esUuid(puntoId)) return false
+  const filas = await ejecutor()
+    .select({ id: punto.id })
+    .from(punto)
+    .where(and(eq(punto.id, puntoId), eq(punto.tipo, 'compra'), or(exists(enLista(programaId)), exists(porCategoria(programaId)))))
+    .limit(1)
+  return filas.length === 1
 }
 
 /** Las sedes donde se puede usar un bono (lo que ve el beneficiario). */
-export function autorizadosEnPrograma(programaId: string): FilaPunto[] {
-  return varios<FilaPunto>(
-    `SELECT s.* FROM punto s WHERE s.tipo = 'compra' AND EXISTS (
-       SELECT 1 FROM programa_punto pp WHERE pp.programa_id = :p AND pp.punto_id = s.id
-       UNION ALL
-       SELECT 1 FROM comercio c JOIN programa_categoria pc ON pc.programa_id = :p AND pc.categoria = c.categoria
-       WHERE c.id = s.comercio_id AND c.verificado_en IS NOT NULL)
-     ORDER BY s.nombre`,
-    { p: programaId },
-  )
+export async function autorizadosEnPrograma(programaId: string): Promise<FilaPunto[]> {
+  if (!esUuid(programaId)) return []
+  return ejecutor()
+    .select()
+    .from(punto)
+    .where(and(eq(punto.tipo, 'compra'), or(exists(enLista(programaId)), exists(porCategoria(programaId)))))
+    .orderBy(asc(punto.nombre))
 }

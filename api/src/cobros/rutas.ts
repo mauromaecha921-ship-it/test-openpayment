@@ -31,8 +31,8 @@ export function rutasCobros(): Router {
     res.status(status).json(cobro)
   })
 
-  r.post('/cobros/:id/cancelar', (req, res) => {
-    res.json(orquestacion.cancelar(req.params.id))
+  r.post('/cobros/:id/cancelar', async (req, res) => {
+    res.json(await orquestacion.cancelar(req.params.id))
   })
 
   r.get('/cobros/:id', async (req, res) => {

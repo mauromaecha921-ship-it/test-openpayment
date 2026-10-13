@@ -1,13 +1,14 @@
 # API del piloto: todos los endpoints
 
-> Parte del [piloto](./README.md). Catálogo único de las **43 rutas** que usa hoy la API del piloto
-> (rama `piloto`, 12 de octubre de 2026), con lo que hace cada una, quién la usa y de dónde salió.
+> Parte del [piloto](./README.md). Catálogo único de las **46 rutas** que usa hoy la API del piloto
+> (rama `piloto-v2`, 12 de octubre de 2026; la rama `piloto` tiene las 43 primeras), con lo que hace
+> cada una, quién la usa y de dónde salió.
 > Todas van bajo `/api` (por ejemplo, `GET /api/programas`). El código está en `api/src/*/rutas.ts`.
 >
 > **Swagger:** con la API prendida, `http://localhost:3000/api/docs` (o el 3100) muestra estas rutas
 > con sus campos y deja probarlas; el JSON está en `/api/openapi.json`. Los cuerpos salen de los
 > mismos esquemas Zod que validan las rutas, y `api/src/openapi.test.ts` falla si se agrega una ruta
-> sin documentarla. Ojo: «Try it out» llama a la API de verdad y, con `api/.env` lleno, mueve dinero
+> sin documentarla. Ojo: «Try it out» llama a la API de verdad y, con el `.env` lleno, mueve dinero
 > de prueba.
 
 **Por qué hay tantas:** la Guía define **9 rutas**. No alcanzan para las pantallas de los
@@ -87,16 +88,20 @@ Equipo (registro de prueba) · Sistema (la propia API o la Test Wallet).
 | `POST /comercios/:id/sedes` | Agrega una sede (una cadena tiene varias), con su wallet | Equipo | Ajustes § 11 | D-38 |
 | `POST /comercios/:id/verificar` | La entidad verifica el comercio (simula el cruce con el RUT y el RUES) | Entidad | Ajustes § 11 | D-38 |
 
-## 6. Liquidación simulada (el sistema de la entidad)
+## 6. Liquidación simulada (el sistema del gobierno)
 
 En producción es otro sistema (AD-12); en el piloto vive en la misma API, bajo `/api/liquidacion`, y
-la API lo consume por HTTP.
+la API lo consume por HTTP. En `piloto-v2` sus datos están en el esquema `piloto_gobierno` de PostgreSQL: Tatú
+no guarda nombres ni PIN y se los pide aquí ([Plan Supabase y pnpm](./Plan%20Supabase%20y%20pnpm.md) § 3).
 
 | Método y ruta | Qué hace | Quién | Origen | HU / hallazgo |
 |---|---|---|---|---|
 | `GET /liquidacion/programas/:programaId/resumen` | Cuántas cédulas y cuánto suman (sin las novedades) | Sistema | Piloto | HU-02 |
 | `GET /liquidacion/programas/:programaId/pagos/:documento` | Si una cédula tiene pago en ese programa y cuánto | Sistema | Piloto | HU-02 |
 | `POST /liquidacion/pin/validar` | Valida el PIN de una cédula (guardado con hash) | Sistema | Piloto | HU-11, D-07 |
+| `GET /liquidacion/personas?documentos=…` | Nombre y si tiene PIN de varias cédulas, en una sola consulta (nunca el PIN) | Sistema | Piloto v2 | § 3 del plan v2, D-43 |
+| `POST /liquidacion/personas` | Inscribe a una persona en el gobierno, o la actualiza («Equipo de prueba» hace de gobierno) | Equipo | Piloto v2 | § 3 del plan v2 |
+| `POST /liquidacion/personas/:documento/pin` | Pone o cambia el PIN de una persona inscrita | Equipo | Piloto v2 | HU-11 |
 
 ## 7. Salud, estado y configuración
 
@@ -115,7 +120,8 @@ la API lo consume por HTTP.
 | Guía (alcance original) | 9 |
 | Piloto, para que funcionaran los wireframes (D-05) | 21 |
 | Ajustes, después de probar con dinero real | 13 |
-| **Total** | **43** |
+| Piloto v2: el gobierno simulado guarda el nombre y el PIN | 3 |
+| **Total** | **46** |
 
 ## 9. Pendientes que tocan la API
 

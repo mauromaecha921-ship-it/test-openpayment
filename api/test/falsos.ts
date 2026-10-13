@@ -108,10 +108,16 @@ export function falsoOP(real: ModuloOP) {
 }
 
 export function falsaLiquidacion(real: typeof Liq) {
+  const personas = async (documentos: string[]) => new Map((await datos.personas(documentos)).map((p) => [p.documento, p]))
   return {
     ...real,
     resumen: vi.fn(async (p: string) => datos.resumen(p)),
     pago: vi.fn(async (p: string, d: string) => datos.pago(p, d)),
     validarPin: vi.fn(async (d: string, p: string) => datos.validarPin(d, p)),
+    // Lo que Tatú no guarda (nombre y PIN) lo pide al gobierno (Plan Supabase y pnpm § 3)
+    personas: vi.fn(personas),
+    persona: vi.fn(async (d: string) => (await personas([d])).get(d)),
+    inscribir: vi.fn(async (d: string, nombre: string, pin?: string) => datos.inscribir(d, nombre, pin)),
+    ponerPin: vi.fn(async (d: string, pin: string) => datos.ponerPin(d, pin)),
   }
 }

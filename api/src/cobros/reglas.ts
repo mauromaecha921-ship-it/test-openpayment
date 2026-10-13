@@ -86,10 +86,13 @@ export function rn07EvaluarPin(args: { valido: boolean; intentosPrevios: number;
   return { resultado: 'incorrecto', intentos, restantes: args.maxIntentos - intentos }
 }
 
-/** RN-07 (D-17): la cédula está bloqueada si tuvo un PinBloqueado en los últimos N minutos. */
-export function rn07Bloqueada(args: { ultimoBloqueo: string | null; ahora: Date; bloqueoMin: number }): boolean {
-  if (!args.ultimoBloqueo) return false
-  return args.ahora.getTime() - Date.parse(args.ultimoBloqueo) < args.bloqueoMin * 60_000
+/**
+ * RN-07: la persona está bloqueada en el programa mientras no pase `bloqueado_hasta` (tabla
+ * `bloqueo_pin` de db/003; reemplaza la deducción de D-17).
+ */
+export function rn07Bloqueada(args: { bloqueadoHasta: string | null; ahora: Date }): boolean {
+  if (!args.bloqueadoHasta) return false
+  return args.ahora.getTime() < Date.parse(args.bloqueadoHasta)
 }
 
 // RN-11 · todo monto se valida en el backend con la escala de la moneda

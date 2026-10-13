@@ -24,7 +24,7 @@ async function confirmar(id: string, pin: string) {
 }
 
 beforeEach(async () => {
-  prepararBd()
+  await prepararBd()
   programaId = await programaActivo()
 })
 
@@ -147,7 +147,7 @@ describe('guion de la demo, pasos 2 a 7 (Historias § Fórmulas)', () => {
     estado.salientesLentos = true
     const c = (await retiro('900000003')).body
     await confirmar(c.id, '3333')
-    expect(cobros.obtener(c.id)!.estado).toBe('Pagando')
+    expect((await cobros.obtener(c.id))!.estado).toBe('Pagando')
     await request(a).post(`/api/programas/${programaId}/cerrar`).send({ confirmacion: 'CERRAR' }).expect(409)
     // Al consultar se reconcilia (RN-10) y ya se puede cerrar
     expect((await request(a).get(`/api/cobros/${c.id}`)).body.estado).toBe('Pagado')

@@ -1,16 +1,19 @@
 import './certificados.js'
 import { crearApp } from './app.js'
 import { recuperarAlArrancar } from './cobros/orquestacion.js'
-import { config, rutaBaseDeDatos } from './config.js'
+import { baseDeDatos, config } from './config.js'
 import { log } from './comun/log.js'
 import { abrirBd, cerrarBd } from './db/conexion.js'
 import { migrar } from './db/migrar.js'
 import { iniciarRenovacion } from './programas/renovacion.js'
 
 const cfg = config()
-const bd = abrirBd(rutaBaseDeDatos())
-const nuevas = migrar(bd)
-if (nuevas.length) log.info('Migraciones aplicadas', { nuevas })
+const base = baseDeDatos()
+if (base.aviso) log.warn(base.aviso)
+await abrirBd(base)
+const nuevas = await migrar()
+// Dónde quedan los datos, sin la contraseña (D-44)
+log.info(`Base de datos: ${base.descripcion}`, nuevas.length ? { migracionesAplicadas: nuevas } : undefined)
 
 const servidor = crearApp().listen(cfg.PORT, () => {
   log.info(`API en http://localhost:${cfg.PORT}/api`)
@@ -24,8 +27,7 @@ const servidor = crearApp().listen(cfg.PORT, () => {
 
 function apagar() {
   servidor.close(() => {
-    cerrarBd()
-    process.exit(0)
+    void cerrarBd().finally(() => process.exit(0))
   })
 }
 process.on('SIGINT', apagar)

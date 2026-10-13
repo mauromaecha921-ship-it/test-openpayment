@@ -5,6 +5,11 @@ import { normalizarBilletera } from './comun/billeteras.js'
 
 /** Carpeta `api/`, para resolver `.env` y `data/` sin depender del directorio actual. */
 export const RAIZ_API = path.resolve(import.meta.dirname, '..')
+/** Raíz del repositorio: ahí vive el `.env`, como en la rama de Pablo. */
+export const RAIZ_REPO = path.resolve(RAIZ_API, '..')
+
+/** Sin DATABASE_URL, la API usa PostgreSQL local (PGlite) en `api/data/pglite`. */
+const BASE_LOCAL = 'pglite:./data/pglite'
 
 const booleano = z
   .enum(['true', 'false', '1', '0'])
@@ -34,7 +39,8 @@ const esquema = z.object({
   APP_BASE_URL: z.url().transform((v) => v.replace(/\/+$/, '')),
   API_BASE_URL: z.url().transform((v) => v.replace(/\/+$/, '')),
   LIQUIDACION_URL: z.url().transform((v) => v.replace(/\/+$/, '')),
-  DATABASE_URL: z.string().startsWith('file:').default('file:./data/tatu.db'),
+  // PostgreSQL (Supabase) o PGlite: «pglite:ruta» en disco, «pglite:memoria» para las pruebas
+  DATABASE_URL: z.string().trim().default(BASE_LOCAL),
 
   // Cliente Open Payments: solo backend. Opcionales aquí para que la API arranque con la
   // semilla «solo UI»; el adaptador exige que estén al crear el cliente.
@@ -73,18 +79,23 @@ export type Config = z.infer<typeof esquema>
 let cache: Config | undefined
 
 /**
- * Lee `api/.env` (si existe) y valida todo con Zod. Si algo falla, el error lista las
- * variables con su problema, nunca sus valores.
+ * Lee el `.env` de la raíz y luego `api/.env` (si existen) y valida todo con Zod. Node no pisa
+ * una variable ya definida, así que manda el de la raíz y el de `api/` completa lo que falte
+ * (la rama `piloto` usaba `api/.env`). Si algo falla, el error lista las variables con su
+ * problema, nunca sus valores.
  */
 export function config(): Config {
   if (cache) return cache
-  const archivo = path.join(RAIZ_API, '.env')
-  if (!process.env.TATU_SIN_ENV_ARCHIVO && existsSync(archivo)) process.loadEnvFile(archivo)
+  if (!process.env.TATU_SIN_ENV_ARCHIVO) {
+    for (const archivo of [path.join(RAIZ_REPO, '.env'), path.join(RAIZ_API, '.env')]) {
+      if (existsSync(archivo)) process.loadEnvFile(archivo)
+    }
+  }
 
   const r = esquema.safeParse(process.env)
   if (!r.success) {
     const lista = r.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n')
-    throw new Error(`Configuración inválida en api/.env:\n${lista}`)
+    throw new Error(`Configuración inválida en el .env:\n${lista}`)
   }
   if (r.data.OP_PRIVATE_KEY_BASE64 && r.data.OP_PRIVATE_KEY_PATH) {
     throw new Error('Configuración inválida: usa OP_PRIVATE_KEY_BASE64 u OP_PRIVATE_KEY_PATH, no las dos')
@@ -100,9 +111,44 @@ export function reiniciarConfig(cambios: Record<string, string> = {}): Config {
   return config()
 }
 
-/** Ruta del archivo SQLite, o ':memory:'. */
-export function rutaBaseDeDatos(): string {
-  const valor = config().DATABASE_URL.slice('file:'.length)
-  if (valor === ':memory:') return valor
-  return path.resolve(RAIZ_API, valor)
+/** A qué base se conecta la API. `descripcion` sirve para logs y para /salud: nunca lleva la contraseña. */
+export type BaseDeDatos =
+  | { tipo: 'postgres'; url: string; descripcion: string; aviso?: string }
+  | { tipo: 'pglite'; ruta: string | null; descripcion: string; aviso?: string }
+
+const AYUDA_URL =
+  'si la contraseña tiene @, #, +, /, ?, : o %, escríbelos codificados (%40, %23, %2B, %2F, %3F, %3A, %25)'
+
+function local(valor: string, aviso?: string): BaseDeDatos {
+  const resto = valor.slice('pglite:'.length)
+  if (resto === '' || resto === 'memoria') return { tipo: 'pglite', ruta: null, descripcion: 'PostgreSQL en memoria (PGlite)', aviso }
+  const ruta = path.resolve(RAIZ_API, resto)
+  return { tipo: 'pglite', ruta, descripcion: `PostgreSQL local (PGlite) en ${path.relative(RAIZ_REPO, ruta)}`, aviso }
+}
+
+/**
+ * La base que indica DATABASE_URL. Una URL de PostgreSQL se revisa sin mostrarla: si la
+ * contraseña trae caracteres sin codificar, el servidor que se lee no es el real (D-44).
+ */
+export function baseDeDatos(): BaseDeDatos {
+  const valor = config().DATABASE_URL
+  if (valor.startsWith('pglite:')) return local(valor)
+  if (valor.startsWith('file:')) {
+    // api/.env de la rama `piloto` (SQLite): en v2 se usa la base local hasta que llegue la de Supabase
+    return local(BASE_LOCAL, 'DATABASE_URL apunta a SQLite (rama piloto); piloto-v2 usa PostgreSQL: se usa la base local')
+  }
+  if (!/^postgres(ql)?:\/\//.test(valor)) {
+    throw new Error('Configuración inválida: DATABASE_URL debe empezar con postgresql://, postgres:// o pglite:')
+  }
+  let url: URL
+  try {
+    url = new URL(valor)
+  } catch {
+    throw new Error(`Configuración inválida: DATABASE_URL no se puede leer; ${AYUDA_URL}`)
+  }
+  if (url.hash || !url.hostname.includes('.') || !url.username || !url.pathname.slice(1)) {
+    throw new Error(`Configuración inválida: DATABASE_URL está mal armada; ${AYUDA_URL}`)
+  }
+  const puerto = url.port || '5432'
+  return { tipo: 'postgres', url: valor, descripcion: `PostgreSQL en ${url.hostname}:${puerto}/${url.pathname.slice(1)}` }
 }

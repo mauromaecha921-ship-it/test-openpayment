@@ -5,20 +5,34 @@ Esquema PostgreSQL para el flujo de subsidio (y el extra de bono) de las
 Es una **propuesta del rol de modelado de datos**: parte de las 6 tablas del diccionario
 de las Historias y agrega lo que hacía falta para cuidar el dinero y la trazabilidad.
 
+**Somos pasarela:** de la persona solo se guarda lo que se verifica para la transacción
+(tipo y número de documento, y la billetera verificada). Nombre, contacto y demás datos
+viven en Colsubsidio y se consultan en la liquidación; no se copian aquí.
+
 | Archivo | Qué hace |
 |---|---|
-| `001_esquema.sql` | Crea tipos, tablas, restricciones, índices, triggers y la vista de edad |
+| `001_esquema.sql` | Crea tipos, tablas, restricciones, índices y triggers |
 | `002_datos_prueba.sql` | Escenario ficticio de la demo: 4 personas, 1 punto, 3 cobros |
+| `003_ajustes.sql` | Bloqueo por PIN, `evento.actor`, fecha de solicitud de aprobación, reglas del cobro (RN-03, RN-04, RN-06, RN-07) y RLS |
 
 ```bash
 psql "$DATABASE_URL" -f db/001_esquema.sql
 psql "$DATABASE_URL" -f db/002_datos_prueba.sql
+psql "$DATABASE_URL" -f db/003_ajustes.sql
 ```
+
+**En Supabase:** SQL Editor → pegar y ejecutar cada archivo en ese orden. El `003` activa
+RLS en todas las tablas: la API pública de Supabase (`anon`) queda sin acceso y el backend
+entra con la cadena de conexión del proyecto (en `.env`, nunca en el repo).
 
 Requiere PostgreSQL 13 o superior (usa `gen_random_uuid()` sin extensiones).
 Cuando exista `api/`, `001_esquema.sql` pasa a ser `api/src/db/migraciones/001_init.sql`.
 
 ## Modelo
+
+![Modelo entidad-relación](./modelo-er.svg)
+
+El mismo modelo en Mermaid, con todos los tipos:
 
 ```mermaid
 erDiagram
@@ -29,7 +43,6 @@ erDiagram
   beneficiario ||--o{ cuenta_beneficiario : enlaza
   beneficiario ||--o{ cobro : cobra
   cuenta_beneficiario |o--o{ cobro : recibe
-  municipio |o--o{ beneficiario : ubica
 
   programa {
     uuid id PK
@@ -96,29 +109,7 @@ erDiagram
     uuid id PK
     enum tipo_documento
     text numero_documento
-    date fecha_expedicion
-    text primer_nombre
-    text segundo_nombre
-    text primer_apellido
-    text segundo_apellido
-    date fecha_nacimiento
-    enum sexo
-    char nacionalidad
-    text celular
-    text correo
-    char municipio_id FK
-    text direccion
-    smallint estrato
-    enum categoria_afiliacion
-    boolean autoriza_datos
-    timestamptz fecha_autorizacion
-    text version_politica
-    enum estado
-  }
-  municipio {
-    char codigo_dane PK
-    text nombre
-    text departamento
+    timestamptz creado_en
   }
   evento {
     bigserial id PK
@@ -148,7 +139,7 @@ La **liquidación** de la entidad no está aquí: se consulta, no se guarda.
 | Historial intocable | `cobro` no admite DELETE; `evento` es solo inserción |
 | Moneda fija | La billetera y la moneda del programa no cambian fuera de Borrador |
 
-Probado en PostgreSQL 17: 15 violaciones bloqueadas y 10 inserciones simultáneas de la
+Probado en PostgreSQL 17: 14 violaciones bloqueadas y 10 inserciones simultáneas de la
 misma persona → 1 solo cobro.
 
 ## Cambios frente al diccionario de las Historias
@@ -156,21 +147,20 @@ misma persona → 1 solo cobro.
 - **Nombres en español:** `wallet_address` → `billetera`, `asset_code`/`asset_scale` →
   `codigo_moneda`/`escala_moneda`, `access_token` → `token_acceso`, `idempotency_key` →
   `llave_idempotencia`, `incoming/outgoing_payment_url` → `url_pago_entrante/saliente`, etc.
-- **`beneficiario` (nueva):** la persona, con los datos que entrega Colsubsidio. La cédula deja
-  de ser llave primaria y `cobro` apunta a la persona por FK (también a quien no tiene cuenta).
+- **`beneficiario` (nueva y mínima):** solo tipo y número de documento. La cédula deja de ser
+  llave primaria y `cobro` apunta a la persona por FK (también a quien no tiene cuenta). La fila
+  nace la primera vez que la persona enlaza o cobra, nunca por carga masiva.
 - **`cuenta_beneficiario` con historial:** id propio; una sola cuenta vigente por persona.
 - **`cobro.cuenta_id`:** guarda a qué cuenta exacta se pagó.
-- **`municipio` (nueva):** catálogo DANE.
 - **`referencia`** se genera sola (`SUB-0001`…). Puede tener saltos: una secuencia no se
   devuelve si la inserción falla, y eso es normal.
-- **La edad no se guarda:** se calcula en la vista `beneficiario_con_edad`.
 
 ## Pendientes
 
 1. **Fallido libera a la persona.** Solo se puede marcar `Fallido` con una respuesta
    definitiva del banco; un timeout deja el cobro en `Pagando` hasta reconciliar.
-2. **Bloqueo de 15 min tras 3 PIN errados** (P-12): todavía no tiene tabla.
-3. **Tokens en texto plano:** en producción, cifrados con KMS y en una tabla aparte.
-4. **Finalidad de los datos personales** (estrato, edad, municipio para informes): confirmar
-   con Colsubsidio que su política lo cubre; si no, separarlos en `beneficiario_perfil`.
-5. Categorías de afiliación y si los menores (TI) cobran ellos o un acudiente.
+2. **Saldo del bono:** si la compra es menor que el bono, hoy el resto se pierde. Si debe
+   quedar para otra compra, cambia el modelo.
+3. **Tokens y cédula en texto plano:** en producción, tokens cifrados con KMS en una tabla
+   aparte y `numero_documento` como HMAC más valor cifrado.
+4. Si los menores (TI) cobran ellos o un acudiente.
