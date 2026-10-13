@@ -2,6 +2,7 @@
  * Orquestación del cobro (P-20, Plan backend § 8.2 a § 8.6):
  * liquidación → transición → pagar → guardar. Las rutas solo reciben y validan.
  */
+import { waitUntil } from '@vercel/functions'
 import { config } from '../config.js'
 import { conflicto, ErrorApi, noEncontrado } from '../comun/errores.js'
 import { enmascararDocumento, log } from '../comun/log.js'

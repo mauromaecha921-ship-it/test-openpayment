@@ -92,6 +92,8 @@ export function config(): Config {
     }
   }
 
+  completarUrlsDeVercel()
+
   const r = esquema.safeParse(process.env)
   if (!r.success) {
     const lista = r.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n')
@@ -102,6 +104,22 @@ export function config(): Config {
   }
   cache = r.data
   return cache
+}
+
+/**
+ * En Vercel la web y la API comparten dominio: si no se definieron APP_BASE_URL, API_BASE_URL o
+ * LIQUIDACION_URL, salen del dominio del despliegue (el de producción, o el de la rama en preview).
+ */
+function completarUrlsDeVercel() {
+  const e = process.env
+  if (!e.VERCEL) return
+  const dominio =
+    e.VERCEL_ENV === 'production' ? (e.VERCEL_PROJECT_PRODUCTION_URL ?? e.VERCEL_URL) : (e.VERCEL_BRANCH_URL ?? e.VERCEL_URL)
+  if (!dominio) return
+  const base = `https://${dominio}`
+  e.APP_BASE_URL ||= base
+  e.API_BASE_URL ||= `${base}/api`
+  e.LIQUIDACION_URL ||= `${base}/api/liquidacion`
 }
 
 /** Solo para pruebas: cambia una variable y vuelve a validar. */
