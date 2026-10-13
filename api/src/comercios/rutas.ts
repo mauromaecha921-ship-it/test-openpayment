@@ -9,13 +9,13 @@ import * as puntos from '../db/repositorios/puntos.js'
 import { resolverWallet } from '../programas/servicio.js'
 import { CATEGORIAS, categoriaDe } from './categorias.js'
 
-const EntradaSede = z.object({
+export const EntradaSede = z.object({
   nombre: z.string().trim().min(3).max(80),
   direccion: z.string().trim().max(120).optional().transform((v) => (v && v.length >= 3 ? v : 'Sin dirección')),
   billetera: z.string().trim().min(3),
 })
 
-const EntradaComercio = z.object({
+export const EntradaComercio = z.object({
   nit: z.string().trim().regex(/^\d{5,15}$/, 'el NIT va sin puntos, sin guion y sin dígito de verificación'),
   razonSocial: z.string().trim().min(3).max(120),
   ciiu: z.string().trim().regex(/^\d{4}$/, 'la actividad CIIU tiene 4 dígitos'),

@@ -10,7 +10,7 @@ import * as datosLiquidacion from '../liquidacion/datos.js'
 import * as servicio from './servicio.js'
 
 // Registro del equipo: la cédula y la wallet; el nombre y el PIN son opcionales
-const EntradaPersona = z.object({
+export const EntradaPersona = z.object({
   documento: z.string().trim().regex(/^\d{5,12}$/, 'la cédula va sin puntos ni espacios: de 5 a 12 dígitos'),
   billetera: z.string().trim().min(3),
   nombre: z.string().trim().max(80).optional().transform((v) => v || undefined),

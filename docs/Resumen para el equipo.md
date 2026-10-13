@@ -196,7 +196,7 @@ Más detalle: [`api/README.md`](../api/README.md).
 | Las reglas de negocio en corto | `Reglas de negocio.md` |
 | Las decisiones técnicas | `Documento de Arquitectura — Hackathon Open Payments.md` |
 | Cómo hablar con Open Payments | `Hallazgos — Investigación de Fuentes.md` y `ENDPOINTS.md` |
-| Todos los endpoints de la API del piloto (43) y los pendientes que la tocan | [`piloto/API del piloto.md`](./piloto/API%20del%20piloto.md) |
+| Todos los endpoints de la API del piloto (43) y los pendientes que la tocan | [`piloto/API del piloto.md`](./piloto/API%20del%20piloto.md) · para probarlos, Swagger en `/api/docs` con la API prendida |
 | Todo lo que hizo y encontró el piloto (D-01 a D-36) | `piloto/Resultados del piloto.md` y `piloto/Plan de ajustes.md` |
 | Correr la API del piloto | `api/README.md` |
 

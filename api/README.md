@@ -33,6 +33,12 @@ llave privada va solo ahí.
 cliente. En la web, la página **Estado de los pagos** (`/estado`, que lee `GET /api/estado`) dice si
 los pagos son reales o simulados y qué falta. Conviene revisarla antes del primer pago.
 
+**Swagger:** `http://localhost:3000/api/docs` (o el 3100; también tras el proxy de la web) lista
+las 43 rutas con sus campos y deja probarlas. El documento OpenAPI 3.1 está en `/api/openapi.json`
+y se arma en `src/openapi.ts` con los mismos esquemas Zod de las rutas. Una ruta nueva va también
+en `RUTAS` de ese archivo, si no `openapi.test.ts` falla. «Try it out» llama a la API de verdad:
+con `api/.env` lleno, los cobros mueven dinero de prueba.
+
 ### Pagos reales entre el equipo
 
 1. Cada persona crea su cuenta en la [Test Wallet](https://wallet.interledger-test.dev) y una

@@ -10,7 +10,7 @@ const fecha = z.string().refine((v) => !Number.isNaN(Date.parse(v)), 'fecha inv�
 // En pesos, como lo escribe la entidad: «10000» o «10000.50»
 const montoEnPesos = z.string().trim().regex(/^\d+(\.\d+)?$/, 'monto en pesos, sin puntos de miles')
 
-const EntradaPrograma = z.object({
+export const EntradaPrograma = z.object({
   entidad: z.string().trim().min(3).max(80),
   nombre: z.string().trim().min(3).max(80),
   billetera: z.string().trim().min(3),
@@ -21,7 +21,7 @@ const EntradaPrograma = z.object({
   categorias: z.array(z.enum(IDS_CATEGORIA)).max(10).optional(),
 })
 
-const EdicionPrograma = z
+export const EdicionPrograma = z
   .object({
     entidad: z.string().trim().min(3).max(80),
     nombre: z.string().trim().min(3).max(80),
@@ -34,9 +34,9 @@ const EdicionPrograma = z
   })
   .partial()
 
-const Cierre = z.object({ confirmacion: z.string() })
+export const Cierre = z.object({ confirmacion: z.string() })
 
-const Callback = z.object({
+export const Callback = z.object({
   hash: z.string().optional(),
   interact_ref: z.string().optional(),
   result: z.string().optional(),

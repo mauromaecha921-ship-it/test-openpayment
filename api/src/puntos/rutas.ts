@@ -14,7 +14,7 @@ import { documento } from '../liquidacion/contrato.js'
 import * as datosLiquidacion from '../liquidacion/datos.js'
 import { resolverWallet } from '../programas/servicio.js'
 
-const EntradaPunto = z.object({
+export const EntradaPunto = z.object({
   nombre: z.string().trim().min(3).max(80),
   direccion: z.string().trim().max(120).optional().transform((v) => (v && v.length >= 3 ? v : 'Sin dirección')),
   billetera: z.string().trim().min(3),
@@ -32,7 +32,7 @@ function inicioDeHoy(): string {
 }
 
 /** Periodo de la caja y del historial del punto (D-36). */
-const Periodo = z.enum(['hoy', '7d', 'todo'])
+export const Periodo = z.enum(['hoy', '7d', 'todo'])
 
 function desdeDe(valor: unknown): string | undefined {
   if (valor === 'hoy') return inicioDeHoy()

@@ -4,7 +4,7 @@ import { validar } from '../comun/errores.js'
 import { documento } from '../liquidacion/contrato.js'
 import * as servicio from './servicio.js'
 
-const EntradaCuenta = z.object({
+export const EntradaCuenta = z.object({
   documento,
   billetera: z.string().trim().min(3),
   // Quien se registró sin PIN no tiene con qué probar que es la persona (Plan de ajustes § 2)

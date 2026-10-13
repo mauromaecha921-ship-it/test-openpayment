@@ -5,7 +5,7 @@ import { documento } from '../liquidacion/contrato.js'
 import * as orquestacion from './orquestacion.js'
 
 /** Las rutas solo reciben y validan con Zod; decide la orquestación (Arquitectura § 3.2). */
-const EntradaCobro = z.object({
+export const EntradaCobro = z.object({
   programaId: z.guid().optional(),
   documento,
   canal: z.enum(['cuenta', 'retiro', 'compra']),
@@ -16,7 +16,7 @@ const EntradaCobro = z.object({
   totalCompra: z.string().regex(/^\d+$/).optional(),
 })
 
-const Confirmacion = z.object({ pin: z.string().regex(/^\d{4}$/, 'el PIN tiene 4 dígitos') })
+export const Confirmacion = z.object({ pin: z.string().regex(/^\d{4}$/, 'el PIN tiene 4 dígitos') })
 
 export function rutasCobros(): Router {
   const r = Router()

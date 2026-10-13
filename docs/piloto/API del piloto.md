@@ -3,6 +3,12 @@
 > Parte del [piloto](./README.md). Catálogo único de las **43 rutas** que usa hoy la API del piloto
 > (rama `piloto`, 12 de octubre de 2026), con lo que hace cada una, quién la usa y de dónde salió.
 > Todas van bajo `/api` (por ejemplo, `GET /api/programas`). El código está en `api/src/*/rutas.ts`.
+>
+> **Swagger:** con la API prendida, `http://localhost:3000/api/docs` (o el 3100) muestra estas rutas
+> con sus campos y deja probarlas; el JSON está en `/api/openapi.json`. Los cuerpos salen de los
+> mismos esquemas Zod que validan las rutas, y `api/src/openapi.test.ts` falla si se agrega una ruta
+> sin documentarla. Ojo: «Try it out» llama a la API de verdad y, con `api/.env` lleno, mueve dinero
+> de prueba.
 
 **Por qué hay tantas:** la Guía define **9 rutas**. No alcanzan para las pantallas de los
 wireframes (hallazgo **D-05**: faltaban 16) ni para lo que salió de probar con dinero real

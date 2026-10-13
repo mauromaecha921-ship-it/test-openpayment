@@ -6,6 +6,7 @@ import { manejarErrores } from './comun/errores.js'
 import { rutasCuentas } from './cuentas/rutas.js'
 import { rutasExtras } from './extras.js'
 import { routerLiquidacion } from './liquidacion/router.js'
+import { rutasOpenApi } from './openapi.js'
 import { rutasProgramas } from './programas/rutas.js'
 import { rutasPuntos } from './puntos/rutas.js'
 import { rutasSalud } from './salud.js'
@@ -19,6 +20,7 @@ export function crearApp() {
   const api = express.Router()
   api.use(rutasSalud())
   api.use(rutasExtras())
+  api.use(rutasOpenApi())
   api.use('/liquidacion', routerLiquidacion())
   api.use(rutasProgramas())
   api.use(rutasPuntos())
