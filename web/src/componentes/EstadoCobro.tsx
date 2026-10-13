@@ -4,14 +4,14 @@ import type { EstadoCobro as Estado, Motivo } from '@/api/tipos'
 import { MOTIVO_CORTO, NOMBRE_ESTADO_COBRO } from '@/lib/textos'
 import { cn } from '@/lib/utils'
 
-// Los wireframes no le dan color a los estados: aquí va uno discreto por estado, siempre con
-// ícono y texto, nunca solo color (Plan frontend § 6).
+// Colores de la identidad visual: «Pagado» va sólido como en el prototipo; los demás, en un tono
+// suave. Siempre con ícono y texto, nunca solo color (Plan frontend § 6).
 
 const ESTILO: Record<Estado, string> = {
   Solicitado: 'border-control bg-background text-foreground',
   PorConfirmar: 'border-control bg-background text-foreground',
   Pagando: 'border-pagando bg-pagando-fondo text-pagando',
-  Pagado: 'border-pagado bg-pagado-fondo text-pagado',
+  Pagado: 'border-pagado-relleno bg-pagado-relleno text-primary-foreground',
   Rechazado: 'border-dashed border-rechazo bg-rechazo-fondo text-rechazo',
   Fallido: 'border-dashed border-rechazo bg-rechazo-fondo text-rechazo',
 }

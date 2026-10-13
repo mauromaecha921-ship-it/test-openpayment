@@ -29,7 +29,7 @@ export default function Equipo() {
   const comercios = usePolling(() => api.get<Comercio[]>('/comercios'), null)
 
   return (
-    <div className="flex min-h-dvh flex-col bg-muted">
+    <div className="flex min-h-dvh flex-col bg-background">
       <Encabezado variante="entrada" />
       <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 pt-6 pb-12 sm:px-6 md:pt-8">
         <Volver to="/">Volver a la entrada</Volver>

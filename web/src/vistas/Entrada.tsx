@@ -13,6 +13,7 @@ import { Button } from '@/componentes/ui/button'
 import { useRol } from '@/contexto/Rol'
 import { rutaDelPrograma } from '@/lib/pantallas'
 import { NOMBRE_ESTADO_PROGRAMA } from '@/lib/textos'
+import { cn } from '@/lib/utils'
 
 const NUEVO = '__nuevo'
 
@@ -25,10 +26,29 @@ interface Datos {
 export const claseSelect =
   'min-h-12 w-full rounded-lg border border-control bg-background px-3 text-base font-normal text-foreground'
 
-function TarjetaRol({ icono, titulo, texto, children }: { icono: ReactNode; titulo: string; texto: string; children: ReactNode }) {
+/** Color del ícono de cada rol, como en el prototipo: entidad noche, beneficiario azul, punto ámbar. */
+const COLOR_ROL = {
+  entidad: 'bg-noche text-background',
+  beneficiario: 'bg-primary text-primary-foreground',
+  punto: 'bg-ambar text-noche',
+}
+
+function TarjetaRol({
+  icono,
+  color,
+  titulo,
+  texto,
+  children,
+}: {
+  icono: ReactNode
+  color: keyof typeof COLOR_ROL
+  titulo: string
+  texto: string
+  children: ReactNode
+}) {
   return (
-    <section className="flex min-w-0 flex-[1_1_300px] flex-col gap-4 rounded-xl border border-border bg-card p-6 sm:p-7">
-      <div aria-hidden className="flex size-12 items-center justify-center rounded-xl bg-secondary [&_svg]:size-6">
+    <section className="flex min-w-0 flex-[1_1_300px] flex-col gap-4 rounded-2xl border border-border bg-card p-6 sm:p-7">
+      <div aria-hidden className={cn('flex size-12 items-center justify-center rounded-xl [&_svg]:size-6', COLOR_ROL[color])}>
         {icono}
       </div>
       <h2 className="m-0 text-2xl font-bold">{titulo}</h2>
@@ -86,9 +106,19 @@ export default function Entrada() {
   const cargando = !datos && !error
 
   return (
-    <div className="flex min-h-dvh flex-col bg-muted">
+    <div className="flex min-h-dvh flex-col bg-background">
       <Encabezado variante="entrada" />
-      <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 pt-10 pb-12 sm:px-6 sm:pt-14">
+      <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 pt-8 pb-12 sm:px-6 sm:pt-12">
+        <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:gap-6 sm:text-left">
+          <img src="/marca/tatu-logo-claro.svg" alt="" className="size-28 shrink-0 sm:size-32" />
+          <div className="flex flex-col gap-2">
+            <p className="marca m-0 text-[50px] sm:text-[64px]">Tatú</p>
+            <p className="m-0 max-w-[420px] text-lg leading-snug">
+              La plata del subsidio sale de la cuenta de la entidad solo cuando alguien cobra.
+            </p>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-2">
           <Titulo className="text-[32px] sm:text-[40px]">¿Con qué rol entras?</Titulo>
           <p className="m-0 max-w-[640px] text-lg text-muted-foreground">
@@ -101,7 +131,7 @@ export default function Entrada() {
         <ComoProbar />
 
         <div className="flex flex-wrap items-stretch gap-6" aria-busy={cargando}>
-          <TarjetaRol icono={<Building2 />} titulo="Entidad" texto="Conecta el subsidio, apruébalo una vez en tu banco y sigue lo cobrado.">
+          <TarjetaRol icono={<Building2 />} color="entidad" titulo="Entidad" texto="Conecta el subsidio, apruébalo una vez en tu banco y sigue lo cobrado.">
             <label className="flex flex-col gap-1.5 text-sm font-bold">
               Programa
               <select className={claseSelect} value={programaId} onChange={(e) => setProgramaId(e.target.value)} disabled={cargando}>
@@ -118,7 +148,7 @@ export default function Entrada() {
             </Button>
           </TarjetaRol>
 
-          <TarjetaRol icono={<User />} titulo="Beneficiario" texto="Mira cuánto tienes y cóbralo a tu wallet o en un punto.">
+          <TarjetaRol icono={<User />} color="beneficiario" titulo="Beneficiario" texto="Mira cuánto tienes y cóbralo a tu wallet o en un punto.">
             {datos && datos.beneficiarios.length === 0 ? (
               <SinRegistros texto="Todavía no hay personas registradas." boton="Registrar personas" />
             ) : (
@@ -145,6 +175,7 @@ export default function Entrada() {
 
           <TarjetaRol
             icono={<Store />}
+            color="punto"
             titulo="Punto de retiro"
             texto="Digita la cédula, el beneficiario confirma con su PIN y recuperas el efectivo al instante."
           >

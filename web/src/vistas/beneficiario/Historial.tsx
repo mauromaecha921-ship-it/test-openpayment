@@ -7,6 +7,7 @@ import { MarcoBeneficiario } from '@/componentes/Marcos'
 import { textoMonto } from '@/componentes/Monto'
 import { Titulo } from '@/componentes/Titulo'
 import { formatFechaHora } from '@/lib/textos'
+import { cn } from '@/lib/utils'
 
 import { useResumen } from './useResumen'
 
@@ -16,7 +17,10 @@ export function TarjetaCobrado({ cobro: c }: { cobro: CobroResumen }) {
   return (
     <section className="flex flex-col gap-3.5 rounded-2xl border-2 border-foreground p-5">
       <div className="flex items-center gap-2.5">
-        <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <span
+          aria-hidden
+          className={cn('flex size-9 shrink-0 items-center justify-center rounded-full text-primary-foreground', pagado ? 'bg-pagado-relleno' : 'bg-primary')}
+        >
           {pagado ? <Check className="size-5" strokeWidth={3} /> : <LoaderCircle className="size-5 animate-spin motion-reduce:animate-none" />}
         </span>
         <h2 className="m-0 text-xl font-bold">{pagado ? 'Tu subsidio ya fue cobrado' : 'Tu cobro se está pagando'}</h2>

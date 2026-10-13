@@ -12,8 +12,8 @@ const pastilla = 'rounded-full border px-3 py-1 text-sm whitespace-nowrap'
 export function Logo({ compacto = false }: { compacto?: boolean }) {
   return (
     <Link to="/" className="flex min-h-11 items-center gap-2.5 text-foreground no-underline hover:text-foreground" aria-label="Tatú, ir a la entrada">
-      <span aria-hidden className={cn('rounded-md bg-primary', compacto ? 'size-6 md:size-7' : 'size-7')} />
-      <span aria-hidden className={cn('font-bold', compacto ? 'text-lg md:text-xl' : 'text-xl')}>
+      <img src="/marca/tatu-icono-pequeno.svg" alt="" aria-hidden className={cn('shrink-0', compacto ? 'size-8 md:size-9' : 'size-9')} />
+      <span aria-hidden className={cn('marca', compacto ? 'text-xl md:text-2xl' : 'text-2xl')}>
         Tatú
       </span>
     </Link>

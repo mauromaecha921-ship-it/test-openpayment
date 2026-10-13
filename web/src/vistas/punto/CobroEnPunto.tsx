@@ -153,7 +153,7 @@ function Pagado({ cobro: c }: { cobro: Cobro }) {
   return (
     <>
       <div role="status" className="flex flex-col items-center gap-2.5 pt-1 text-center">
-        <span aria-hidden className="flex size-24 items-center justify-center rounded-full bg-pagado text-primary-foreground">
+        <span aria-hidden className="flex size-24 items-center justify-center rounded-full bg-pagado-relleno text-primary-foreground">
           <Check className="size-12" strokeWidth={3} />
         </span>
         <Titulo className="text-[34px]">Pagado</Titulo>

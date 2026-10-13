@@ -6,10 +6,10 @@ import { cn } from '@/lib/utils'
 import { Encabezado } from './Encabezado'
 import { NavInferior, SECCIONES_BENEFICIARIO, SECCIONES_PUNTO, type Seccion } from './NavInferior'
 
-/** Entidad, en escritorio: fondo gris y contenido de hasta 1200 px. */
+/** Entidad, en escritorio: fondo arena y contenido de hasta 1200 px. */
 export function MarcoEntidad({ entidad, children }: { entidad?: string; children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-muted text-foreground">
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <Encabezado variante="escritorio" quien={entidad ?? 'Entidad de prueba'} rol="Entidad" />
       <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 pt-8 pb-12 sm:px-6">{children}</main>
     </div>
