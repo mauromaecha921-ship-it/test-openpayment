@@ -1,46 +1,57 @@
-import { Clock, Wallet } from 'lucide-react'
-import { useState } from 'react'
+import { Clock, Hand, TriangleAlert, Wallet } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 
 import { api, ErrorApi, mensajeDeError } from '@/api/client'
 import { useConfig } from '@/api/config'
 import type { Cobro } from '@/api/tipos'
 import { usePolling, type Consulta } from '@/api/usePolling'
-import { Bloque, Cargando, ErrorCarga, ListaDatos, MensajeError } from '@/componentes/Comun'
-import { CuentaRegresiva, useCuentaRegresiva } from '@/componentes/CuentaRegresiva'
+import { Cargando, ErrorCarga } from '@/componentes/Comun'
+import { useCuentaRegresiva } from '@/componentes/CuentaRegresiva'
 import { EsperaPagando } from '@/componentes/EsperaPagando'
-import { MarcoPunto } from '@/componentes/Marcos'
+import { PantallaPuntoEscritorio } from '@/componentes/MarcosProto'
 import { textoMonto } from '@/componentes/Monto'
-import { PasosCobroPunto } from '@/componentes/PasosCobroPunto'
-import { TatuPagado } from '@/componentes/TatuAnimado'
-import { TarjetaRechazo } from '@/componentes/TarjetaRechazo'
+import {
+  Boton,
+  BotonEnlace,
+  BotonVolver,
+  CabeceraCelular,
+  Caja,
+  ChipCobro,
+  CirculoCheck,
+  claseEnlaceSuave,
+  FilaDato,
+  PantallaCelular,
+  TituloPantalla,
+} from '@/componentes/Proto'
 import { PuntosPin, TecladoPin } from '@/componentes/TecladoPin'
-import { Titulo } from '@/componentes/Titulo'
-import { Button } from '@/componentes/ui/button'
-import { esEstadoFinal, pantallaDelCobro } from '@/lib/pantallas'
-import { formatSegundos, plural } from '@/lib/textos'
+import { esEstadoFinal, inicioPagando, pantallaDelCobro } from '@/lib/pantallas'
+import { explicacionMotivo, formatCuentaRegresiva, formatSegundos, MOTIVO_CORTO } from '@/lib/textos'
+import { useEscritorio } from '@/lib/useEscritorio'
 import { personaTexto } from '@/vistas/entidad/Tablero'
-import { inicioPagando } from '@/vistas/beneficiario/CobroPagado'
 
-/** Pantallas 15 a 19 en una sola ruta: la vista sale del estado del cobro que manda la API. */
+// Prototipo P2 a P7 (celular) y PD2 a PD4 (computador), en una sola ruta: la pantalla sale del
+// estado del cobro que manda la API.
+
 export default function CobroEnPunto() {
   const { id = '' } = useParams()
   const config = useConfig()
+  const escritorio = useEscritorio()
   const consulta = usePolling(() => api.get<Cobro>(`/cobros/${id}`), config.pollIntervaloMs, (c) => !c || !esEstadoFinal(c.estado), { clave: id })
   const c = consulta.datos
   const pantalla = pantallaDelCobro(c?.estado)
 
+  if (!c) {
+    const carga = consulta.error ? <ErrorCarga mensaje={consulta.error} reintentar={() => void consulta.recargar()} /> : <Cargando />
+    return escritorio ? <PantallaPuntoEscritorio>{carga}</PantallaPuntoEscritorio> : <PantallaCelular>{carga}</PantallaCelular>
+  }
   return (
-    <MarcoPunto nav={false}>
-      {!c && consulta.error && <ErrorCarga mensaje={consulta.error} reintentar={() => void consulta.recargar()} />}
-      {pantalla === 'cargando' && !consulta.error && <Cargando />}
-      <div aria-live="polite" className="flex flex-1 flex-col gap-[18px]">
-        {c && pantalla === 'confirmarPin' && <ConfirmarPin cobro={c} consulta={consulta} />}
-        {c && pantalla === 'pagando' && <Pagando cobro={c} />}
-        {c && pantalla === 'pagado' && <Pagado cobro={c} />}
-        {c && pantalla === 'rechazo' && <Rechazo cobro={c} />}
-      </div>
-    </MarcoPunto>
+    <div aria-live="polite">
+      {pantalla === 'confirmarPin' && <ConfirmarPin cobro={c} consulta={consulta} escritorio={escritorio} />}
+      {pantalla === 'pagando' && <Pagando cobro={c} escritorio={escritorio} />}
+      {pantalla === 'pagado' && <Pagado cobro={c} escritorio={escritorio} />}
+      {pantalla === 'rechazo' && <Rechazo cobro={c} escritorio={escritorio} />}
+    </div>
   )
 }
 
@@ -51,15 +62,33 @@ function textoCompra(c: Cobro): string {
   return resto === '0' ? 'el cliente no paga nada más' : `cobra ${textoMonto(resto, c.moneda)} al cliente`
 }
 
-function NuevoCobroBoton() {
+/** «Nuevo cobro» e «Ir al inicio», abajo en el celular. */
+function AccionesFinales() {
   return (
-    <Button asChild size="lg" className="mt-auto min-h-[60px] text-xl md:mt-2">
-      <Link to="/punto">Nuevo cobro</Link>
-    </Button>
+    <div className="mt-auto flex flex-col gap-1">
+      <BotonEnlace to="/punto/nuevo">Nuevo cobro</BotonEnlace>
+      <Link to="/punto" className={claseEnlaceSuave()}>
+        Ir al inicio
+      </Link>
+    </div>
   )
 }
 
-function ConfirmarPin({ cobro: c, consulta }: { cobro: Cobro; consulta: Consulta<Cobro> }) {
+/** En el computador, «Nuevo cobro» en su tarjeta, con una nota debajo. */
+function AccionesEscritorio({ nota }: { nota: string }) {
+  return (
+    <Caja grande className="flex-[1_1_300px]">
+      <BotonEnlace to="/punto" medio className="min-h-14 w-full">
+        Nuevo cobro
+      </BotonEnlace>
+      <span className="text-[15px] text-muted-foreground">{nota}</span>
+    </Caja>
+  )
+}
+
+// ── PIN (P2, P3, PD2) ─────────────────────────────────────────────────────────
+
+function ConfirmarPin({ cobro: c, consulta, escritorio }: { cobro: Cobro; consulta: Consulta<Cobro>; escritorio: boolean }) {
   // El PIN solo vive aquí: se envía una vez y se borra.
   const [pin, setPin] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -67,6 +96,7 @@ function ConfirmarPin({ cobro: c, consulta }: { cobro: Cobro; consulta: Consulta
   const restante = useCuentaRegresiva(c.confirmarAntesDe, () => void consulta.recargar())
   const nombre = c.persona.nombre ?? 'el beneficiario'
   const vencido = restante === 0
+  const monto = textoMonto(c.monto, c.moneda)
 
   const confirmar = async () => {
     if (pin.length !== 4) return
@@ -84,6 +114,7 @@ function ConfirmarPin({ cobro: c, consulta }: { cobro: Cobro; consulta: Consulta
     }
   }
 
+  /** Volver o «Cancelar cobro»: se cancela para que la cédula no quede con un cobro en curso. */
   const cancelar = async () => {
     setEnviando(true)
     try {
@@ -95,131 +126,256 @@ function ConfirmarPin({ cobro: c, consulta }: { cobro: Cobro; consulta: Consulta
     }
   }
 
+  const reloj = restante !== null && (
+    <span className={escritorio ? 'inline-flex items-center gap-1.5 text-[17px] font-bold' : 'inline-flex items-center gap-[5px] text-[15px] font-bold'}>
+      <Clock aria-hidden className={escritorio ? 'size-[18px]' : 'size-4'} strokeWidth={2} />
+      <time aria-label={`${formatCuentaRegresiva(restante)} para confirmar`}>{formatCuentaRegresiva(restante)}</time>
+    </span>
+  )
+  const alerta = error && (
+    <div role="alert" className="flex items-center gap-2.5 rounded-xl bg-rechazo-fondo px-3 py-2.5 text-base font-bold text-rechazo">
+      <TriangleAlert aria-hidden className="size-5 flex-none" />
+      {error.endsWith('.') ? error : `${error}.`}
+    </div>
+  )
+  const titulo = c.persona.nombre ? `${c.persona.nombre}, digita tu PIN` : 'Digita tu PIN'
+  const queCubre = c.canal === 'compra' ? `${c.programa.nombre} · el bono cubre` : `${c.programa.nombre} · valor completo`
+
+  if (escritorio) {
+    return (
+      <PantallaPuntoEscritorio>
+        <BotonVolver onClick={() => void cancelar()}>Pagos de {nombre}</BotonVolver>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[15px] text-muted-foreground">{personaTexto(c)}</span>
+          <TituloPantalla className="text-[34px]">Confirmar con PIN</TituloPantalla>
+        </div>
+        <div className="flex flex-wrap items-stretch gap-6">
+          <Caja grande className="flex-[1_1_360px]">
+            <span className="text-base font-semibold text-muted-foreground">{c.canal === 'compra' ? 'El bono cubre' : 'Pago disponible'}</span>
+            <span className="cifra text-[60px] leading-none [overflow-wrap:anywhere]">{monto}</span>
+            <span className="text-base">{c.programa.nombre}</span>
+            <span className="text-[15px] text-muted-foreground">{c.canal === 'compra' ? textoCompra(c) : 'Se entrega el valor completo.'}</span>
+          </Caja>
+          <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-[18px] rounded-[20px] bg-ambar p-7 text-noche">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="titulo-proto text-[26px]">{titulo}</span>
+              {reloj}
+            </div>
+            <PuntosPin largo={pin.length} grande error={Boolean(error)} />
+            <span className="text-base leading-[1.45]">Pásale el teclado o gira la pantalla hacia {nombre}. Mientras digita, no mires el PIN.</span>
+            {alerta}
+            <TecladoPin onChange={setPin} deshabilitado={enviando || vencido} oculto />
+            <div className="mt-1 flex flex-wrap gap-3">
+              <Boton medio className="min-w-[200px]" onClick={() => void confirmar()} disabled={pin.length !== 4 || enviando || vencido}>
+                {enviando ? 'Confirmando…' : 'Confirmar'}
+              </Boton>
+              <Boton medio variante="contorno" className="border-noche text-noche hover:bg-[#e5951a] hover:text-noche" onClick={() => void cancelar()} disabled={enviando}>
+                Cancelar cobro
+              </Boton>
+            </div>
+          </div>
+        </div>
+      </PantallaPuntoEscritorio>
+    )
+  }
+
   return (
-    <>
-      <PasosCobroPunto paso="PIN" />
-      <section className="flex flex-col gap-1 rounded-2xl border border-border bg-card px-5 py-4">
-        <span className="text-[15px] text-muted-foreground">
-          {c.canal === 'compra' ? `${c.programa.nombre} · el bono cubre` : `${c.programa.nombre} · valor completo`}
-        </span>
-        <span className="cifra text-[36px]">{textoMonto(c.monto, c.moneda)}</span>
-        <span className="text-[15px]">{personaTexto(c)}</span>
-        {c.canal === 'compra' && <span className="text-sm text-tenue">{textoCompra(c)}</span>}
-      </section>
-
-      <span className="-mb-2 text-center text-sm text-muted-foreground">Entrega el celular a {nombre}</span>
-      <Bloque tono="ambar" className="gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-          <Titulo className="text-[22px]">{c.persona.nombre ? `${c.persona.nombre}, digita tu PIN` : 'Digita tu PIN'}</Titulo>
-          <span className="inline-flex items-center gap-1.5 text-[15px] font-bold">
-            <Clock aria-hidden className="size-4" />
-            <CuentaRegresiva segundos={restante} />
-          </span>
+    <PantallaCelular className="gap-[11px]">
+      <CabeceraCelular alVolver={() => void cancelar()} etiquetaVolver="Cancelar y volver" titulo="Confirmar con PIN" subtitulo={personaTexto(c)} />
+      <div className="flex flex-col gap-0.5 rounded-[18px] border-[1.5px] border-border bg-card px-4 py-3">
+        <span className="text-sm font-semibold text-muted-foreground">{queCubre}</span>
+        <span className="cifra text-[34px] leading-[1.05] [overflow-wrap:anywhere]">{monto}</span>
+        {c.canal === 'compra' && <span className="text-sm text-muted-foreground">{textoCompra(c)}</span>}
+      </div>
+      <div className="flex flex-col gap-2.5 rounded-[18px] bg-ambar p-3.5 text-noche">
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="m-0 text-lg font-extrabold">{titulo}</h1>
+          {reloj}
         </div>
-        <div className="flex justify-center py-1">
-          <PuntosPin largo={pin.length} />
-        </div>
-        {c.intentosRestantes !== null && (
-          <span className="text-center text-[15px]">Te {c.intentosRestantes === 1 ? 'queda' : 'quedan'} {plural(c.intentosRestantes, 'intento')}</span>
-        )}
-      </Bloque>
-      {error && (
-        <div className="rounded-xl bg-rechazo-fondo px-4 py-3">
-          <MensajeError>{error}</MensajeError>
-        </div>
-      )}
-
+        <PuntosPin largo={pin.length} error={Boolean(error)} />
+      </div>
+      {alerta}
       <TecladoPin onChange={setPin} deshabilitado={enviando || vencido} />
-
-      <Button size="lg" onClick={() => void confirmar()} disabled={pin.length !== 4 || enviando || vencido}>
+      <Boton onClick={() => void confirmar()} disabled={pin.length !== 4 || enviando || vencido}>
         {enviando ? 'Confirmando…' : 'Confirmar'}
-      </Button>
-      <Button variant="link" className="min-h-11 self-center text-base font-normal text-enlace underline" onClick={() => void cancelar()} disabled={enviando}>
+      </Boton>
+      <button type="button" onClick={() => void cancelar()} disabled={enviando} className={`${claseEnlaceSuave()} border-0 bg-transparent`}>
         Cancelar cobro
-      </Button>
-    </>
+      </button>
+    </PantallaCelular>
   )
 }
 
-function Pagando({ cobro: c }: { cobro: Cobro }) {
+// ── Pagando (P4) ──────────────────────────────────────────────────────────────
+
+function Pagando({ cobro: c, escritorio }: { cobro: Cobro; escritorio: boolean }) {
+  const contenido = (
+    <EsperaPagando desde={inicioPagando(c.eventos) ?? c.actualizado} paraPunto cobro={c}>
+      Estamos pagando {textoMonto(c.monto, c.moneda)} desde la cuenta del programa a la billetera de tu {c.canal === 'compra' ? 'comercio' : 'tienda'}.
+    </EsperaPagando>
+  )
+  if (escritorio) {
+    return (
+      <PantallaPuntoEscritorio>
+        <BotonVolver to="/punto">Inicio</BotonVolver>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[15px] text-muted-foreground">{personaTexto(c)}</span>
+          <TituloPantalla className="text-[34px]">Pagando</TituloPantalla>
+        </div>
+        <div className="flex max-w-[640px] flex-col gap-4">{contenido}</div>
+      </PantallaPuntoEscritorio>
+    )
+  }
   return (
-    <>
+    <PantallaCelular>
+      <CabeceraCelular volver="/punto" etiquetaVolver="Volver al inicio; el cobro sigue en curso" titulo="Pagando" subtitulo={personaTexto(c)} />
       <h1 className="sr-only">Pagando</h1>
-      <PasosCobroPunto paso="Resultado" />
-      <EsperaPagando desde={inicioPagando(c.eventos) ?? c.actualizado} paraPunto cobro={c}>
-        Estamos pagando {textoMonto(c.monto, c.moneda)} desde la cuenta del programa a la billetera de tu {c.canal === 'compra' ? 'comercio' : 'tienda'}.
-      </EsperaPagando>
-      <ListaDatos
-        className="rounded-2xl border border-border bg-card px-[18px] py-1"
-        filas={[
-          ['Persona', personaTexto(c)],
-          ['Monto', textoMonto(c.monto, c.moneda)],
-          ['Referencia', <span key="r" className="mono">{c.referencia}</span>],
-        ]}
-      />
-    </>
+      {contenido}
+      <p className="m-0 mt-auto text-[15px] leading-[1.45] text-muted-foreground">Si vuelves al inicio, el cobro sigue en curso y lo encuentras en Cobros de hoy.</p>
+    </PantallaCelular>
   )
 }
 
-function Pagado({ cobro: c }: { cobro: Cobro }) {
+// ── Pagado (P5, PD3) ──────────────────────────────────────────────────────────
+
+function Reembolso({ cobro: c, grande = false }: { cobro: Cobro; grande?: boolean }) {
   const monto = textoMonto(c.monto, c.moneda)
   return (
-    <>
-      <PasosCobroPunto paso="Resultado" />
-      <Bloque tono="pagado" role="status" className="gap-1.5">
-        <TatuPagado medallon className="mb-2 size-[88px]" />
-        <Titulo className="text-[40px] sm:text-[44px]">Pagado</Titulo>
-        <p className="m-0 text-lg font-bold">
-          {c.canal === 'compra' ? `El bono cubrió ${monto}. ${textoCompra(c)}` : `Entrega a ${c.persona.nombre ?? 'la persona'}`}
-        </p>
-        {c.canal !== 'compra' && <p className="cifra m-0 text-[40px] sm:text-[44px]">{monto}</p>}
-        <span className="text-[15px]">
-          Referencia <span className="mono">{c.referencia}</span>
-          {c.segundosHastaPagado !== null && ` · en ${formatSegundos(c.segundosHastaPagado)}`}
+    <div className={`flex items-center gap-3 ${grande ? '' : 'rounded-[18px] border-[1.5px] border-border bg-card px-4 py-3.5'}`}>
+      <span aria-hidden className={`flex flex-none items-center justify-center rounded-xl bg-bloque text-bloque-texto ${grande ? 'size-12' : 'size-11'}`}>
+        <Wallet className="size-[22px]" strokeWidth={2} />
+      </span>
+      <div className="flex flex-col gap-0.5">
+        <span className={grande ? 'text-[19px] font-extrabold' : 'text-[17px] font-extrabold'}>{c.canal === 'compra' ? 'El pago del bono ya llegó' : 'Tu reembolso ya llegó'}</span>
+        <span className={`text-muted-foreground ${grande ? 'text-base' : 'text-[15px]'}`}>
+          {monto} en la billetera de tu {c.canal === 'compra' ? 'comercio' : 'tienda'}
+          {c.segundosHastaPagado !== null ? `, ${formatSegundos(c.segundosHastaPagado)} después del PIN` : ''}.
         </span>
-      </Bloque>
-      <section className="flex items-start gap-3.5 rounded-2xl border border-border bg-card p-4">
-        <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-bloque text-ambar">
-          <Wallet className="size-[22px]" />
-        </span>
-        <div className="flex min-w-0 flex-col gap-1">
-          <strong className="text-lg">{c.canal === 'compra' ? 'El pago del bono ya llegó' : 'Tu reembolso ya llegó'}</strong>
-          <span className="text-muted-foreground">
-            Recibiste {monto} en tu billetera
-            {c.segundosHastaPagado !== null ? ` ${formatSegundos(c.segundosHastaPagado)} después del PIN` : ''}.
-          </span>
-          <span className="mono text-[13px] text-muted-foreground [overflow-wrap:anywhere]">
-            {c.punto?.billeteraCorta} · ref. {c.referencia}
-          </span>
-        </div>
-      </section>
-      <NuevoCobroBoton />
-    </>
+      </div>
+    </div>
   )
 }
 
-function Rechazo({ cobro: c }: { cobro: Cobro }) {
-  const codigo = c.motivo?.codigo
+function Pagado({ cobro: c, escritorio }: { cobro: Cobro; escritorio: boolean }) {
+  const monto = textoMonto(c.monto, c.moneda)
+  const aQuien = c.canal === 'compra' ? `El bono cubrió ${monto}` : `Entrega a ${c.persona.nombre ?? 'la persona'}`
+  if (escritorio) {
+    return (
+      <PantallaPuntoEscritorio>
+        <BotonVolver to="/punto">Inicio</BotonVolver>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[15px] text-muted-foreground">{personaTexto(c)}</span>
+          <TituloPantalla className="text-[34px]">Resultado del cobro</TituloPantalla>
+        </div>
+        <div role="status" className="flex flex-wrap items-center gap-7 rounded-3xl bg-pagado-relleno p-8 text-white">
+          <CirculoCheck grande />
+          <div className="flex flex-[1_1_360px] flex-col gap-1.5">
+            <span className="cifra text-[44px] leading-none">Pagado</span>
+            <span className="text-xl font-semibold">{c.canal === 'compra' ? textoCompra(c) : aQuien}</span>
+          </div>
+          <div className="flex flex-col items-start gap-1.5">
+            <span className="cifra text-[72px] leading-none [overflow-wrap:anywhere] max-sm:text-5xl">{monto}</span>
+            <span className="text-[17px]">Referencia {c.referencia}</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-start gap-6">
+          <Caja grande className="flex-[999_1_520px]">
+            <Reembolso cobro={c} grande />
+          </Caja>
+          <AccionesEscritorio nota="El cobro ya aparece en Cobros de hoy." />
+        </div>
+      </PantallaPuntoEscritorio>
+    )
+  }
   return (
-    <>
-      <PasosCobroPunto paso="Resultado" />
-      <TarjetaRechazo
-        cobro={c}
-        paraPunto
-        datos={
-          <ListaDatos
-            className="rounded-2xl border border-border bg-card px-[18px] py-1"
-            filas={[
-              ['Cédula', personaTexto(c)],
-              ['Programa', `${c.programa.nombre}${codigo === 'ProgramaCerrado' ? ' · Cerrado' : ''}`],
-              c.estado === 'Fallido' && ['Monto', `${textoMonto(c.monto, c.moneda)}${c.persona.novedad ? ' · retroactivo' : ''}`],
-              c.estado === 'Fallido' && ['Referencia', <span key="r" className="mono">{c.referencia}</span>],
-              [c.estado === 'Fallido' ? 'Cobro' : 'Intento', c.estado],
-            ]}
-          />
-        }
-      />
-      <NuevoCobroBoton />
-    </>
+    <PantallaCelular>
+      <CabeceraCelular volver="/punto" etiquetaVolver="Volver al inicio" titulo="Resultado del cobro" subtitulo={personaTexto(c)} />
+      <div role="status" className="flex flex-col gap-1.5 rounded-[22px] bg-pagado-relleno p-5 text-white">
+        <CirculoCheck />
+        <TituloPantalla className="mt-1.5 text-[38px] leading-[1.05]">Pagado</TituloPantalla>
+        <span className="text-lg font-semibold">{aQuien}</span>
+        {c.canal === 'compra' ? (
+          <span className="text-base">{textoCompra(c)}</span>
+        ) : (
+          <span className="cifra text-[44px] leading-none [overflow-wrap:anywhere]">{monto}</span>
+        )}
+        <span className="mt-1 text-base">Referencia {c.referencia}</span>
+      </div>
+      <Reembolso cobro={c} />
+      <AccionesFinales />
+    </PantallaCelular>
+  )
+}
+
+// ── Rechazado o fallido (P6, P7, PD4) ─────────────────────────────────────────
+
+function BloqueNoEntregues({ cobro: c, grande = false }: { cobro: Cobro; grande?: boolean }) {
+  const compra = c.canal === 'compra'
+  return (
+    <div role="alert" className={`flex items-center bg-rechazo-relleno text-white ${grande ? 'flex-wrap gap-6 rounded-3xl p-8' : 'gap-3.5 rounded-[20px] p-[18px]'}`}>
+      <Hand aria-hidden className={grande ? 'size-14 flex-none' : 'size-9 flex-none'} strokeWidth={2} />
+      <div className={`flex flex-col ${grande ? 'flex-[1_1_420px] gap-1.5' : 'gap-0.5'}`}>
+        <span className={grande ? 'cifra text-[40px] leading-[1.05]' : 'text-2xl font-extrabold'}>{compra ? 'El bono no se aplicó' : 'No entregues efectivo'}</span>
+        <span className={grande ? 'text-xl' : 'text-base'}>{compra ? 'Cobra la compra completa por otro medio.' : 'No se movió dinero.'}</span>
+      </div>
+    </div>
+  )
+}
+
+function Rechazo({ cobro: c, escritorio }: { cobro: Cobro; escritorio: boolean }) {
+  const codigo = c.motivo?.codigo
+  const titulo = c.motivo?.mensaje ?? (c.estado === 'Fallido' ? 'El pago falló' : 'El cobro fue rechazado')
+  const datos: Array<[string, ReactNode]> = [
+    ['Persona', personaTexto(c)],
+    ['Programa', `${c.programa.nombre}${codigo === 'ProgramaCerrado' ? ' · Cerrado' : ''}`],
+  ]
+  if (c.monto) datos.push(['Valor solicitado', `${textoMonto(c.monto, c.moneda)}${c.persona.novedad ? ' · retroactivo' : ''}`])
+  if (c.motivo) datos.push(['Motivo', MOTIVO_CORTO[c.motivo.codigo] ?? c.motivo.mensaje])
+  if (c.estado === 'Fallido') datos.push(['Referencia', c.referencia])
+  const chip = <ChipCobro estado={c.estado} motivo={c.motivo} conMotivo grande />
+
+  if (escritorio) {
+    return (
+      <PantallaPuntoEscritorio>
+        <BotonVolver to="/punto">Inicio</BotonVolver>
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[15px] text-muted-foreground">{personaTexto(c)}</span>
+            <TituloPantalla className="text-[34px]">Resultado del cobro</TituloPantalla>
+          </div>
+          {chip}
+        </div>
+        <p className="m-0 text-lg font-bold">{titulo}</p>
+        <BloqueNoEntregues cobro={c} grande />
+        <div className="flex flex-wrap items-start gap-6">
+          <Caja grande className="flex-[999_1_520px]">
+            <h2 className="m-0 text-[21px] font-extrabold">Este intento</h2>
+            {datos.map(([e, v]) => (
+              <FilaDato key={e} etiqueta={e}>
+                {v}
+              </FilaDato>
+            ))}
+          </Caja>
+          <AccionesEscritorio nota={explicacionMotivo(codigo, c.estado)} />
+        </div>
+      </PantallaPuntoEscritorio>
+    )
+  }
+  return (
+    <PantallaCelular className="gap-3.5">
+      <CabeceraCelular volver="/punto" etiquetaVolver="Volver al inicio" titulo="Resultado del cobro" subtitulo={personaTexto(c)} />
+      {chip}
+      <TituloPantalla className="text-[27px]">{titulo}</TituloPantalla>
+      <p className="m-0 text-[17px] leading-[1.45]">{explicacionMotivo(codigo, c.estado)}</p>
+      <BloqueNoEntregues cobro={c} />
+      <Caja>
+        {datos.map(([e, v]) => (
+          <FilaDato key={e} etiqueta={e}>
+            {v}
+          </FilaDato>
+        ))}
+      </Caja>
+      <AccionesFinales />
+    </PantallaCelular>
   )
 }

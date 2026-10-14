@@ -151,3 +151,33 @@ export function plural(n: number, singular: string, pluralTexto = `${singular}s`
 export function formatSegundos(s: number): string {
   return `${s.toLocaleString('es-CO', { maximumFractionDigits: 1 })} s`
 }
+
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+
+function partes(fechaIso: string) {
+  const [a, m, d] = fechaIso.slice(0, 10).split('-').map(Number)
+  return { a, m: m - 1, d }
+}
+
+/** Vigencia como en el prototipo: corta «1 al 31 oct 2026» o larga «1 al 31 de octubre de 2026». */
+export function formatVigencia(inicio: string, fin: string, larga = false): string {
+  const i = partes(inicio)
+  const f = partes(fin)
+  const mes = (m: number) => (larga ? MESES[m] : MESES[m].slice(0, 3))
+  const de = larga ? ' de ' : ' '
+  if (i.a === f.a && i.m === f.m) return `${i.d} al ${f.d}${de}${mes(f.m)}${de}${f.a}`
+  if (i.a === f.a) return `${i.d}${de}${mes(i.m)} al ${f.d}${de}${mes(f.m)}${de}${f.a}`
+  return `${i.d}${de}${mes(i.m)}${de}${i.a} al ${f.d}${de}${mes(f.m)}${de}${f.a}`
+}
+
+/** «31 de octubre» (sin el año), para «Cóbralo antes del 31 de octubre». */
+export function formatDiaMes(fechaIso: string): string {
+  const p = partes(fechaIso)
+  return `${p.d} de ${MESES[p.m]}`
+}
+
+/** «31 oct», para «hasta el 31 oct». */
+export function formatDiaMesCorto(fechaIso: string): string {
+  const p = partes(fechaIso)
+  return `${p.d} ${MESES[p.m].slice(0, 3)}`
+}

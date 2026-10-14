@@ -1,9 +1,10 @@
 import { lazy, Suspense, type ReactNode } from 'react'
-import { Link, Navigate, Route, Routes } from 'react-router'
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router'
 
 import { API_SIMULADA } from '@/api/client'
 import { Cargando } from '@/componentes/Comun'
 import { MarcoRol } from '@/componentes/Marcos'
+import { PanelPrueba } from '@/componentes/PanelPrueba'
 import { Titulo } from '@/componentes/Titulo'
 import { RolProvider, useRol } from '@/contexto/Rol'
 import CobrarCuenta from '@/vistas/beneficiario/CobrarCuenta'
@@ -13,10 +14,12 @@ import DondeUsarBono from '@/vistas/beneficiario/DondeUsarBono'
 import EnlazarCuenta from '@/vistas/beneficiario/EnlazarCuenta'
 import Historial from '@/vistas/beneficiario/Historial'
 import Inicio from '@/vistas/beneficiario/Inicio'
+import Subsidio from '@/vistas/beneficiario/Subsidio'
 import AprobarEnBanco from '@/vistas/entidad/AprobarEnBanco'
 import CerrarPrograma from '@/vistas/entidad/CerrarPrograma'
 import ConectarPrograma from '@/vistas/entidad/ConectarPrograma'
 import DetalleCobro from '@/vistas/entidad/DetalleCobro'
+import TusProgramas from '@/vistas/entidad/TusProgramas'
 import VistaPrograma from '@/vistas/entidad/VistaPrograma'
 import Entrada from '@/vistas/Entrada'
 import Equipo from '@/vistas/Equipo'
@@ -24,6 +27,7 @@ import Estado from '@/vistas/Estado'
 import CobroEnPunto from '@/vistas/punto/CobroEnPunto'
 import MiCaja from '@/vistas/punto/MiCaja'
 import InicioPunto from '@/vistas/punto/InicioPunto'
+import NuevoCobro from '@/vistas/punto/NuevoCobro'
 
 // Solo existe en el modo «API simulada»: hace las veces de la Test Wallet.
 const BancoSimulado = lazy(() => import('@/api/simulada/BancoSimulado'))
@@ -46,6 +50,12 @@ function NoExiste() {
   )
 }
 
+/** El panel de prueba en todas las vistas, menos en el banco simulado (imita otro banco). */
+function PanelSiNoEsBanco() {
+  const { pathname } = useLocation()
+  return pathname.startsWith('/simulada/') ? null : <PanelPrueba />
+}
+
 export default function App() {
   return (
     <RolProvider>
@@ -54,6 +64,7 @@ export default function App() {
         <Route path="/equipo" element={<Equipo />} />
         <Route path="/estado" element={<Estado />} />
 
+        <Route path="/entidad" element={<TusProgramas />} />
         <Route path="/entidad/programas/nuevo" element={<ConectarPrograma />} />
         <Route path="/entidad/programas/:id/editar" element={<ConectarPrograma />} />
         <Route path="/entidad/programas/:id/aprobar" element={<AprobarEnBanco />} />
@@ -62,6 +73,7 @@ export default function App() {
         <Route path="/entidad/cobros/:id" element={<DetalleCobro />} />
 
         <Route path="/beneficiario" element={<ConRol rol="beneficiario"><Inicio /></ConRol>} />
+        <Route path="/beneficiario/subsidio/:programaId" element={<ConRol rol="beneficiario"><Subsidio /></ConRol>} />
         <Route path="/beneficiario/cuenta" element={<ConRol rol="beneficiario"><EnlazarCuenta /></ConRol>} />
         <Route path="/beneficiario/cobrar" element={<ConRol rol="beneficiario"><CobrarCuenta /></ConRol>} />
         <Route path="/beneficiario/cobros/:id" element={<ConRol rol="beneficiario"><CobroPagado /></ConRol>} />
@@ -70,6 +82,7 @@ export default function App() {
         <Route path="/beneficiario/historial" element={<ConRol rol="beneficiario"><Historial /></ConRol>} />
 
         <Route path="/punto" element={<ConRol rol="punto"><InicioPunto /></ConRol>} />
+        <Route path="/punto/nuevo" element={<ConRol rol="punto"><NuevoCobro /></ConRol>} />
         <Route path="/punto/caja" element={<ConRol rol="punto"><MiCaja /></ConRol>} />
         <Route path="/punto/cobros/:id" element={<ConRol rol="punto"><CobroEnPunto /></ConRol>} />
 
@@ -93,6 +106,7 @@ export default function App() {
         />
         <Route path="*" element={<NoExiste />} />
       </Routes>
+      <PanelSiNoEsBanco />
     </RolProvider>
   )
 }

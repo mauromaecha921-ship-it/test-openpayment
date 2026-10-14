@@ -1,227 +1,128 @@
-import { Check, ChevronRight, Clock, CreditCard, ShoppingBag, Store } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { ChevronRight, Clock, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
 
-import type { PagoPendiente } from '@/api/tipos'
+import { api } from '@/api/client'
+import type { PagoPendiente, Programa } from '@/api/tipos'
+import { usePolling } from '@/api/usePolling'
 import { Cargando, ErrorCarga } from '@/componentes/Comun'
 import { CuentaDestino } from '@/componentes/CuentaDestino'
-import { MarcoBeneficiario } from '@/componentes/Marcos'
 import { textoMonto } from '@/componentes/Monto'
-import { Titulo } from '@/componentes/Titulo'
-import { Button } from '@/componentes/ui/button'
-import { sumarMontos } from '@/lib/montos'
-import { formatFecha } from '@/lib/textos'
+import { CabeceraCelular, Chip, ChipCobro, PantallaCelular } from '@/componentes/Proto'
+import { formatDiaMes, formatFechaHora } from '@/lib/textos'
+import { cn } from '@/lib/utils'
 
-import { TarjetaCobrado } from './Historial'
 import { useResumen } from './useResumen'
 
-/** Colores del ícono, como en la entrada del prototipo: cuenta en azul, punto y comercio en ámbar. */
-const COLOR_OPCION = {
-  cuenta: 'bg-primary text-primary-foreground',
-  punto: 'bg-ambar text-noche',
+/** El bono con destino no se cobra: se usa en un comercio (§ 11, fuera del prototipo). */
+function rutaDelPago(p: PagoPendiente) {
+  return p.programa.tipo === 'bono' ? `/beneficiario/bono/${p.programa.id}` : `/beneficiario/subsidio/${p.programa.id}`
 }
 
-function Opcion({ to, icono, color, titulo, texto }: { to: string; icono: ReactNode; color: keyof typeof COLOR_OPCION; titulo: string; texto: string }) {
-  return (
-    <Link to={to} className="flex min-h-20 items-center gap-3.5 rounded-2xl border border-border bg-card px-4 py-3.5 text-foreground no-underline hover:border-control hover:text-foreground">
-      <span aria-hidden className={`flex size-11 shrink-0 items-center justify-center rounded-xl [&_svg]:size-[22px] ${COLOR_OPCION[color]}`}>
-        {icono}
-      </span>
-      <span className="flex flex-1 flex-col gap-0.5">
-        <strong className="text-xl">{titulo}</strong>
-        <span className="text-[15px] text-muted-foreground">{texto}</span>
-      </span>
-      <ChevronRight aria-hidden className="size-[22px]" />
-    </Link>
-  )
-}
-
-function AvisoPausa() {
-  return (
-    <p className="m-0 rounded-xl border-2 border-pagando bg-pagando-fondo px-4 py-3 text-pagando">
-      La entidad pausó los cobros por un momento. Intenta más tarde.
-    </p>
-  )
-}
-
-/**
- * «A mi cuenta» va a cobrar aunque no haya cuenta enlazada: la API prueba la cédula como llave Bre-B
- * (Plan Bre-B, RN-17). Solo una wallet que espera la aprobación en el banco manda a terminarla.
- */
-function rutaCuenta(porVerificar: boolean, programaId: string) {
-  return porVerificar ? '/beneficiario/cuenta' : `/beneficiario/cobrar?programa=${programaId}`
-}
-
-/** Subsidios en varios programas: cada uno en su tarjeta, con sus dos formas de cobrarlo. */
-function VariosPagos({ pagos, porVerificar, tienePin }: { pagos: PagoPendiente[]; porVerificar: boolean; tienePin: boolean }) {
-  const misma = pagos.every((p) => p.moneda.codigo === pagos[0]!.moneda.codigo)
-  return (
-    <>
-      <section className="bloque flex flex-col gap-1 rounded-2xl p-[22px]">
-        <span className="text-lg font-bold">Tienes {pagos.length} subsidios por cobrar</span>
-        {misma && (
-          <span className="cifra text-[40px] [overflow-wrap:anywhere]">
-            {textoMonto(sumarMontos(...pagos.map((p) => p.monto)), pagos[0]!.moneda)}
-          </span>
-        )}
-        <span className="text-[15px] text-noche-tenue">Cada uno se cobra por separado: a tu cuenta o en un punto.</span>
-      </section>
-      <ul className="m-0 grid list-none gap-4 p-0 lg:grid-cols-2" aria-label="Subsidios por cobrar">
-        {pagos.map((p) => (
-          <li key={p.programa.id} className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[17px] font-bold">{p.programa.nombre}</span>
-              <span className="cifra text-[32px]">{textoMonto(p.monto, p.moneda)}</span>
-              <span className="flex items-center gap-1.5 text-[15px] text-muted-foreground">
-                <Clock aria-hidden className="size-4 shrink-0" />
-                Hasta el {formatFecha(p.vigenciaFin)}
-              </span>
-            </div>
-            {p.programa.estado === 'Pausado' ? (
-              <AvisoPausa />
-            ) : p.programa.tipo === 'bono' ? (
-              // § 11: un bono con destino no se cobra: se usa al pagar en un comercio autorizado
-              <Button asChild className="mt-auto">
-                <Link to={`/beneficiario/bono/${p.programa.id}`}>
-                  <ShoppingBag aria-hidden />
-                  Dónde usar el bono
-                </Link>
-              </Button>
-            ) : (
-              <div className="mt-auto flex flex-wrap gap-2">
-                <Button asChild className="flex-1">
-                  <Link to={rutaCuenta(porVerificar, p.programa.id)}>
-                    <CreditCard aria-hidden />A mi cuenta
-                  </Link>
-                </Button>
-                {tienePin && (
-                  <Button asChild variant="outline" className="flex-1">
-                    <Link to="/beneficiario/puntos">
-                      <Store aria-hidden />
-                      En un punto
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
-    </>
-  )
-}
-
+/** Prototipo B0 «Mis subsidios»: lo que tiene por cobrar, su cuenta y lo ya cobrado. */
 export default function Inicio() {
   const { datos: r, error, recargar } = useResumen()
+  // La entidad de cada programa (el resumen solo trae el nombre del programa)
+  const programas = usePolling(() => api.get<Programa[]>('/programas'), null)
+  const entidad = (id: string) => programas.datos?.find((p) => p.id === id)?.entidad
 
   return (
-    <MarcoBeneficiario ancho="ancho">
+    <PantallaCelular className="gap-3.5">
+      <CabeceraCelular volver="/" etiquetaVolver="Volver a elegir rol" marca />
       {!r && error && <ErrorCarga mensaje={error} reintentar={() => void recargar()} />}
       {!r && !error && <Cargando />}
       {r && (
         <>
-          <Titulo className="text-[26px] md:text-[32px]">Hola, {r.persona.nombre}</Titulo>
+          <div className="-mt-1.5 text-[15px] text-muted-foreground">Hola, {r.persona.nombre}</div>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[17px]">Tienes por cobrar</span>
+            <h1 className="cifra m-0 text-[30px]">{r.pagos.length === 1 ? '1 subsidio' : `${r.pagos.length} subsidios`}</h1>
+          </div>
 
-          {/* En PC: a la izquierda el saldo y cómo cobrarlo; a la derecha, la cuenta y el último cobro. */}
-          <div className="grid items-start gap-[18px] md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] md:gap-8">
-          <div className="flex min-w-0 flex-col gap-[18px]">
-          {r.pagos.length === 1 && r.pago ? (
-            <>
-              <section className="bloque flex flex-col gap-1 rounded-2xl p-[22px]">
-                <span className="text-[17px] font-bold">Tienes por cobrar · {r.pago.programa.nombre}</span>
-                <span className="cifra text-[40px] [overflow-wrap:anywhere] min-[380px]:text-[46px] md:text-[52px]">{textoMonto(r.pago.monto, r.pago.moneda)}</span>
-                <span className="mt-1 flex items-center gap-1.5 text-ambar">
-                  <Clock aria-hidden className="size-[18px] shrink-0" />
-                  Cóbralo hasta el {formatFecha(r.pago.vigenciaFin)}
-                </span>
-              </section>
-              {r.pago.programa.estado === 'Pausado' && <AvisoPausa />}
+          {r.pagos.map((p, i) => {
+            const primero = i === 0
+            return (
+              <Link
+                key={p.programa.id}
+                to={rutaDelPago(p)}
+                className={cn(
+                  'flex flex-col gap-1.5 rounded-[20px] border-[1.5px] p-[18px] no-underline',
+                  primero ? 'bloque border-bloque text-bloque-texto hover:text-bloque-texto' : 'border-border bg-card text-foreground hover:text-foreground',
+                )}
+              >
+                <div className="flex items-center justify-between gap-2.5">
+                  <span className="text-[17px] font-bold">{p.programa.nombre}</span>
+                  <ChevronRight aria-hidden className="size-[22px] flex-none" strokeWidth={2.4} />
+                </div>
+                {entidad(p.programa.id) && <span className="text-[15px] opacity-85">{entidad(p.programa.id)}</span>}
+                <span className="cifra mt-0.5 text-[40px] [overflow-wrap:anywhere]">{textoMonto(p.monto, p.moneda)}</span>
+                {p.programa.estado === 'Pausado' ? (
+                  <Chip tono="pagando" className="mt-0.5">
+                    La entidad pausó los cobros por un momento
+                  </Chip>
+                ) : (
+                  <span className={cn('inline-flex items-center gap-1.5 text-[15px]', primero ? 'text-ambar' : 'text-muted-foreground')}>
+                    <Clock aria-hidden className="size-4" strokeWidth={2} />
+                    {p.programa.tipo === 'bono' ? 'Úsalo antes del' : 'Cóbralo antes del'} {formatDiaMes(p.vigenciaFin)}
+                  </span>
+                )}
+              </Link>
+            )
+          })}
 
-              {r.pago.programa.tipo === 'bono' ? (
+          <Link to="/beneficiario/cuenta" className="flex min-h-14 items-center gap-3 rounded-[14px] bg-muted px-3.5 py-2 text-foreground no-underline hover:text-foreground">
+            <Wallet aria-hidden className="size-[22px] flex-none" strokeWidth={2} />
+            <span className="flex-1 text-base">
+              {r.cuenta?.estado === 'Verificada' ? (
                 <>
-                  <h2 className="mt-1 mb-0 text-[21px] font-bold">Es un bono con destino</h2>
-                  <Opcion
-                    to={`/beneficiario/bono/${r.pago.programa.id}`}
-                    icono={<ShoppingBag />}
-                    color="punto"
-                    titulo="Úsalo en un comercio autorizado"
-                    texto={r.persona.tienePin ? 'Al pagar tu compra, con tu cédula y tu PIN' : 'Necesitas un PIN para usarlo'}
-                  />
+                  <b>
+                    Tu cuenta <CuentaDestino cuenta={r.cuenta} />
+                  </b>{' '}
+                  · verificada
+                </>
+              ) : r.cuenta?.estado === 'PorVerificar' ? (
+                <>
+                  <b>Tu cuenta</b> · por verificar en tu billetera
                 </>
               ) : (
                 <>
-                  <h2 className="mt-1 mb-0 text-[21px] font-bold">¿Cómo lo quieres cobrar?</h2>
-                  <Opcion
-                    to={rutaCuenta(r.cuenta?.estado === 'PorVerificar', r.pago.programa.id)}
-                    icono={<CreditCard />}
-                    color="cuenta"
-                    titulo="A mi cuenta"
-                    texto={
-                      r.cuenta?.estado === 'Verificada'
-                        ? 'Llega en segundos a tu cuenta'
-                        : r.cuenta?.estado === 'PorVerificar'
-                          ? 'Termina de verificar tu billetera'
-                          : 'Con tu cédula como llave Bre-B, sin enlazar nada'
-                    }
-                  />
-                  <Opcion
-                    to="/beneficiario/puntos"
-                    icono={<Store />}
-                    color="punto"
-                    titulo="En un punto"
-                    texto={r.persona.tienePin ? 'En efectivo, con tu cédula y tu PIN' : 'Solo si registraste un PIN'}
-                  />
+                  <b>Enlaza tu cuenta</b> · o cobra con tu cédula como llave Bre-B
                 </>
               )}
-            </>
-          ) : r.pagos.length > 1 ? (
-            <VariosPagos pagos={r.pagos} porVerificar={r.cuenta?.estado === 'PorVerificar'} tienePin={r.persona.tienePin} />
-          ) : r.ultimoCobro ? (
-            <TarjetaCobrado cobro={r.ultimoCobro} />
-          ) : (
-            <section className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-[22px]">
-              <h2 className="m-0 text-xl font-bold">Todavía no tienes pagos disponibles</h2>
-              <p className="m-0 text-muted-foreground">Cuando la entidad active tu subsidio, lo verás aquí.</p>
-            </section>
-          )}
-          </div>
+            </span>
+            <ChevronRight aria-hidden className="size-5 flex-none" strokeWidth={2} />
+          </Link>
 
-          <aside className="flex min-w-0 flex-col gap-[18px]">
-          <p className="m-0 flex flex-wrap items-center gap-x-1.5 gap-y-0 rounded-2xl bg-muted px-4 py-2.5 text-[15px] text-foreground md:p-5">
-            <CreditCard aria-hidden className="mr-1 size-[18px] shrink-0" />
-            {r.cuenta?.estado === 'Verificada' ? (
-              <>
-                <Check aria-hidden className="size-4 text-pagado" strokeWidth={2.5} />
-                <span className="inline-flex flex-wrap items-center gap-1.5">
-                  Tu cuenta <CuentaDestino cuenta={r.cuenta} /> está verificada.
+          <section aria-labelledby="titulo-cobrados" className="mt-auto flex flex-col">
+            <h2 id="titulo-cobrados" className="m-0 text-[17px] font-extrabold">
+              Ya cobrados
+            </h2>
+            {r.ultimoCobro ? (
+              <Link
+                to={`/beneficiario/cobros/${r.ultimoCobro.id}`}
+                className="mt-2 flex items-center gap-3 border-t border-border py-3 text-foreground no-underline hover:text-foreground"
+              >
+                <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+                  <span className="text-base font-bold">{r.ultimoCobro.programa.nombre}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {r.ultimoCobro.referencia} · {formatFechaHora(r.ultimoCobro.actualizado)}
+                  </span>
                 </span>
-                <Link to="/beneficiario/cuenta" className="inline-flex min-h-11 items-center">
-                  Cambiar
-                </Link>
-              </>
+                <span className="flex flex-col items-end gap-1">
+                  <span className="text-base font-bold">{textoMonto(r.ultimoCobro.monto, r.ultimoCobro.moneda)}</span>
+                  <ChipCobro estado={r.ultimoCobro.estado} />
+                </span>
+              </Link>
             ) : (
-              <>
-                <span>
-                  {r.cuenta?.estado === 'PorVerificar'
-                    ? 'Tu cuenta está por verificar.'
-                    : 'Todavía no tienes una cuenta enlazada. Si tu cédula es tu llave Bre-B, cobras sin enlazar nada.'}
-                </span>
-                <Link to="/beneficiario/cuenta" className="inline-flex min-h-11 items-center">
-                  {r.cuenta?.estado === 'PorVerificar' ? 'Enlazar mi cuenta' : 'Enlazar otra llave'}
-                </Link>
-              </>
+              <div className="mt-2 rounded-[14px] border-[1.5px] border-dashed border-border p-3.5 text-center text-[15px] text-muted-foreground">
+                Aquí verás los subsidios que cobres, con su referencia.
+              </div>
             )}
-          </p>
-          {/* En PC sobra espacio: el último cobro también se ve cuando hay un pago nuevo. */}
-          {r.pago && r.ultimoCobro && (
-            <div className="hidden md:block">
-              <TarjetaCobrado cobro={r.ultimoCobro} />
-            </div>
-          )}
-          </aside>
-          </div>
+            <Link to="/beneficiario/historial" className="mt-2 self-start text-[15px] font-semibold text-azul">
+              Ver mi historial
+            </Link>
+          </section>
         </>
       )}
-    </MarcoBeneficiario>
+    </PantallaCelular>
   )
 }

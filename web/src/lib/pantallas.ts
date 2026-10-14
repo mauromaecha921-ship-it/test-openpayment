@@ -1,4 +1,4 @@
-import type { EstadoCobro, EstadoPrograma } from '@/api/tipos'
+import type { EstadoCobro, EstadoPrograma, EventoCobro } from '@/api/tipos'
 
 // Las pantallas 15 a 19 son una sola ruta (/punto/cobros/:id): la vista sale del estado del cobro,
 // así un recargo o un doble clic siempre muestran lo que dice la API.
@@ -36,4 +36,9 @@ export function rutaDelPrograma(id: string, estado: EstadoPrograma): string {
     default:
       return `/entidad/programas/${id}`
   }
+}
+
+/** Cuándo pasó el cobro a Pagando, para contar cuánto lleva. */
+export function inicioPagando(eventos: EventoCobro[]): string | null {
+  return eventos.find((e) => e.hacia === 'Pagando')?.creado ?? null
 }

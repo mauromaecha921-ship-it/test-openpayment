@@ -1,25 +1,20 @@
-import { CreditCard, Pause, Play, RefreshCw, ShoppingBag, Store, TriangleAlert } from 'lucide-react'
+import { Pause, Play, RefreshCw, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 
 import { api, mensajeDeError } from '@/api/client'
 import type { CobroResumen, Tablero as DatosTablero, Redireccion } from '@/api/tipos'
 import { BilleteraCorta } from '@/componentes/BilleteraCorta'
-import { CifraGrande } from '@/componentes/CifraGrande'
-import { MensajeError, Tarjeta } from '@/componentes/Comun'
-import { EstadoCobro } from '@/componentes/EstadoCobro'
-import { MarcoEntidad } from '@/componentes/Marcos'
+import { MensajeError } from '@/componentes/Comun'
+import { PantallaEntidad } from '@/componentes/MarcosProto'
 import { textoMonto } from '@/componentes/Monto'
-import { Titulo } from '@/componentes/Titulo'
+import { Boton, BotonEnlace, Caja, ChipCobro, TarjetaCifra } from '@/componentes/Proto'
 import { Button } from '@/componentes/ui/button'
-import { Progress } from '@/componentes/ui/progress'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/componentes/ui/table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/componentes/ui/tabs'
-import { formatHora, formatSegundos, plural } from '@/lib/textos'
+import { formatHora, formatSegundos, formatVigencia, MOTIVO_CORTO } from '@/lib/textos'
 import { cn } from '@/lib/utils'
 import { prepararPestana } from '@/lib/ventana'
 
-type Filtro = 'todos' | 'pagados' | 'rechazados'
+import { ChipPrograma } from './TusProgramas'
 
 /** Porcentaje con un decimal, calculado con BigInt. */
 export function porcentaje(parte: string, total: string): number {
@@ -33,11 +28,6 @@ export function personaTexto(c: Pick<CobroResumen, 'persona'>): string {
   return partes.join(' · ') + (c.persona.novedad ? ' · novedad' : '')
 }
 
-function filtrar(cobros: CobroResumen[], filtro: Filtro) {
-  if (filtro === 'pagados') return cobros.filter((c) => c.estado === 'Pagado')
-  if (filtro === 'rechazados') return cobros.filter((c) => c.estado === 'Rechazado' || c.estado === 'Fallido')
-  return cobros
-}
 
 /**
  * D-35: el token del permiso dura 10 minutos y la API lo renueva sola mientras está prendida. Si
@@ -124,7 +114,6 @@ function ResultadoRenovacion() {
 export default function Tablero({ tablero: t, error, recargar }: { tablero: DatosTablero; error: string | null; recargar: () => Promise<unknown> }) {
   const p = t.programa
   const m = p.moneda
-  const [filtro, setFiltro] = useState<Filtro>('todos')
   const [enviando, setEnviando] = useState(false)
   const [errorAccion, setErrorAccion] = useState<string | null>(null)
   const pct = porcentaje(t.cobrado, t.autorizado)
@@ -143,35 +132,38 @@ export default function Tablero({ tablero: t, error, recargar }: { tablero: Dato
     }
   }
 
-  return (
-    <MarcoEntidad entidad={p.entidad}>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm text-tenue">{p.nombre}</span>
-          <div className="flex flex-wrap items-center gap-3">
-            <Titulo className="text-[28px] sm:text-[32px]">Tablero</Titulo>
-            <span className={cn('rounded-full px-3 py-1 text-sm font-bold', pausado ? 'border-2 border-pagando bg-pagando-fondo text-pagando' : 'bg-primary text-primary-foreground')}>
-              {pausado ? 'Pausado' : 'Activo'}
-            </span>
-            <span className="text-sm text-tenue">Se actualiza cada 5 s</span>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Button variant="outline" onClick={() => void alternarPausa()} disabled={enviando}>
-            {pausado ? <Play aria-hidden /> : <Pause aria-hidden />}
-            {pausado ? 'Reanudar' : 'Pausar'}
-          </Button>
-          <Button asChild variant="outline" className="border-2 border-foreground">
-            <Link to={`/entidad/programas/${p.id}/cerrar`}>Cerrar programa</Link>
-          </Button>
-        </div>
-      </div>
+  const miniDatos: Array<[string, string]> = [
+    [textoMonto(t.giradoPorAdelantado, m), 'girado por adelantado'],
+    [t.reembolsoSegundos !== null ? formatSegundos(t.reembolsoSegundos) : '—', 'reembolso al punto después del PIN'],
+    p.tipo === 'bono'
+      ? [String(t.porCanal.compra?.cobros ?? 0), 'pagados en comercios']
+      : [`${t.porCanal.cuenta.cobros} · ${t.porCanal.retiro.cobros}`, 'pagados a cuenta · en punto'],
+  ]
 
+  return (
+    <PantallaEntidad
+      quien={p.entidad}
+      volver={{ to: '/entidad', texto: 'Tus programas' }}
+      subtitulo={`Vigencia: ${formatVigencia(p.vigenciaInicio, p.vigenciaFin, true)}`}
+      titulo={p.nombre}
+      junto={<ChipPrograma estado={p.estado} grande />}
+      acciones={
+        <>
+          <Boton variante="contorno" medio onClick={() => void alternarPausa()} disabled={enviando}>
+            {pausado ? <Play aria-hidden className="size-[18px]" /> : <Pause aria-hidden className="size-[18px]" />}
+            {pausado ? 'Reanudar' : 'Pausar'}
+          </Boton>
+          <BotonEnlace variante="contorno" medio to={`/entidad/programas/${p.id}/cerrar`}>
+            Cerrar programa
+          </BotonEnlace>
+        </>
+      }
+    >
       <ResultadoRenovacion />
       {p.permisoVencido && <AvisoPermisoVencido programaId={p.id} />}
 
       {pausado && (
-        <p role="status" className="m-0 rounded-xl border-2 border-pagando bg-pagando-fondo px-4 py-3 font-bold text-pagando">
+        <p role="status" className="m-0 rounded-[14px] bg-pagando-fondo px-4 py-3 font-bold text-pagando">
           El programa está en pausa: los cobros nuevos se rechazan con «El programa no está recibiendo cobros».
         </p>
       )}
@@ -179,160 +171,137 @@ export default function Tablero({ tablero: t, error, recargar }: { tablero: Dato
       {error && <MensajeError>No pudimos actualizar el tablero: {error}. Lo que ves es de la última consulta.</MensajeError>}
 
       <div className="flex flex-wrap gap-4">
-        <CifraGrande etiqueta="Autorizado" apoyo="El tope que aprobaste en tu banco">
+        <TarjetaCifra etiqueta="Autorizado" apoyo="Tope aprobado en tu banco">
           {textoMonto(t.autorizado, m)}
-        </CifraGrande>
-        <CifraGrande
-          etiqueta="Cobrado"
-          apoyo={
-            t.fuente === 'banco'
-              ? `Leído del permiso en tu banco · ${plural(t.cobrosPagados, 'cobro')}`
-              : `Calculado por la plataforma: no pudimos leer el permiso en tu banco · ${plural(t.cobrosPagados, 'cobro')}`
-          }
-        >
+        </TarjetaCifra>
+        <TarjetaCifra etiqueta="Cobrado" apoyo={t.fuente === 'banco' ? 'Leído del permiso en tu banco' : 'Calculado por la plataforma: no pudimos leer el permiso'}>
           {textoMonto(t.cobrado, m)}
-        </CifraGrande>
-        <CifraGrande etiqueta="Todavía no ha salido" apoyo="Sigue en la cuenta del programa" noche ambar>
+        </TarjetaCifra>
+        <TarjetaCifra etiqueta="Todavía no ha salido" apoyo="Sigue en la cuenta del programa" noche>
           {textoMonto(t.noHaSalido, m)}
-        </CifraGrande>
+        </TarjetaCifra>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Progress
-          value={Math.min(100, pct)}
-          aria-label={`Cobrado: ${Math.round(pct)} % del tope`}
-          aria-valuetext={`${Math.round(pct)} %`}
-          className="h-3.5 bg-secondary *:data-[slot=progress-indicator]:bg-foreground oscuro:*:data-[slot=progress-indicator]:bg-ambar"
-        />
-        <div className="flex justify-between text-sm text-muted-foreground">
-          <span>Cobrado {Math.round(pct)} %</span>
-          <span>Tope {textoMonto(t.autorizado, m)}</span>
+        <div
+          role="progressbar"
+          aria-label="Cobrado del tope"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(pct)}
+          className="flex h-3.5 overflow-hidden rounded-lg bg-pista"
+        >
+          <div className="bg-foreground oscuro:bg-ambar" style={{ width: `${Math.min(100, pct)}%` }} />
+        </div>
+        <div className="flex flex-wrap justify-between gap-x-4 text-[15px] text-muted-foreground">
+          <span>Cobrado: {Math.round(pct)} % del tope</span>
+          <span>Tope fijo del permiso: {textoMonto(t.autorizado, m)}</span>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-4">
-        <Tarjeta className="flex-[2_1_420px] gap-3 py-5">
-          <h2 className="m-0 text-lg font-bold">Cobros por canal</h2>
-          <div className="flex flex-wrap gap-3">
-            {(p.tipo === 'bono'
-              ? // § 11: un bono solo se usa en compras de comercios autorizados
-                ([['En comercios', ShoppingBag, t.porCanal.compra ?? { cobros: 0, monto: '0' }]] as const)
-              : ([
-                  ['A la cuenta', CreditCard, t.porCanal.cuenta],
-                  ['En un punto', Store, t.porCanal.retiro],
-                ] as const)
-            ).map(([nombre, Icono, d]) => (
-              <div key={nombre} className="flex flex-[1_1_180px] items-center gap-3 rounded-xl bg-muted px-3.5 py-3">
-                <Icono aria-hidden className="size-[22px]" />
-                <div className="flex flex-col">
-                  <strong>{nombre}</strong>
-                  <span className="text-sm text-muted-foreground">
-                    {plural(d.cobros, 'cobro')} · {textoMonto(d.monto, m)}
-                  </span>
-                </div>
-              </div>
-            ))}
+      <div className="flex flex-wrap gap-3">
+        {miniDatos.map(([valor, texto]) => (
+          <div key={texto} className="flex flex-[1_1_220px] items-center gap-3 rounded-2xl bg-muted px-4 py-3.5">
+            <span className="cifra text-[26px]">{valor}</span>
+            <span className="text-[15px] leading-[1.3]">{texto}</span>
           </div>
-        </Tarjeta>
-        {/* Mini-datos del prototipo: la cifra ancha y qué es. */}
-        <dl className="m-0 flex flex-[1_1_300px] flex-col gap-2">
-          {(
-            [
-              [textoMonto(t.giradoPorAdelantado, m), 'girado por adelantado'],
-              [t.reembolsoSegundos !== null ? formatSegundos(t.reembolsoSegundos) : '—', 'reembolso al punto después del PIN'],
-              [t.sinCobrar ? plural(t.sinCobrar.cedulas, 'cédula') : '—', 'sin cobrar todavía'],
-            ] as const
-          ).map(([valor, texto]) => (
-            <div key={texto} className="flex flex-1 flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-xl bg-muted px-4 py-3">
-              <dt className="order-last text-sm text-muted-foreground">{texto}</dt>
-              <dd className="cifra m-0 text-xl">{valor}</dd>
-            </div>
-          ))}
-        </dl>
+        ))}
       </div>
 
-      <Tarjeta className="gap-3.5 py-5">
-        <Tabs value={filtro} onValueChange={(v) => setFiltro(v as Filtro)} className="gap-3.5">
+      <Caja grande as="section">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="m-0 text-lg font-bold" id="titulo-cobros">
+          <h2 id="titulo-cobros" className="m-0 text-[21px] font-extrabold">
             Cobros
           </h2>
-            <TabsList aria-label="Mostrar" className="h-auto flex-wrap group-data-horizontal/tabs:h-auto">
-              <TabsTrigger value="todos" className="min-h-11 px-3 text-sm text-muted-foreground">
-                Todos ({t.cobros.length})
-              </TabsTrigger>
-              <TabsTrigger value="pagados" className="min-h-11 px-3 text-sm text-muted-foreground">
-                Pagados ({t.cobrosPagados})
-              </TabsTrigger>
-              <TabsTrigger value="rechazados" className="min-h-11 px-3 text-sm text-muted-foreground">
-                Rechazados y fallidos ({t.rechazadosYFallidos})
-              </TabsTrigger>
-            </TabsList>
+          <span className="text-[15px] text-muted-foreground">Se actualiza cada 5 s · rechazados y fallidos no movieron dinero</span>
         </div>
-        {(['todos', 'pagados', 'rechazados'] as const).map((f) => (
-          <TabsContent key={f} value={f}>
-            <TablaCobros cobros={filtrar(t.cobros, f)} />
-          </TabsContent>
-        ))}
-        </Tabs>
-      </Tarjeta>
-    </MarcoEntidad>
+        <TablaCobros cobros={t.cobros} />
+      </Caja>
+    </PantallaEntidad>
   )
 }
 
+/** Debajo del chip: «Ya cobrado», «Tope del banco», «Reembolso en 4 s», «En 3 s». */
+export function detalleCobro(c: CobroResumen): string | null {
+  if (c.estado === 'Pagado' && c.segundosHastaPagado !== null) {
+    return c.canal === 'retiro' ? `Reembolso en ${formatSegundos(c.segundosHastaPagado)}` : `En ${formatSegundos(c.segundosHastaPagado)}`
+  }
+  if (c.motivo) return MOTIVO_CORTO[c.motivo.codigo] ?? c.motivo.mensaje
+  return null
+}
+
+const TH = 'px-3 py-2.5 text-left text-sm font-semibold text-muted-foreground'
+const TD = 'border-t border-border px-3 py-3.5 text-left align-middle'
+
+/** Tabla de cobros del prototipo (E3): referencia, beneficiario, canal, valor, estado, hora y «Ver». */
 export function TablaCobros({ cobros }: { cobros: CobroResumen[] }) {
   return (
-    <Table aria-labelledby="titulo-cobros" className="min-w-[860px] text-[15px]">
-      <TableHeader>
-        <TableRow className="border-b-2 border-foreground hover:bg-transparent">
-          {['Referencia', 'Persona', 'Canal', 'Dónde'].map((h) => (
-            <TableHead key={h} className="px-2 font-bold text-foreground">
-              {h}
-            </TableHead>
-          ))}
-          <TableHead className="px-2 text-right font-bold text-foreground">Monto</TableHead>
-          <TableHead className="px-2 font-bold text-foreground">Estado</TableHead>
-          <TableHead className="px-2 font-bold text-foreground">Hora</TableHead>
-          <TableHead className="px-2">
-            <span className="sr-only">Detalle</span>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {cobros.length === 0 && (
-          <TableRow>
-            <TableCell colSpan={8} className="px-2 py-4 text-tenue">
-              Todavía no hay cobros aquí.
-            </TableCell>
-          </TableRow>
-        )}
-        {cobros.map((c) => {
-          // D-04: el rechazado lleva referencia en la BD, pero la pantalla muestra «—».
-          const sinReferencia = c.estado === 'Rechazado'
-          return (
-            <TableRow key={c.id}>
-              <TableCell className={cn('px-2 py-3', sinReferencia ? 'text-tenue' : 'mono text-sm')}>{sinReferencia ? '—' : c.referencia}</TableCell>
-              <TableCell className="px-2 py-3 whitespace-normal">{personaTexto(c)}</TableCell>
-              <TableCell className="px-2 py-3">{c.canal === 'cuenta' ? 'Cuenta' : c.canal === 'compra' ? 'Compra' : 'Punto'}</TableCell>
-              <TableCell className="px-2 py-3">
-                {c.canal === 'retiro' ? (c.punto?.nombre.split(' — ')[0] ?? '—') : c.cuenta ? <BilleteraCorta url={c.cuenta.billetera} className="text-[13px]" /> : '—'}
-              </TableCell>
-              <TableCell className="px-2 py-3 text-right">{textoMonto(c.monto, c.moneda)}</TableCell>
-              <TableCell className="px-2 py-3">
-                <EstadoCobro estado={c.estado} motivo={c.motivo} />
-              </TableCell>
-              <TableCell className="px-2 py-3 text-muted-foreground">
-                <time dateTime={c.creado}>{formatHora(c.creado, false)}</time>
-              </TableCell>
-              <TableCell className="px-2 py-3">
-                <Link to={`/entidad/cobros/${c.id}`} className="inline-flex min-h-11 min-w-11 items-center justify-center" aria-label={`Ver el cobro de ${personaTexto(c)} de las ${formatHora(c.creado, false)}`}>
-                  Ver
-                </Link>
-              </TableCell>
-            </TableRow>
-          )
-        })}
-      </TableBody>
-    </Table>
+    <div className="relative min-w-0 overflow-x-auto">
+      <table aria-labelledby="titulo-cobros" className="w-full min-w-[760px] border-collapse text-base">
+        <thead>
+          <tr>
+            <th className={TH}>Referencia</th>
+            <th className={TH}>Beneficiario</th>
+            <th className={TH}>Canal</th>
+            <th className={cn(TH, 'text-right')}>Valor</th>
+            <th className={TH}>Estado</th>
+            <th className={TH}>Hora</th>
+            <th className={TH}>
+              <span className="sr-only">Detalle</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {cobros.length === 0 && (
+            <tr>
+              <td colSpan={7} className={cn(TD, 'text-muted-foreground')}>
+                Todavía no hay cobros aquí.
+              </td>
+            </tr>
+          )}
+          {cobros.map((c) => {
+            // D-04: el rechazado lleva referencia en la BD, pero la pantalla muestra «—».
+            const sinReferencia = c.estado === 'Rechazado'
+            const detalle = detalleCobro(c)
+            return (
+              <tr key={c.id}>
+                <td className={TD}>{sinReferencia ? <span className="text-muted-foreground">—</span> : <b>{c.referencia}</b>}</td>
+                <td className={TD}>{personaTexto(c)}</td>
+                <td className={TD}>
+                  {c.canal === 'retiro' ? (
+                    `Punto · ${c.punto?.nombre.split(' — ')[0] ?? '—'}`
+                  ) : c.canal === 'compra' ? (
+                    `Compra · ${c.punto?.nombre.split(' — ')[0] ?? '—'}`
+                  ) : (
+                    <>
+                      Cuenta · {c.cuenta ? <BilleteraCorta url={c.cuenta.billetera} /> : '—'}
+                    </>
+                  )}
+                </td>
+                <td className={cn(TD, 'text-right')}>
+                  <b className={c.estado === 'Pagado' ? undefined : 'text-muted-foreground'}>{textoMonto(c.monto, c.moneda)}</b>
+                </td>
+                <td className={TD}>
+                  <ChipCobro estado={c.estado} />
+                  {detalle && <div className="mt-1 text-sm text-muted-foreground">{detalle}</div>}
+                </td>
+                <td className={TD}>
+                  <time dateTime={c.creado}>{formatHora(c.creado, false)}</time>
+                </td>
+                <td className={TD}>
+                  <Link
+                    to={`/entidad/cobros/${c.id}`}
+                    className="inline-flex min-h-11 min-w-11 items-center font-bold"
+                    aria-label={`Ver el cobro de ${personaTexto(c)} de las ${formatHora(c.creado, false)}`}
+                  >
+                    Ver
+                  </Link>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
   )
 }

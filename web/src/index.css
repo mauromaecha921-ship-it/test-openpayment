@@ -58,6 +58,18 @@
   --color-bloque: var(--bloque);
   --color-bloque-texto: var(--bloque-texto);
   --color-rechazo-relleno: var(--rechazo-relleno);
+  /* Del prototipo HTML (Plan apego al prototipo) */
+  --color-pista: var(--pista);
+  --color-campo: var(--campo);
+  --color-campo-borde: var(--campo-borde);
+  --color-activo: var(--activo);
+  --color-activo-fondo: var(--activo-fondo);
+  --color-cerrado: var(--cerrado);
+  --color-punteado: var(--punteado);
+  --color-pista-bloque: var(--pista-bloque);
+  --color-anillo-bloque: var(--anillo-bloque);
+  --color-pin-vacio: var(--pin-vacio);
+  --color-azul: var(--azul);
 
   --radius-sm: calc(var(--radius) * 0.5);
   --radius-md: calc(var(--radius) * 0.67);
@@ -100,7 +112,7 @@
   --ambar: #f6a623;
   --arcilla: #6e4630;
   /* Sobre los bloques Noche: texto secundario (9,1:1) y fondo de las filas internas. */
-  --noche-tenue: #b8c2d6;
+  --noche-tenue: #c9c2b3;
   --noche-suave: #1e2c49;
 
   /* Estados del cobro: siempre con ícono y texto, nunca solo color. Todos ≥ 4,5:1 sobre su fondo.
@@ -119,6 +131,21 @@
   --bloque: #13203a;
   --bloque-texto: #f5f0e6;
   --bloque-borde: none;
+
+  /* Del prototipo HTML: pista de la barra y chip neutro, campos, chip «Activo», «Cerrado», borde
+     punteado del pago ya cobrado, pista y anillo dentro del bloque Noche, casilla vacía del PIN. */
+  --pista: #e7dfcf;
+  --campo: #ffffff;
+  --campo-borde: #8f8571;
+  --activo: #1e4fc8;
+  --activo-fondo: #e3e9fb;
+  --cerrado: #4b5466;
+  --punteado: #b9ae97;
+  --pista-bloque: #2b3a57;
+  --anillo-bloque: #5f6b82;
+  --pin-vacio: #8f7a4c;
+  /* Texto azul del prototipo («Ver tablero ›», «Pagar ›»): 5,3:1 sobre la tarjeta. */
+  --azul: #2e5fe0;
 }
 
 /* Paleta «Noche», del logo oscuro: fondo Noche hondo, texto Arena clara #EFE6D2 y acentos ámbar.
@@ -165,6 +192,17 @@
   --bloque: #1e2c49;
   --bloque-texto: #efe6d2;
   --bloque-borde: inset 0 0 0 1px rgb(246 166 35 / 0.4);
+
+  --pista: #2c3b5c;
+  --campo: #0b1324;
+  --campo-borde: #6b7a99;
+  --activo: #8db0ff;
+  --activo-fondo: #1e2c49;
+  --cerrado: #2c3b5c;
+  --punteado: #4a5a7a;
+  --pista-bloque: #2c3b5c;
+  --anillo-bloque: #6b7a99;
+  --azul: #8db0ff;
 }
 
 @layer base {
@@ -217,6 +255,14 @@
   letter-spacing: -0.01em;
   line-height: 1.05;
   font-variant-numeric: tabular-nums;
+}
+
+/* Títulos del prototipo HTML: 800 al 125 %, interlineado 1,15. */
+@utility titulo-proto {
+  font-weight: 800;
+  font-stretch: 125%;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
 }
 
 /* Títulos de pantalla: 800 al 115 %, un poco menos ancho que la cifra para que quepan a 375 px. */

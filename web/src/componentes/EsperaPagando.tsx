@@ -1,9 +1,8 @@
-import { Hand } from 'lucide-react'
+import { Check, Hand } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 
 import type { Cobro } from '@/api/tipos'
 
-import { Bloque } from './Comun'
 import { PasosDelPago } from './PasosDelPago'
 import { TatuAnimado } from './TatuAnimado'
 
@@ -21,9 +20,9 @@ function useSegundosDesde(desde: string | null) {
 }
 
 /**
- * «Pagando…» en el bloque Noche del prototipo, con el tatú rodando (variante B de /demo/tatu) y los
- * pasos del pago. Pasados 10 s, avisa que tarda más de lo normal (P-18, RNF-02). En el punto, debajo,
- * siempre recuerda que no se entrega el efectivo todavía.
+ * «Pagando…» del prototipo: en el punto (P4) con «✓ PIN confirmado», la barra ámbar y el aviso de no
+ * entregar el efectivo; en la cuenta (B5) con los pasos. Lleva el tatú rodando (las esperas son
+ * suyas). Pasados 10 s avisa que tarda más de lo normal (P-18, RNF-02).
  */
 export function EsperaPagando({
   desde,
@@ -34,38 +33,54 @@ export function EsperaPagando({
   desde: string | null
   paraPunto: boolean
   cobro: Pick<Cobro, 'canal' | 'estado' | 'segundosHastaPagado'>
-  /** Qué se está pagando y a dónde («Estamos pagando $230.000 a…»). */
+  /** «Estamos pagando $230.000 desde la cuenta del programa a…». */
   children?: ReactNode
 }) {
   const segundos = useSegundosDesde(desde)
   const tarda = segundos > 10
+  // La barra avanza con el tiempo hasta el 90 %: suele tardar unos 5 s
+  const avance = Math.min(90, 15 + (segundos / 6) * 75)
 
   return (
     <>
-      <Bloque tono="noche" className="gap-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 flex-col gap-2">
-            <p className="titular m-0 text-[34px] sm:text-[40px]">Pagando…</p>
-            {children && <p className="m-0 text-[17px] leading-snug">{children}</p>}
+      <div className="bloque mt-1.5 flex flex-col gap-4 rounded-[22px] px-5 py-[22px]">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-4">
+            {paraPunto && (
+              <span className="inline-flex items-center gap-2 text-base font-semibold">
+                <Check aria-hidden className="size-[18px]" strokeWidth={2.5} />
+                PIN confirmado
+              </span>
+            )}
+            <p className="cifra m-0 text-[36px]">Pagando…</p>
           </div>
-          <TatuAnimado estado="pagando" variante="cerradura" sobreOscuro className="size-20 shrink-0 sm:size-24" />
+          <TatuAnimado estado="pagando" variante="cerradura" sobreOscuro className="size-16 flex-none" />
         </div>
-        <PasosDelPago cobro={cobro} />
-        <p className="m-0 border-t border-noche-suave pt-3 text-[15px] text-noche-tenue">Suele tardar unos segundos.</p>
-      </Bloque>
+        {children && <p className="m-0 text-[17px] leading-[1.4]">{children}</p>}
+        {paraPunto ? (
+          <>
+            <div aria-hidden className="h-2 overflow-hidden rounded-lg bg-pista-bloque">
+              <div className="h-2 rounded-lg bg-ambar transition-[width] duration-500" style={{ width: `${avance}%` }} />
+            </div>
+            <span className="text-[15px] text-noche-tenue">Suele tardar unos segundos.</span>
+          </>
+        ) : (
+          <PasosDelPago cobro={cobro} />
+        )}
+      </div>
 
       {paraPunto && (
-        <p className="m-0 flex items-center gap-3.5 rounded-2xl border-2 border-foreground bg-card px-4 py-3.5">
-          <Hand aria-hidden className="size-7 shrink-0" />
-          <span className="flex flex-col">
-            <strong className="titular text-xl">No entregues efectivo todavía</strong>
-            <span className="text-[15px] text-muted-foreground">Espera a que la pantalla diga «Pagado».</span>
-          </span>
-        </p>
+        <div role="status" className="flex items-center gap-3 rounded-[18px] border-[2.5px] border-foreground bg-card p-4">
+          <Hand aria-hidden className="size-7 flex-none" strokeWidth={2} />
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[21px] font-extrabold">No entregues efectivo todavía</span>
+            <span className="text-[15px] text-muted-foreground">Espera a que la pantalla diga Pagado.</span>
+          </div>
+        </div>
       )}
 
       {tarda && (
-        <p role="alert" className="m-0 rounded-xl border-2 border-pagando bg-pagando-fondo px-4 py-3 text-base text-pagando">
+        <p role="alert" className="m-0 rounded-[14px] bg-pagando-fondo px-4 py-3 text-base font-semibold text-pagando">
           Está tardando más de lo normal.{paraPunto ? ' No entregues el efectivo todavía.' : ' Seguimos esperando la confirmación del banco.'}
         </p>
       )}

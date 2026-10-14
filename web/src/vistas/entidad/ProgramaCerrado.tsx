@@ -2,19 +2,15 @@ import { Lock } from 'lucide-react'
 import { useState } from 'react'
 
 import type { Tablero } from '@/api/tipos'
-import { Tarjeta } from '@/componentes/Comun'
-import { MarcoEntidad } from '@/componentes/Marcos'
+import { PantallaEntidad } from '@/componentes/MarcosProto'
 import { textoMonto } from '@/componentes/Monto'
-import { PasosPrograma } from '@/componentes/PasosPrograma'
-import { Titulo } from '@/componentes/Titulo'
-import { Button } from '@/componentes/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/componentes/ui/table'
-import { sumarMontos } from '@/lib/montos'
-import { formatFechaHora, plural } from '@/lib/textos'
+import { BotonEnlace, Caja, FilaDato, TarjetaCifra } from '@/componentes/Proto'
+import { formatFechaHora, formatVigencia, plural } from '@/lib/textos'
 
 import { TablaCobros } from './Tablero'
+import { ChipPrograma } from './TusProgramas'
 
-/** Wireframe 07. Las cifras salen del evento de cierre, leídas antes de revocar el permiso (D-18). */
+/** Prototipo E5 (wireframe 07). Las cifras salen del evento de cierre, leídas antes de revocar el permiso (D-18). */
 export default function ProgramaCerrado({ tablero: t }: { tablero: Tablero }) {
   const p = t.programa
   const m = p.moneda
@@ -22,91 +18,69 @@ export default function ProgramaCerrado({ tablero: t }: { tablero: Tablero }) {
   const [verTodos, setVerTodos] = useState(false)
 
   const pagados = t.cobros.filter((c) => c.estado === 'Pagado')
-  const aCuenta = pagados.filter((c) => c.canal === 'cuenta')
-  const enPunto = pagados.filter((c) => c.canal === 'retiro')
-  const monto = (l: typeof pagados) => textoMonto(sumarMontos('0', ...l.map((c) => c.monto ?? '0')), m)
+  const rechazados = t.cobros.filter((c) => c.estado === 'Rechazado').length
+  const fallidos = t.cobros.filter((c) => c.estado === 'Fallido').length
 
   return (
-    <MarcoEntidad entidad={p.entidad}>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <span className="text-sm text-tenue">{p.nombre}</span>
-          <Titulo className="text-[28px] sm:text-[32px]">Cierre del programa</Titulo>
+    <PantallaEntidad
+      quien={p.entidad}
+      volver={{ to: '/entidad', texto: 'Tus programas' }}
+      subtitulo={`Vigencia: ${formatVigencia(p.vigenciaInicio, p.vigenciaFin, true)}`}
+      titulo={p.nombre}
+      junto={<ChipPrograma estado="Cerrado" grande />}
+    >
+      <section className="bloque flex flex-wrap items-center gap-7 rounded-3xl p-8 max-sm:p-6">
+        <div className="flex flex-[1_1_420px] flex-col gap-2 max-sm:flex-[1_1_100%]">
+          <h2 className="m-0 text-lg font-normal">Nunca salió de tu cuenta</h2>
+          <span className="cifra text-[72px] leading-none text-ambar [overflow-wrap:anywhere] max-sm:text-[48px]">{textoMonto(cierre.nuncaSalio, m)}</span>
+          <span className="max-w-[520px] text-[17px] leading-[1.45]">No hay nada que reintegrar: lo que no se cobró sigue en la cuenta del programa.</span>
         </div>
-        <PasosPrograma estado="Cerrado" />
-      </div>
-
-      <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-5 py-4">
-        <Lock aria-hidden className="size-6" />
-        <strong className="text-[17px]">Programa cerrado. Revocamos el permiso en tu banco.</strong>
-        {cierre.cerradoEn && (
-          <time dateTime={cierre.cerradoEn} className="ml-auto text-sm text-tenue">
-            {formatFechaHora(cierre.cerradoEn)}
-          </time>
-        )}
-      </div>
-
-      <section className="bloque flex items-center gap-6 rounded-2xl p-6 sm:p-8">
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
-          <h2 className="m-0 text-lg font-bold">Nunca salió de tu cuenta</h2>
-          <span className="cifra text-[44px] text-ambar [overflow-wrap:anywhere] sm:text-[64px]">{textoMonto(cierre.nuncaSalio, m)}</span>
-          <p className="m-0 text-[17px]">No hay nada que reintegrar: lo que no se cobró sigue en la cuenta del programa.</p>
-        </div>
-        <img src="/marca/tatu-logo-oscuro.svg" alt="" className="hidden size-36 shrink-0 sm:block" />
+        <img src="/marca/tatu-logo-oscuro.svg" alt="" className="h-auto w-40 flex-none rounded-3xl" />
       </section>
 
       <div className="flex flex-wrap gap-4">
-        {(
-          [
-            ['Autorizado', cierre.autorizado],
-            ['Cobrado', cierre.cobrado],
-            ['Girado por adelantado', t.giradoPorAdelantado],
-          ] as const
-        ).map(([etiqueta, valor]) => (
-          <section key={etiqueta} className="flex flex-[1_1_220px] flex-col gap-1 rounded-2xl border border-border bg-card px-6 py-5">
-            <h2 className="m-0 text-[15px] font-bold">{etiqueta}</h2>
-            <span className="cifra text-[30px]">{textoMonto(valor, m)}</span>
-          </section>
-        ))}
+        <TarjetaCifra etiqueta="Autorizado">{textoMonto(cierre.autorizado, m)}</TarjetaCifra>
+        <TarjetaCifra etiqueta="Cobrado">{textoMonto(cierre.cobrado, m)}</TarjetaCifra>
+        <TarjetaCifra etiqueta="Girado por adelantado">{textoMonto(t.giradoPorAdelantado, m)}</TarjetaCifra>
       </div>
 
-      <Tarjeta className="gap-3 py-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="m-0 text-lg font-bold" id="titulo-cobros">
-            Resumen de cobros
-          </h2>
-          <Button variant="link" className="h-auto px-0 text-[15px] font-normal text-enlace" onClick={() => setVerTodos((v) => !v)} aria-expanded={verTodos}>
-            {verTodos ? 'Ocultar los cobros' : 'Ver todos los cobros'}
-          </Button>
-        </div>
-        <Table className="min-w-[520px] text-[15px]">
-          <TableHeader>
-            <TableRow className="border-b-2 border-foreground hover:bg-transparent">
-              <TableHead className="px-2 font-bold text-foreground">Resultado</TableHead>
-              <TableHead className="px-2 text-right font-bold text-foreground">Cobros</TableHead>
-              <TableHead className="px-2 text-right font-bold text-foreground">Monto</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(
-              [
-                ['Pagados a la cuenta', String(aCuenta.length), monto(aCuenta)],
-                ['Pagados en un punto', String(enPunto.length), monto(enPunto)],
-                ['Rechazados o fallidos (no movieron dinero)', String(t.rechazadosYFallidos), textoMonto('0', m)],
-                ['Sin cobrar al cierre', t.sinCobrar ? plural(t.sinCobrar.cedulas, 'cédula') : '—', t.sinCobrar ? textoMonto(t.sinCobrar.monto, m) : '—'],
-              ] as const
-            ).map(([a, b, c]) => (
-              <TableRow key={a} className="hover:bg-transparent">
-                <TableCell className="px-2 py-3 whitespace-normal">{a}</TableCell>
-                <TableCell className="px-2 py-3 text-right">{b}</TableCell>
-                <TableCell className="px-2 py-3 text-right">{c}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <p className="m-0 text-sm text-tenue">Desde ahora, todo intento de cobro se rechaza con «El programa está cerrado y ya no recibe cobros».</p>
-        {verTodos && <TablaCobros cobros={t.cobros} />}
-      </Tarjeta>
-    </MarcoEntidad>
+      <div className="flex flex-wrap items-start gap-6">
+        <Caja grande as="section" className="flex-[999_1_520px]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="titulo-cobros" className="m-0 text-[21px] font-extrabold">
+              Resumen de cobros
+            </h2>
+            <button
+              type="button"
+              aria-expanded={verTodos}
+              onClick={() => setVerTodos((v) => !v)}
+              className="min-h-11 border-0 bg-transparent p-0 text-base font-bold text-azul underline underline-offset-[3px]"
+            >
+              {verTodos ? 'Ocultar los cobros' : 'Ver todos los cobros'}
+            </button>
+          </div>
+          <FilaDato etiqueta="Pagados a una cuenta">{pagados.filter((c) => c.canal === 'cuenta').length}</FilaDato>
+          <FilaDato etiqueta="Pagados en un punto">{pagados.filter((c) => c.canal === 'retiro').length}</FilaDato>
+          {p.tipo === 'bono' && <FilaDato etiqueta="Pagados en comercios">{pagados.filter((c) => c.canal === 'compra').length}</FilaDato>}
+          <FilaDato etiqueta="Rechazados">{rechazados}</FilaDato>
+          <FilaDato etiqueta="Fallidos">{fallidos}</FilaDato>
+          <FilaDato etiqueta="Cédulas sin cobrar al cierre">{t.sinCobrar ? plural(t.sinCobrar.cedulas, 'cédula') : '—'}</FilaDato>
+          {verTodos && <TablaCobros cobros={t.cobros} />}
+        </Caja>
+
+        <Caja grande as="section" className="flex-[1_1_320px]">
+          <div className="flex items-center gap-3">
+            <Lock aria-hidden className="size-[22px]" strokeWidth={2} />
+            <h2 className="m-0 text-lg font-extrabold">Permiso revocado</h2>
+          </div>
+          <span className="text-base leading-[1.45]">
+            Revocamos el permiso en tu banco{cierre.cerradoEn ? ` el ${formatFechaHora(cierre.cerradoEn)}` : ''}. Ya nadie puede cobrar en este programa.
+          </span>
+          <BotonEnlace variante="contorno" medio to="/entidad">
+            Ir a tus programas
+          </BotonEnlace>
+        </Caja>
+      </div>
+    </PantallaEntidad>
   )
 }

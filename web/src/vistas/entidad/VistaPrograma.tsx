@@ -1,7 +1,7 @@
 import { Navigate, useParams } from 'react-router'
 
 import { Cargando, ErrorCarga } from '@/componentes/Comun'
-import { MarcoEntidad } from '@/componentes/Marcos'
+import { PantallaEntidad } from '@/componentes/MarcosProto'
 import { rutaDelPrograma } from '@/lib/pantallas'
 
 import ProgramaCerrado from './ProgramaCerrado'
@@ -16,9 +16,9 @@ export default function VistaPrograma() {
 
   if (!t) {
     return (
-      <MarcoEntidad>
+      <PantallaEntidad volver={{ to: '/entidad', texto: 'Tus programas' }}>
         {consulta.error ? <ErrorCarga mensaje={consulta.error} reintentar={() => void consulta.recargar()} /> : <Cargando />}
-      </MarcoEntidad>
+      </PantallaEntidad>
     )
   }
   const estado = t.programa.estado

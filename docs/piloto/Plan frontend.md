@@ -173,7 +173,8 @@ recargo de página o un doble clic siempre muestran la verdad que tiene la API. 
 Los wireframes eran de baja fidelidad y en escala de grises. La identidad visual (P-17) ya está
 aplicada: paleta, logo y tipografía salen del manual y del prototipo del equipo (detalle y hallazgos
 en [Plan identidad visual](./Plan%20identidad%20visual.md)). Desde el 14 oct 2026 también hay modo
-oscuro con la paleta del logo oscuro ([Plan modo oscuro](./Plan%20modo%20oscuro.md)).
+oscuro con la paleta del logo oscuro ([Plan modo oscuro](./Plan%20modo%20oscuro.md)). Desde la misma fecha, las vistas que están en el prototipo HTML del equipo lo siguen al 100 %
+([Plan apego al prototipo](./Plan%20apego%20al%20prototipo.md)).
 
 | Uso | Valor | Variable del tema |
 |---|---|---|

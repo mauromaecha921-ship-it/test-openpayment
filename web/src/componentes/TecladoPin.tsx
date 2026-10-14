@@ -1,5 +1,5 @@
 import { Delete } from 'lucide-react'
-import { useEffect, type Dispatch, type ReactNode, type SetStateAction } from 'react'
+import { useEffect, type Dispatch, type SetStateAction } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -11,11 +11,12 @@ export function agregarDigito(pin: string, d: string): string {
 }
 
 /**
- * Teclado de 3 × 4 del wireframe 15 con el estilo del prototipo: 1 a 9, «Limpiar», 0 y ⌫ (borrar). El PIN vive solo en el estado
- * del componente que lo usa; también se puede digitar con el teclado físico. Usa actualizaciones
- * funcionales: dos toques seguidos antes de volver a pintar no pierden un dígito.
+ * Teclado del prototipo (P2): 1 a 9, un hueco, 0 y ⌫. El PIN vive solo en el estado del componente
+ * que lo usa; también se digita con el teclado físico (Escape borra todo). Usa actualizaciones
+ * funcionales: dos toques seguidos antes de volver a pintar no pierden un dígito. `oculto`: en el
+ * computador (PD2) no se dibuja, solo escucha el teclado.
  */
-export function TecladoPin({ onChange, deshabilitado = false }: { onChange: Dispatch<SetStateAction<string>>; deshabilitado?: boolean }) {
+export function TecladoPin({ onChange, deshabilitado = false, oculto = false }: { onChange: Dispatch<SetStateAction<string>>; deshabilitado?: boolean; oculto?: boolean }) {
   const agregar = (d: string) => !deshabilitado && onChange((p) => agregarDigito(p, d))
   const borrar = () => !deshabilitado && onChange((p) => p.slice(0, -1))
   const limpiar = () => !deshabilitado && onChange('')
@@ -31,48 +32,50 @@ export function TecladoPin({ onChange, deshabilitado = false }: { onChange: Disp
     return () => window.removeEventListener('keydown', alTeclear)
   })
 
-  const teclas: Array<{ texto: ReactNode; aria: string; accion: () => void; chica?: boolean; plana?: boolean }> = [
-    ...'123456789'.split('').map((d) => ({ texto: d, aria: `Dígito ${d}`, accion: () => agregar(d) })),
-    { texto: 'Limpiar', aria: 'Limpiar: borrar todo el PIN', accion: limpiar, chica: true, plana: true },
-    { texto: '0', aria: 'Dígito 0', accion: () => agregar('0') },
-    { texto: <Delete className="mx-auto size-7" />, aria: 'Borrar un dígito', accion: borrar, plana: true },
-  ]
+  if (oculto) return null
 
+  const tecla = 'h-12 rounded-xl border-[1.5px] border-border bg-card text-2xl font-bold text-foreground active:bg-muted disabled:opacity-50'
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {teclas.map((t) => (
-        <button
-          key={t.aria}
-          type="button"
-          aria-label={t.aria}
-          disabled={deshabilitado}
-          onClick={t.accion}
-          className={cn(
-            'h-[60px] rounded-xl font-bold text-foreground disabled:opacity-50',
-            t.plana ? 'bg-transparent active:bg-muted' : 'border border-border bg-card active:bg-muted',
-            t.chica ? 'text-base text-muted-foreground' : 'text-[26px]',
-          )}
-        >
-          {t.texto}
+    <div className="grid grid-cols-3 gap-1.5">
+      {'123456789'.split('').map((d) => (
+        <button key={d} type="button" aria-label={`Dígito ${d}`} disabled={deshabilitado} onClick={() => agregar(d)} className={tecla}>
+          {d}
         </button>
       ))}
+      <span />
+      <button type="button" aria-label="Dígito 0" disabled={deshabilitado} onClick={() => agregar('0')} className={tecla}>
+        0
+      </button>
+      <button
+        type="button"
+        aria-label="Borrar un dígito"
+        disabled={deshabilitado}
+        onClick={borrar}
+        className="flex h-12 items-center justify-center rounded-xl border-0 bg-transparent text-foreground disabled:opacity-50"
+      >
+        <Delete aria-hidden className="size-6" strokeWidth={2} />
+      </button>
     </div>
   )
 }
 
-/** Las 4 casillas del PIN, con su lectura para lector de pantalla («2 de 4 dígitos»). */
-export function PuntosPin({ largo }: { largo: number }) {
+/**
+ * Las 4 casillas del PIN, sobre el bloque ámbar, con su lectura para lector de pantalla («2 de 4
+ * dígitos»). `grande`: las del computador (72 × 80). `error`: el borde rojo de «PIN incorrecto».
+ */
+export function PuntosPin({ largo, grande = false, error = false }: { largo: number; grande?: boolean; error?: boolean }) {
   return (
-    <div role="img" aria-label={`${largo} de ${LARGO} dígitos`} className="flex gap-2.5">
+    <div role="img" aria-label={`${largo} de ${LARGO} dígitos`} className={cn('flex', grande ? 'gap-3.5' : 'justify-center gap-2.5')}>
       {Array.from({ length: LARGO }, (_, i) => (
         <span
           key={i}
           className={cn(
-            'flex h-14 w-[52px] items-center justify-center rounded-xl border-2 bg-white',
-            i < largo || i === largo ? 'border-noche' : 'border-white',
+            'flex items-center justify-center bg-[#fffdf8]',
+            grande ? 'h-20 w-[72px] rounded-[14px] border-[2.5px]' : 'h-[54px] w-[52px] rounded-xl border-2',
+            error ? 'border-[#a3261c]' : i < largo ? 'border-noche' : 'border-pin-vacio',
           )}
         >
-          {i < largo && <span className="size-3.5 rounded-full bg-noche" />}
+          {i < largo && <span className={cn('rounded-full bg-noche', grande ? 'size-[18px]' : 'size-3.5')} />}
         </span>
       ))}
     </div>

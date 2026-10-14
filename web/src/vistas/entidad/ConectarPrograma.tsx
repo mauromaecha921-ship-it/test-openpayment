@@ -1,5 +1,5 @@
-import { Check, TriangleAlert } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Check, Store, TriangleAlert } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
 
 import { resolverBilletera, type EstadoBilletera } from '@/api/billeteras'
@@ -8,18 +8,18 @@ import { useConfig } from '@/api/config'
 import type { Billetera, Categoria, Comercio, Liquidacion, Programa, ProgramaEntrada, Punto } from '@/api/tipos'
 import { BilleteraCorta } from '@/componentes/BilleteraCorta'
 import { Campo } from '@/componentes/Campo'
-import { Cargando, ErrorCarga, MensajeError, Pastilla, Tarjeta } from '@/componentes/Comun'
-import { MarcoEntidad } from '@/componentes/Marcos'
+import { Cargando, ErrorCarga, MensajeError } from '@/componentes/Comun'
+import { PantallaEntidad } from '@/componentes/MarcosProto'
 import { textoMonto } from '@/componentes/Monto'
-import { PasosPrograma } from '@/componentes/PasosPrograma'
-import { Titulo } from '@/componentes/Titulo'
-import { Button } from '@/componentes/ui/button'
+import { Boton, Caja, claseEnlaceSuave, FilaDato } from '@/componentes/Proto'
 import { RadioGroup, RadioGroupItem } from '@/componentes/ui/radio-group'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/componentes/ui/table'
 import { useRol } from '@/contexto/Rol'
 import { aPesos } from '@/lib/montos'
 import { rutaDelPrograma } from '@/lib/pantallas'
+import { plural } from '@/lib/textos'
 import { cn } from '@/lib/utils'
+
+import { ChipPrograma } from './TusProgramas'
 
 function hoyIso() {
   const f = new Date()
@@ -260,104 +260,97 @@ export default function ConectarPrograma() {
   const moneda = billetera.estado === 'encontrada' ? billetera.billetera.moneda : null
 
   return (
-    <MarcoEntidad entidad={form.entidad || undefined}>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <span className="text-sm text-tenue">{id ? 'Borrador' : 'Nuevo programa'}</span>
-          <Titulo className="text-[28px] sm:text-[32px]">Conecta tu subsidio</Titulo>
-        </div>
-        <PasosPrograma estado="Borrador" />
-      </div>
-
+    <PantallaEntidad
+      quien={form.entidad || undefined}
+      volver={{ to: '/entidad', texto: 'Tus programas' }}
+      subtitulo={id ? 'Borrador' : 'Nuevo programa'}
+      titulo="Conecta tu programa"
+    >
       {errorCarga && <ErrorCarga mensaje={errorCarga} reintentar={() => location.reload()} />}
       {!cargado && <Cargando />}
 
       {cargado && !errorCarga && (
         <div className="flex flex-wrap items-start gap-6">
           <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-5">
-            <Tarjeta>
-              <h2 className="m-0 text-xl font-bold">1. Datos del programa</h2>
-              <div className="flex flex-wrap gap-4">
-                <Campo className="flex-[1_1_260px]" etiqueta="Nombre del programa" value={form.nombre} onChange={(e) => cambiar('nombre', e.target.value)} />
-                <Campo className="flex-[1_1_260px]" etiqueta="Entidad" value={form.entidad} onChange={(e) => cambiar('entidad', e.target.value)} />
+            <Caja grande as="section">
+              <TituloSeccion n={1}>Datos del programa</TituloSeccion>
+              <div className="flex flex-wrap gap-3.5">
+                <Campo proto="escritorio" className="min-w-[200px] flex-[1_1_100%]" etiqueta="Entidad" value={form.entidad} onChange={(e) => cambiar('entidad', e.target.value)} />
+                <Campo proto="escritorio" className="min-w-[200px] flex-[1_1_100%]" etiqueta="Nombre del programa" value={form.nombre} onChange={(e) => cambiar('nombre', e.target.value)} />
+                <Campo proto="escritorio" className="min-w-[200px] flex-[1_1_40%]" etiqueta="Inicio de la vigencia" type="date" value={form.vigenciaInicio} onChange={(e) => cambiar('vigenciaInicio', e.target.value)} />
+                <Campo
+                  proto="escritorio"
+                  className="min-w-[200px] flex-[1_1_40%]"
+                  etiqueta="Fin de la vigencia"
+                  type="date"
+                  value={form.vigenciaFin}
+                  min={form.vigenciaInicio}
+                  onChange={(e) => cambiar('vigenciaFin', e.target.value)}
+                />
+                <Campo
+                  proto="escritorio"
+                  className="min-w-[200px] flex-[1_1_100%]"
+                  etiqueta="Cuenta del programa (wallet)"
+                  placeholder="$ilp.interledger-test.dev/…"
+                  value={form.billetera}
+                  autoComplete="off"
+                  spellCheck={false}
+                  onChange={(e) => {
+                    cambiar('billetera', e.target.value)
+                    setBilletera({ estado: 'vacia' })
+                  }}
+                  onBlur={() => void validarBilletera()}
+                  ayuda="La wallet de quien paga, con saldo de prueba."
+                />
               </div>
-              <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
-                <legend className="mb-2 p-0 text-sm font-bold">Tipo</legend>
-                <RadioGroup value={form.tipo} onValueChange={(v) => cambiar('tipo', v as ProgramaEntrada['tipo'])} className="flex flex-wrap gap-3">
-                  <label htmlFor="tipo-subsidio" className={cn('flex flex-[1_1_240px] items-start gap-2.5 rounded-[10px] px-3.5 py-3 text-[15px]', form.tipo === 'subsidio' ? 'border-2 border-foreground' : 'border border-control')}>
-                    <RadioGroupItem id="tipo-subsidio" value="subsidio" className="mt-0.5 size-5" />
-                    <span className="flex flex-col gap-0.5">
-                      <strong>Subsidio</strong>
-                      <span className="text-muted-foreground">Destino libre: a la cuenta o retiro en un punto</span>
-                    </span>
-                  </label>
-                  <label
-                    htmlFor="tipo-bono"
-                    className={cn(
-                      'flex flex-[1_1_240px] items-start gap-2.5 rounded-[10px] px-3.5 py-3 text-[15px]',
-                      config.extras.bono ? (form.tipo === 'bono' ? 'border-2 border-foreground' : 'border border-control') : 'border border-dashed border-control text-tenue',
-                    )}
-                  >
-                    <RadioGroupItem id="tipo-bono" value="bono" disabled={!config.extras.bono} className="mt-0.5 size-5" />
-                    <span className="flex flex-col gap-0.5">
-                      <strong>Bono con destino</strong>
-                      <span>Solo en comercios autorizados · extra{!config.extras.bono && ' (apagado)'}</span>
-                    </span>
-                  </label>
-                </RadioGroup>
-              </fieldset>
-              <div className="flex flex-wrap gap-4">
-                <Campo className="flex-[1_1_200px]" etiqueta="Vigencia: inicio" type="date" value={form.vigenciaInicio} onChange={(e) => cambiar('vigenciaInicio', e.target.value)} />
-                <Campo className="flex-[1_1_200px]" etiqueta="Vigencia: fin" type="date" value={form.vigenciaFin} min={form.vigenciaInicio} onChange={(e) => cambiar('vigenciaFin', e.target.value)} />
-              </div>
-            </Tarjeta>
-
-            <Tarjeta className="gap-3">
-              <h2 className="m-0 text-xl font-bold">2. Cuenta del programa</h2>
-              <Campo
-                etiqueta="Dirección de la wallet del programa"
-                mono
-                placeholder="$ilp.interledger-test.dev/…"
-                value={form.billetera}
-                autoComplete="off"
-                spellCheck={false}
-                onChange={(e) => {
-                  cambiar('billetera', e.target.value)
-                  setBilletera({ estado: 'vacia' })
-                }}
-                onBlur={() => void validarBilletera()}
-                ayuda="La wallet de quien paga, con saldo de prueba. Si empieza con $ la convertimos a https://."
-              />
               <div aria-live="polite">
-                {billetera.estado === 'buscando' && <p className="m-0 text-sm text-muted-foreground">Buscando la cuenta…</p>}
+                {billetera.estado === 'buscando' && <p className="m-0 text-[15px] text-muted-foreground">Buscando la cuenta…</p>}
                 {billetera.estado === 'encontrada' && (
-                  <div className="flex flex-wrap items-center gap-2.5 rounded-lg bg-muted px-3 py-2.5 text-sm">
-                    <Check aria-hidden className="size-[18px] text-pagado" strokeWidth={2.5} />
-                    <span className="font-bold">Cuenta encontrada</span>
-                    <BilleteraCorta url={billetera.billetera.id} completa className="text-muted-foreground" />
-                    <Pastilla className="ml-auto">
-                      Moneda: {billetera.billetera.moneda.codigo} · escala {billetera.billetera.moneda.escala}
-                    </Pastilla>
+                  <div className="inline-flex flex-wrap items-center gap-2 text-[15px] font-semibold text-azul">
+                    <Check aria-hidden className="size-[18px]" strokeWidth={2.5} />
+                    Cuenta encontrada · {nombreMoneda(billetera.billetera.moneda)}, escala {billetera.billetera.moneda.escala}
                   </div>
                 )}
                 {billetera.estado === 'noEncontrada' && <MensajeError>{billetera.mensaje}</MensajeError>}
               </div>
-            </Tarjeta>
+              {config.extras.bono ? (
+                <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
+                  <legend className="mb-2 p-0 text-[15px] font-bold">Tipo</legend>
+                  <RadioGroup value={form.tipo} onValueChange={(v) => cambiar('tipo', v as ProgramaEntrada['tipo'])} className="flex flex-wrap gap-3">
+                    {TIPOS.map(([valor, nombre, texto]) => (
+                      <label
+                        key={valor}
+                        htmlFor={`tipo-${valor}`}
+                        className={cn(
+                          'flex flex-[1_1_240px] items-start gap-2.5 rounded-[14px] px-3.5 py-3 text-[15px]',
+                          form.tipo === valor ? 'border-2 border-foreground' : 'border-[1.5px] border-border',
+                        )}
+                      >
+                        <RadioGroupItem id={`tipo-${valor}`} value={valor} className="mt-0.5 size-5" />
+                        <span className="flex flex-col gap-0.5">
+                          <strong>{nombre}</strong>
+                          <span className="text-muted-foreground">{texto}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </RadioGroup>
+                </fieldset>
+              ) : (
+                <span className="text-[15px] text-muted-foreground">Tipo: subsidio de destino libre. Se cobra a una cuenta verificada o en un punto de retiro.</span>
+              )}
+            </Caja>
 
-            <Tarjeta className="gap-3.5">
+            <Caja grande as="section">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="m-0 text-xl font-bold">{form.tipo === 'bono' ? '3. Personas y valor del bono' : '3. Personas y monto'}</h2>
-                <Button variant="link" className="h-auto min-h-11 px-0 text-[15px] font-normal text-enlace underline" onClick={() => irAlEquipo('personas')}>
+                <TituloSeccion n={2}>Liquidación</TituloSeccion>
+                <button type="button" onClick={() => irAlEquipo('personas')} className={CLASE_ENLACE_AZUL}>
                   Registrar personas
-                </Button>
+                </button>
               </div>
-              <p className="m-0 text-[15px] text-muted-foreground">
-                Cada persona registrada en «Equipo de prueba» recibe este monto en su wallet. Regístrenlas antes de aprobar: quien llegue
-                después queda por fuera del tope y el banco puede rechazar su cobro.
-              </p>
               <div className="flex flex-wrap items-end gap-3">
                 <Campo
-                  className="flex-[1_1_200px]"
+                  proto="escritorio"
+                  className="flex-[1_1_220px]"
                   etiqueta={`${form.tipo === 'bono' ? 'Valor del bono por persona' : 'Monto por persona'}${moneda ? ` (${moneda.codigo})` : ''}`}
                   inputMode="decimal"
                   placeholder="10000"
@@ -365,24 +358,25 @@ export default function ConectarPrograma() {
                   onChange={(e) => cambiar('montoPorPersona', e.target.value.replace(/[^\d.]/g, ''))}
                   ayuda="En pesos, sin puntos de miles."
                 />
-                <Button variant="outline" className="mb-7 border-foreground" onClick={() => void conectarLiquidacion()} disabled={guardando}>
+                <Boton variante="contorno" medio className="mb-[26px]" onClick={() => void conectarLiquidacion()} disabled={guardando}>
                   {liquidacion ? 'Volver a calcular' : 'Calcular total'}
-                </Button>
+                </Boton>
               </div>
-              <div className="flex flex-wrap gap-3" aria-live="polite">
-                <div className="flex flex-[1_1_180px] flex-col gap-0.5 rounded-[10px] border border-border px-4 py-3.5">
-                  <span className="text-sm text-tenue">Personas registradas</span>
-                  <span className="text-[28px] font-bold">{liquidacion ? liquidacion.cedulas : '—'}</span>
+              <div className="grid grid-cols-2 gap-3.5 max-sm:grid-cols-1" aria-live="polite">
+                <div className="rounded-[14px] bg-background p-4">
+                  <div className="text-[15px] text-muted-foreground">Cédulas con pago</div>
+                  <div className="cifra text-[30px]">{liquidacion ? liquidacion.cedulas : '—'}</div>
                 </div>
-                <div className="flex flex-[1_1_180px] flex-col gap-0.5 rounded-[10px] border border-border px-4 py-3.5">
-                  <span className="text-sm text-tenue">Total a pagar</span>
-                  <span className="text-[28px] font-bold">{liquidacion ? textoMonto(liquidacion.total, liquidacion.moneda) : '—'}</span>
-                </div>
-                <div className="flex flex-[2_1_260px] items-center rounded-[10px] border border-dashed border-control px-4 py-3.5 text-[15px] text-muted-foreground">
-                  Este total será el tope del permiso que apruebas en tu banco.
+                <div className="rounded-[14px] bg-background p-4">
+                  <div className="text-[15px] text-muted-foreground">Total liquidado · será el tope del permiso</div>
+                  <div className="cifra text-[30px] [overflow-wrap:anywhere]">{liquidacion ? textoMonto(liquidacion.total, liquidacion.moneda) : '—'}</div>
                 </div>
               </div>
-            </Tarjeta>
+              <span className="text-[15px] leading-[1.45] text-muted-foreground">
+                Cada persona registrada en «Equipo de prueba» recibe este monto. Regístrenlas antes de aprobar: quien llegue después queda
+                por fuera del tope y el banco puede rechazar su cobro.
+              </span>
+            </Caja>
 
             {form.tipo === 'bono' ? (
               <SeccionCategorias
@@ -397,38 +391,55 @@ export default function ConectarPrograma() {
             )}
           </div>
 
-          <Tarjeta as="aside" className="flex-[1_1_300px]" aria-labelledby="titulo-resumen">
-            <h2 id="titulo-resumen" className="m-0 text-xl font-bold">
-              Resumen
-            </h2>
-            <Pastilla>Borrador</Pastilla>
-            <p className="m-0 text-[15px] text-muted-foreground">Todavía no se mueve dinero.</p>
-            <dl className="m-0 grid grid-cols-2 gap-x-3 gap-y-2.5 text-[15px]">
-              <dt className="text-tenue">Tope del permiso</dt>
-              <dd className="m-0 text-right font-bold">{liquidacion ? textoMonto(liquidacion.total, liquidacion.moneda) : '—'}</dd>
-              <dt className="text-tenue">Personas</dt>
-              <dd className="m-0 text-right">{liquidacion?.cedulas ?? '—'}</dd>
-              <dt className="text-tenue">Canales</dt>
-              <dd className="m-0 text-right">{form.tipo === 'bono' ? 'Compra en comercios' : 'Cuenta y punto'}</dd>
-              <dt className="text-tenue">{form.tipo === 'bono' ? 'Categorías' : 'Puntos'}</dt>
-              <dd className="m-0 text-right">{form.tipo === 'bono' ? (form.categorias?.length ?? 0) : puntos.length}</dd>
-            </dl>
+          <Caja grande as="section" className="flex-[1_1_280px]">
+            <h2 className="sr-only">Resumen</h2>
+            <span className="text-[15px] text-muted-foreground">Estado</span>
+            <ChipPrograma estado="Borrador" grande />
+            <span className="text-base leading-[1.4]">Todavía no se mueve dinero.</span>
+            <div aria-hidden className="h-px bg-border" />
+            <FilaDato etiqueta="Tope del permiso">{liquidacion ? textoMonto(liquidacion.total, liquidacion.moneda) : '—'}</FilaDato>
+            <FilaDato etiqueta="Beneficiarios">{liquidacion?.cedulas ?? '—'}</FilaDato>
+            <FilaDato etiqueta="Canales">{form.tipo === 'bono' ? 'Compra en comercios' : 'Cuenta y punto'}</FilaDato>
+            <FilaDato etiqueta={form.tipo === 'bono' ? 'Categorías' : 'Puntos'}>{form.tipo === 'bono' ? (form.categorias?.length ?? 0) : puntos.length}</FilaDato>
             <MensajeError>{error}</MensajeError>
             {aviso && (
               <p role="status" className="m-0 text-[15px] font-bold text-pagado">
                 {aviso}
               </p>
             )}
-            <Button size="lg" onClick={() => void guardarYSeguir()} disabled={guardando}>
-              Guardar y seguir
-            </Button>
-            <Button variant="outline" onClick={() => void guardarBorrador()} disabled={guardando}>
+            <Boton medio className="w-full" onClick={() => void guardarYSeguir()} disabled={guardando}>
+              Guardar y continuar
+            </Boton>
+            <button type="button" onClick={() => void guardarBorrador()} disabled={guardando} className={cn(claseEnlaceSuave(), 'border-0 bg-transparent text-base')}>
               Guardar borrador
-            </Button>
-          </Tarjeta>
+            </button>
+          </Caja>
         </div>
       )}
-    </MarcoEntidad>
+    </PantallaEntidad>
+  )
+}
+
+const TIPOS = [
+  ['subsidio', 'Subsidio', 'Destino libre: a una cuenta verificada o en un punto de retiro'],
+  ['bono', 'Bono con destino', 'Solo en comercios autorizados · extra'],
+] as const
+
+const CLASE_ENLACE_AZUL = 'min-h-11 border-0 bg-transparent p-0 text-base font-bold text-azul underline underline-offset-[3px]'
+
+function nombreMoneda(m: Billetera['moneda']) {
+  return m.codigo === 'COP' ? 'pesos de prueba (COP)' : m.codigo
+}
+
+/** «① Datos del programa»: el número en círculo Noche y el título de la sección. */
+function TituloSeccion({ n, children }: { n: number; children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span aria-hidden className="flex size-8 flex-none items-center justify-center rounded-full bg-foreground font-extrabold text-background">
+        {n}
+      </span>
+      <h2 className="m-0 text-[21px] font-extrabold">{children}</h2>
+    </div>
   )
 }
 
@@ -449,12 +460,12 @@ function SeccionCategorias({
   const sedesVerificadas = (categoria: string) =>
     comercios.filter((c) => c.categoria === categoria && c.verificado).reduce((n, c) => n + c.sedes.length, 0)
   return (
-    <Tarjeta className="gap-3.5">
+    <Caja grande as="section">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="m-0 text-xl font-bold">4. Dónde se usa el bono</h2>
-        <Button variant="link" className="h-auto min-h-11 px-0 text-[15px] font-normal text-enlace underline" onClick={irAlEquipo}>
+        <TituloSeccion n={3}>Dónde se usa el bono</TituloSeccion>
+        <button type="button" onClick={irAlEquipo} className={CLASE_ENLACE_AZUL}>
           Registrar comercios
-        </Button>
+        </button>
       </div>
       <p className="m-0 text-[15px] text-muted-foreground">
         El bono no se cobra en efectivo ni a la cuenta: se usa como parte del pago de una compra. Lo aceptan las sedes de comercios
@@ -468,7 +479,7 @@ function SeccionCategorias({
           return (
             <label
               key={c.id}
-              className={cn('flex items-start gap-3 rounded-[10px] px-3.5 py-3 text-[15px]', marcada ? 'border-2 border-foreground' : 'border border-control')}
+              className={cn('flex items-start gap-3 rounded-[14px] px-3.5 py-3 text-[15px]', marcada ? 'border-2 border-foreground' : 'border-[1.5px] border-border')}
             >
               <input
                 type="checkbox"
@@ -479,7 +490,7 @@ function SeccionCategorias({
               <span className="flex flex-col gap-0.5">
                 <strong>{c.nombre}</strong>
                 <span className="text-muted-foreground">{c.actividades.map((a) => a.nombre).join(' · ')}</span>
-                <span className={cn('text-sm', sedes ? 'text-pagado' : 'text-tenue')}>
+                <span className={cn('text-sm', sedes ? 'text-pagado' : 'text-muted-foreground')}>
                   {sedes ? `${sedes} ${sedes === 1 ? 'sede verificada' : 'sedes verificadas'}` : 'Todavía no hay comercios verificados en esta categoría'}
                 </span>
               </span>
@@ -487,10 +498,11 @@ function SeccionCategorias({
           )
         })}
       </fieldset>
-    </Tarjeta>
+    </Caja>
   )
 }
 
+/** Prototipo: «③ Puntos de retiro», con el resumen y «Gestionar puntos» (abre la lista y el alta). */
 function SeccionPuntos({
   programaId,
   moneda,
@@ -502,6 +514,7 @@ function SeccionPuntos({
   puntos: Punto[]
   alAgregar: (p: Punto) => void
 }) {
+  const [abierta, setAbierta] = useState(false)
   const [nuevo, setNuevo] = useState({ nombre: '', direccion: '', billetera: '' })
   const [error, setError] = useState<string | null>(null)
   const [ok, setOk] = useState<string | null>(null)
@@ -530,69 +543,102 @@ function SeccionPuntos({
     }
   }
 
+  const nombres = puntos.map((p) => p.nombre.split(' — ')[0]).join(', ')
+  const monedaDistinta = (p: Punto) => moneda && p.moneda && p.moneda.codigo !== moneda.codigo
+
   return (
-    <Tarjeta className="gap-3.5">
-      <h2 className="m-0 text-xl font-bold">4. Puntos de retiro</h2>
-      <div className="rounded-lg border border-border">
-        <Table className="min-w-[620px] text-sm">
-          <TableHeader>
-            <TableRow className="bg-muted hover:bg-muted">
-              <TableHead className="px-3 font-bold text-foreground">Nombre</TableHead>
-              <TableHead className="px-3 font-bold text-foreground">Dirección</TableHead>
-              <TableHead className="px-3 font-bold text-foreground">Wallet</TableHead>
-              <TableHead className="px-3 font-bold text-foreground">Moneda</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {puntos.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="px-3 py-3 text-tenue">
-                  Todavía no hay puntos.
-                </TableCell>
-              </TableRow>
+    <Caja grande as="section">
+      <TituloSeccion n={3}>Puntos de retiro</TituloSeccion>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span aria-hidden className="flex size-11 flex-none items-center justify-center rounded-xl bg-ambar text-noche">
+            <Store className="size-[22px]" />
+          </span>
+          <div>
+            <div className="text-[17px] font-bold">{puntos.length === 0 ? 'Todavía no hay puntos' : plural(puntos.length, 'punto disponible', 'puntos disponibles')}</div>
+            {puntos.length > 0 && (
+              <div className="text-[15px] text-muted-foreground">
+                {nombres}
+                {moneda?.codigo === 'COP' ? ' · pesos de prueba' : moneda ? ` · ${moneda.codigo}` : ''}
+              </div>
             )}
-            {puntos.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell className="px-3 py-2.5 font-bold whitespace-normal">{p.nombre}</TableCell>
-                <TableCell className="px-3 py-2.5 whitespace-normal text-muted-foreground">{p.direccion || '—'}</TableCell>
-                <TableCell className="px-3 py-2.5">
-                  <BilleteraCorta url={p.billetera} completa className="text-[13px]" />
-                </TableCell>
-                <TableCell className="px-3 py-2.5">
-                  {!p.moneda ? (moneda ? 'Igual al programa' : '—') : !moneda ? p.moneda.codigo : p.moneda.codigo === moneda.codigo ? 'Igual al programa' : (
-                    <span className="inline-flex items-center gap-1 font-bold text-rechazo">
-                      <TriangleAlert aria-hidden className="size-4" /> {p.moneda.codigo}: distinta
-                    </span>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+          </div>
+        </div>
+        <button type="button" aria-expanded={abierta} onClick={() => setAbierta((a) => !a)} className={CLASE_ENLACE_AZUL}>
+          {abierta ? 'Cerrar' : 'Gestionar puntos'}
+        </button>
       </div>
-      <div className="flex flex-wrap items-end gap-3">
-        <Campo className="flex-[1_1_160px]" etiqueta="Nombre" value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
-        <Campo className="flex-[1_1_160px]" etiqueta="Dirección (opcional)" value={nuevo.direccion} onChange={(e) => setNuevo({ ...nuevo, direccion: e.target.value })} />
-        <Campo
-          className="flex-[2_1_220px]"
-          etiqueta="Wallet del punto"
-          mono
-          placeholder="$ilp.interledger-test.dev/…"
-          spellCheck={false}
-          value={nuevo.billetera}
-          onChange={(e) => setNuevo({ ...nuevo, billetera: e.target.value })}
-        />
-        <Button variant="outline" className="border-foreground" onClick={() => void agregar()} disabled={enviando}>
-          Agregar punto
-        </Button>
-      </div>
-      <MensajeError>{error}</MensajeError>
-      {ok && (
-        <p role="status" className="m-0 text-[15px] font-bold text-pagado">
-          {ok}
-        </p>
+
+      {abierta && (
+        <>
+          {puntos.length > 0 && (
+            <div className="relative min-w-0 overflow-x-auto">
+              <table className="w-full min-w-[560px] border-collapse text-base">
+                <thead>
+                  <tr>
+                    {['Nombre', 'Dirección', 'Wallet', 'Moneda'].map((h) => (
+                      <th key={h} className="px-3 py-2.5 text-left text-sm font-semibold text-muted-foreground">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {puntos.map((p) => (
+                    <tr key={p.id}>
+                      <td className="border-t border-border px-3 py-3.5 font-bold">{p.nombre}</td>
+                      <td className="border-t border-border px-3 py-3.5 text-muted-foreground">{p.direccion || '—'}</td>
+                      <td className="border-t border-border px-3 py-3.5">
+                        <BilleteraCorta url={p.billetera} completa className="text-[13px]" />
+                      </td>
+                      <td className="border-t border-border px-3 py-3.5">
+                        {monedaDistinta(p) ? (
+                          <span className="inline-flex items-center gap-1 font-bold text-rechazo">
+                            <TriangleAlert aria-hidden className="size-4" /> {p.moneda!.codigo}: distinta
+                          </span>
+                        ) : moneda || p.moneda ? (
+                          'Igual al programa'
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="flex flex-wrap items-end gap-3">
+            <Campo proto="escritorio" className="flex-[1_1_160px]" etiqueta="Nombre" value={nuevo.nombre} onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} />
+            <Campo
+              proto="escritorio"
+              className="flex-[1_1_160px]"
+              etiqueta="Dirección (opcional)"
+              value={nuevo.direccion}
+              onChange={(e) => setNuevo({ ...nuevo, direccion: e.target.value })}
+            />
+            <Campo
+              proto="escritorio"
+              className="flex-[2_1_220px]"
+              etiqueta="Wallet del punto"
+              placeholder="$ilp.interledger-test.dev/…"
+              spellCheck={false}
+              value={nuevo.billetera}
+              onChange={(e) => setNuevo({ ...nuevo, billetera: e.target.value })}
+            />
+            <Boton variante="contorno" medio onClick={() => void agregar()} disabled={enviando}>
+              Agregar punto
+            </Boton>
+          </div>
+          <MensajeError>{error}</MensajeError>
+          {ok && (
+            <p role="status" className="m-0 text-[15px] font-bold text-pagado">
+              {ok}
+            </p>
+          )}
+          <p className="m-0 text-sm text-muted-foreground">La wallet del punto debe usar la misma moneda del programa; si no, no se guarda.</p>
+        </>
       )}
-      <p className="m-0 text-sm text-tenue">La wallet del punto debe usar la misma moneda del programa; si no, no se guarda.</p>
-    </Tarjeta>
+    </Caja>
   )
 }

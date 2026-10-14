@@ -1,20 +1,20 @@
-import { Clock, TriangleAlert } from 'lucide-react'
+import { Clock, Lock, TriangleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useParams, useSearchParams } from 'react-router'
+import { Navigate, useParams, useSearchParams } from 'react-router'
 
 import { api, mensajeDeError } from '@/api/client'
 import type { Liquidacion, Programa, Redireccion } from '@/api/tipos'
 import { usePolling } from '@/api/usePolling'
 import { BilleteraCorta } from '@/componentes/BilleteraCorta'
-import { Cargando, ErrorCarga, ListaDatos, MensajeError, Tarjeta } from '@/componentes/Comun'
-import { MarcoEntidad } from '@/componentes/Marcos'
+import { Cargando, ErrorCarga, MensajeError } from '@/componentes/Comun'
+import { PantallaEntidad } from '@/componentes/MarcosProto'
 import { textoMonto } from '@/componentes/Monto'
-import { PasosPrograma } from '@/componentes/PasosPrograma'
-import { Titulo } from '@/componentes/Titulo'
-import { Button } from '@/componentes/ui/button'
+import { Boton, BotonEnlace, Caja, FilaDato, NumeroCirculo } from '@/componentes/Proto'
 import { useRol } from '@/contexto/Rol'
-import { formatFecha, plural } from '@/lib/textos'
+import { formatVigencia, plural } from '@/lib/textos'
 import { prepararPestana } from '@/lib/ventana'
+
+import { ChipPrograma } from './TusProgramas'
 
 const DIEZ_MINUTOS = 10 * 60_000
 
@@ -102,17 +102,15 @@ export default function AprobarEnBanco() {
   const tope = programa?.tope ?? liquidacion?.total
 
   return (
-    <MarcoEntidad entidad={programa?.entidad}>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <span className="text-sm text-tenue">{programa?.nombre ?? ' '}</span>
-          <Titulo className="text-[28px] sm:text-[32px]">Aprueba una sola vez en tu banco</Titulo>
-        </div>
-        {programa && <PasosPrograma estado={programa.estado} />}
-      </div>
-
+    <PantallaEntidad
+      quien={programa?.entidad}
+      volver={{ to: `/entidad/programas/${id}/editar`, texto: 'Conectar programa' }}
+      subtitulo={programa ? `Vigencia: ${formatVigencia(programa.vigenciaInicio, programa.vigenciaFin, true)}` : ' '}
+      titulo={programa?.nombre ?? 'Aprueba en tu banco'}
+      junto={programa && <ChipPrograma estado={programa.estado} grande />}
+    >
       {rechazada && !esperando && (
-        <div role="alert" className="flex items-start gap-3 rounded-xl border-2 border-foreground bg-card px-5 py-4">
+        <div role="alert" className="flex items-start gap-3 rounded-[18px] border-2 border-foreground bg-card px-5 py-4">
           <TriangleAlert aria-hidden className="size-6 shrink-0" />
           <div className="flex flex-col gap-1">
             <strong className="text-[17px]">
@@ -130,42 +128,39 @@ export default function AprobarEnBanco() {
 
       {programa && liquidacion && tope && (
         <div className="flex flex-wrap items-start gap-6">
-          <Tarjeta className="flex-[999_1_560px] gap-[18px]">
-            <h2 className="m-0 text-xl font-bold">El permiso que vas a aprobar</h2>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-sm text-tenue">Tope total</span>
-              <span className="cifra text-[40px] [overflow-wrap:anywhere] sm:text-[48px]">{textoMonto(tope, programa.moneda)}</span>
-              <span className="text-[15px] text-muted-foreground">
-                La suma de la liquidación: {plural(liquidacion.cedulas, 'cédula')}
-              </span>
+          <Caja grande as="section" className="flex-[999_1_560px]">
+            <h2 className="sr-only">El permiso que vas a aprobar</h2>
+            <span className="text-base text-muted-foreground">Vas a aprobar en tu banco un permiso con tope de</span>
+            <span className="cifra text-[56px] leading-none [overflow-wrap:anywhere] max-sm:text-[40px]">{textoMonto(tope, programa.moneda)}</span>
+            <div className="flex items-start gap-3 rounded-[14px] bg-background p-4">
+              <Lock aria-hidden className="size-[22px] flex-none" strokeWidth={2} />
+              <p className="m-0 text-base leading-[1.45]">
+                El permiso fija un límite de desembolso: no reserva ni separa la plata. Nada sale de tu cuenta hasta que alguien cobra.
+              </p>
             </div>
-            <ListaDatos
-              className="border-t border-border text-[15px]"
-              filas={[
-                ['Cuenta que paga', <BilleteraCorta key="b" url={programa.billetera} completa />],
-                ['A quién puede pagar', 'Cuentas verificadas de beneficiarios y puntos registrados'],
-                ['Vigencia', `${formatFecha(programa.vigenciaInicio)} – ${formatFecha(programa.vigenciaFin)}`],
-              ]}
-            />
-            <p className="m-0 rounded-lg bg-muted px-3.5 py-3 text-[15px]">
-              El permiso fija un límite de desembolso: no reserva ni separa la plata. Nada sale de tu cuenta hasta que alguien cobra.
-            </p>
+            <FilaDato etiqueta="Cuenta que paga">
+              <BilleteraCorta url={programa.billetera} />
+            </FilaDato>
+            <FilaDato etiqueta="Vigencia">{formatVigencia(programa.vigenciaInicio, programa.vigenciaFin, true)}</FilaDato>
+            <FilaDato etiqueta="Beneficiarios">{plural(liquidacion.cedulas, 'cédula')}</FilaDato>
+            <FilaDato etiqueta="Se aprueba">Una sola vez</FilaDato>
+            <p className="m-0 text-[15px] leading-[1.45] text-muted-foreground">La plataforma solo paga a cuentas verificadas y a puntos de retiro registrados.</p>
 
             <MensajeError>{error}</MensajeError>
 
             {!esperando && (
-              <div className="flex flex-wrap gap-3">
-                <Button size="lg" className="flex-[1_1_240px]" onClick={() => void aprobar()} disabled={enviando}>
+              <div className="mt-1 flex flex-wrap gap-3">
+                <Boton medio onClick={() => void aprobar()} disabled={enviando}>
                   Aprobar en mi banco
-                </Button>
-                <Button asChild variant="outline" size="lg" className="flex-[0_1_200px] text-base">
-                  <Link to={`/entidad/programas/${id}/editar`}>Volver a editar</Link>
-                </Button>
+                </Boton>
+                <BotonEnlace medio variante="contorno" to={`/entidad/programas/${id}/editar`}>
+                  Volver a editar
+                </BotonEnlace>
               </div>
             )}
 
             {esperando && (
-              <div aria-live="polite" className="flex flex-col gap-3 rounded-xl bg-muted px-[18px] py-4">
+              <div aria-live="polite" className="flex flex-col gap-3 rounded-[14px] bg-muted px-[18px] py-4">
                 <div className="flex items-center gap-2.5">
                   <Clock aria-hidden className="size-[22px]" />
                   <strong className="text-[17px]">Esperando tu aprobación en el banco…</strong>
@@ -175,47 +170,38 @@ export default function AprobarEnBanco() {
                 </p>
                 <div className="flex flex-wrap gap-3">
                   {redirect && (
-                    <Button onClick={() => window.open(redirect, '_blank', 'noopener')} disabled={enviando}>
+                    <Boton medio onClick={() => window.open(redirect, '_blank', 'noopener')} disabled={enviando}>
                       Abrir mi banco otra vez
-                    </Button>
+                    </Boton>
                   )}
-                  <Button variant="outline" onClick={() => void cancelar()} disabled={enviando}>
+                  <Boton medio variante="contorno" onClick={() => void cancelar()} disabled={enviando}>
                     Cancelar
-                  </Button>
+                  </Boton>
                 </div>
               </div>
             )}
-          </Tarjeta>
+          </Caja>
 
-          <aside className="flex flex-[1_1_320px] flex-col gap-4">
-            <Tarjeta className="gap-3">
-              <h2 className="m-0 text-lg font-bold">Cómo funciona</h2>
-              <ol className="m-0 flex list-none flex-col gap-2.5 p-0 text-[15px]">
-                {['Pulsas «Aprobar en mi banco».', 'Tu banco te muestra el tope y tú lo apruebas.', 'Vuelves aquí y el programa queda Activo.'].map((t, i) => (
-                  <li key={i} className="flex items-start gap-2.5">
-                    <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-foreground text-[13px] font-bold text-background">
-                      {i + 1}
-                    </span>
-                    {t}
-                  </li>
-                ))}
-              </ol>
-            </Tarjeta>
-            <figure className="m-0 flex flex-col gap-2.5 rounded-xl border-2 border-dashed border-control bg-card p-5">
-              <div aria-hidden className="flex flex-col gap-2.5">
-                <div className="h-3.5 w-[55%] rounded bg-secondary" />
-                <div className="h-2.5 w-[85%] rounded bg-secondary" />
-                <div className="h-2.5 w-[70%] rounded bg-secondary" />
-                <div className="mt-1.5 flex gap-2">
-                  <div className="h-9 flex-1 rounded-md bg-border" />
-                  <div className="h-9 flex-1 rounded-md border border-border" />
+          <Caja grande as="section" className="flex-[1_1_300px]">
+            <h2 className="m-0 text-[19px] font-extrabold">Qué va a pasar</h2>
+            {PASOS.map(([titulo, texto], i) => (
+              <div key={titulo} className="flex items-start gap-3">
+                <NumeroCirculo n={i + 1} tono="borde" />
+                <div>
+                  <div className="text-[17px] font-bold">{titulo}</div>
+                  <div className="text-[15px] text-muted-foreground">{texto}</div>
                 </div>
               </div>
-              <figcaption className="text-sm text-muted-foreground">Pantalla de consentimiento de la Test Wallet. La muestra tu banco, fuera de Tatú.</figcaption>
-            </figure>
-          </aside>
+            ))}
+          </Caja>
         </div>
       )}
-    </MarcoEntidad>
+    </PantallaEntidad>
   )
 }
+
+const PASOS = [
+  ['Abrimos tu banco', 'Interledger Test Wallet, en otra pestaña.'],
+  ['Apruebas el tope', 'Tienes 10 minutos para hacerlo.'],
+  ['Vuelves aquí', 'Con el programa activo y listo para pagar.'],
+] as const
