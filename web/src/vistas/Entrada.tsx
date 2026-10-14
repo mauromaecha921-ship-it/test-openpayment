@@ -11,7 +11,6 @@ import { Encabezado } from '@/componentes/Encabezado'
 import { Titulo } from '@/componentes/Titulo'
 import { Button } from '@/componentes/ui/button'
 import { useRol } from '@/contexto/Rol'
-import { rutaDelPrograma } from '@/lib/pantallas'
 import { NOMBRE_ESTADO_PROGRAMA } from '@/lib/textos'
 import { cn } from '@/lib/utils'
 
@@ -113,9 +112,8 @@ export default function Entrada() {
   }, [datos])
 
   const entrarEntidad = () => {
-    const p = datos?.programas.find((x) => x.id === programaId)
-    rol.actualizar({ rol: 'entidad', programaId: p?.id ?? null })
-    navegar(p ? rutaDelPrograma(p.id, p.estado) : '/entidad/programas/nuevo')
+    rol.actualizar({ rol: 'entidad', programaId: null })
+    navegar('/entidad')
   }
   const entrarBeneficiario = () => {
     const b = datos?.beneficiarios.find((x) => x.documento === documento)
@@ -164,18 +162,7 @@ export default function Entrada() {
             texto="Conecta el subsidio, apruébalo una vez en tu banco y sigue lo cobrado."
             onEntrar={entrarEntidad}
           >
-            <label className="flex flex-col gap-1.5 text-sm font-bold">
-              Programa
-              <select className={claseSelect} value={programaId} onChange={(e) => setProgramaId(e.target.value)} disabled={cargando}>
-                {datos?.programas.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombre} · {NOMBRE_ESTADO_PROGRAMA[p.estado]}
-                  </option>
-                ))}
-                <option value={NUEVO}>Nuevo programa</option>
-              </select>
-            </label>
-            <Button size="lg" className="mt-auto w-full" onClick={entrarEntidad} disabled={cargando}>
+            <Button size="lg" className="mt-auto w-full" onClick={entrarEntidad}>
               Entrar como entidad
             </Button>
           </TarjetaRol>

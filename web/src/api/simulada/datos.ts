@@ -19,6 +19,8 @@ export interface PersonaLiquidacion {
   usaApp: boolean
   /** Solo las registradas por el equipo: si llegaron después de fijar el tope, son novedad. */
   registrada?: string
+  /** Valor propio en unidades mínimas (carga por Excel); si falta, el del programa por `veces`. */
+  valorPropio?: string
 }
 
 /** $230.000: el monto por persona de los programas que no dicen otro. */

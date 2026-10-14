@@ -109,7 +109,10 @@ function cargar(): Estado {
   } catch {
     // estado dañado: se empieza de nuevo
   }
-  return estadoInicial()
+  // Primera vez: la entidad ya trae sus programas de prueba, como el punto trae a Tienda Marta
+  const e = estadoInicial()
+  montarEscenarioDemo(e)
+  return e
 }
 
 function guardar(e: Estado) {
@@ -162,6 +165,7 @@ function persona(e: Estado, documento: string): PersonaLiquidacion | undefined {
 
 /** Lo que recibe la persona en ese programa: el monto por persona por sus «veces». */
 function montoDe(prog: Pick<Programa, 'montoPorPersona'>, quien: PersonaLiquidacion): string {
+  if (quien.valorPropio) return quien.valorPropio
   return (BigInt(prog.montoPorPersona) * BigInt(quien.veces)).toString()
 }
 
@@ -655,11 +659,15 @@ const rutas: Array<[string, string, Manejador]> = [
     const pin = String(b.pin ?? '').trim()
     if (pin && !/^\d{4}$/.test(pin)) throw new Falla(400, 'EntradaInvalida', 'El PIN tiene 4 dígitos')
     if (persona(e, documento)) throw new Falla(409, 'PersonaExiste', 'Esa cédula ya está registrada')
-    const w = resolverBilletera(String(b.billetera ?? ''))
-    if (!w) throw new Falla(404, 'BilleteraNoEncontrada', 'No encontramos esa cuenta')
-    const ajena = e.cuentas.find((c) => c.billetera === w.id && c.estado !== 'SinEnlazar')
+    // Sin wallet (carga por Excel): la persona la enlaza después, desde su celular
+    const sinWallet = !String(b.billetera ?? '').trim()
+    const valor = b.valor === undefined || b.valor === '' ? null : String(b.valor)
+    if (valor !== null && !/^\d+$/.test(valor)) throw new Falla(400, 'EntradaInvalida', 'El valor va en unidades mínimas')
+    const w = sinWallet ? null : resolverBilletera(String(b.billetera))
+    if (!sinWallet && !w) throw new Falla(404, 'BilleteraNoEncontrada', 'No encontramos esa cuenta')
+    const ajena = w && e.cuentas.find((c) => c.billetera === w.id && c.estado !== 'SinEnlazar')
     if (ajena) throw new Falla(409, 'BilleteraEnUso', `Esa wallet ya está registrada para ${persona(e, ajena.documento)?.nombre ?? 'otra persona'}`)
-    const nombre = String(b.nombre ?? '').trim() || w.id.split('/').pop() || `Persona ${documento.slice(-4)}`
+    const nombre = String(b.nombre ?? '').trim() || w?.id.split('/').pop() || `Persona ${documento.slice(-4)}`
     const nueva: PersonaLiquidacion = {
       documento,
       nombre,
@@ -669,9 +677,10 @@ const rutas: Array<[string, string, Manejador]> = [
       novedad: false,
       usaApp: true,
       registrada: iso(),
+      ...(valor ? { valorPropio: valor } : {}),
     }
     e.personas.push(nueva)
-    e.cuentas.push({ id: uuid(), documento, estado: 'Verificada', billetera: w.id, billeteraCorta: billeteraCorta(w.id), creado: iso() })
+    if (w) e.cuentas.push({ id: uuid(), documento, estado: 'Verificada', billetera: w.id, billeteraCorta: billeteraCorta(w.id), creado: iso() })
     return { status: 201, cuerpo: personaRegistrada(e, nueva) }
   }],
   ['POST', '/beneficiarios/:documento/pin', (e, p, b) => {
@@ -906,6 +915,13 @@ export function reiniciarSimulacion() {
 /** El escenario de db/002_datos_prueba.sql: programa Activo con cobros ya hechos («solo UI»). */
 export function cargarEscenarioDemo() {
   const e = estadoInicial()
+  const id = montarEscenarioDemo(e)
+  guardar(e)
+  return id
+}
+
+/** Agrega a `e` el programa Activo con cobros y un borrador sin aprobar; devuelve el id del Activo. */
+function montarEscenarioDemo(e: Estado): string {
   const t0 = Date.now() - 40 * 60_000
   const inicio = hoy().slice(0, 8) + '01'
   const fin = `${new Date().getFullYear()}-12-31`
@@ -993,6 +1009,24 @@ export function cargarEscenarioDemo() {
   hecho('900000003', 'retiro', 6, 'Pagado')
   hecho('900000003', 'retiro', 9, 'YaCobrado')
   hecho('900000004', 'retiro', 15, 'TopeSuperado')
-  guardar(e)
+
+  // Un segundo programa sin aprobar: así «Tus programas» muestra los dos estados
+  e.programas.push({
+    id: 'a0000000-0000-0000-0000-000000000002',
+    nombre: 'Subsidio de transporte (borrador)',
+    entidad: 'Entidad de prueba',
+    tipo: 'subsidio',
+    billetera: WALLET_PROGRAMA,
+    moneda: COP,
+    vigenciaInicio: `${new Date().getFullYear()}-11-01`,
+    vigenciaFin: `${new Date().getFullYear()}-11-15`,
+    estado: 'Borrador',
+    tope: null,
+    montoPorPersona: '5000000',
+    creado: iso(t0),
+    corte: null,
+    pendienteDesde: null,
+    cierre: null,
+  })
   return programa.id
 }

@@ -6,7 +6,7 @@ import { api, mensajeDeError } from '@/api/client'
 import type { CobroResumen, Tablero as DatosTablero, Redireccion } from '@/api/tipos'
 import { BilleteraCorta } from '@/componentes/BilleteraCorta'
 import { CifraGrande } from '@/componentes/CifraGrande'
-import { MensajeError, Tarjeta } from '@/componentes/Comun'
+import { MensajeError, Tarjeta, Volver } from '@/componentes/Comun'
 import { EstadoCobro } from '@/componentes/EstadoCobro'
 import { MarcoEntidad } from '@/componentes/Marcos'
 import { textoMonto } from '@/componentes/Monto'
@@ -15,7 +15,7 @@ import { Button } from '@/componentes/ui/button'
 import { Progress } from '@/componentes/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/componentes/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/componentes/ui/tabs'
-import { formatHora, formatSegundos, plural } from '@/lib/textos'
+import { formatFecha, formatHora, formatSegundos, plural } from '@/lib/textos'
 import { cn } from '@/lib/utils'
 import { prepararPestana } from '@/lib/ventana'
 
@@ -145,9 +145,12 @@ export default function Tablero({ tablero: t, error, recargar }: { tablero: Dato
 
   return (
     <MarcoEntidad entidad={p.entidad}>
+      <Volver to="/entidad">Tus programas</Volver>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
-          <span className="text-sm text-tenue">{p.nombre}</span>
+          <span className="text-sm text-tenue">
+            {p.nombre} · Vigencia: {formatFecha(p.vigenciaInicio)} al {formatFecha(p.vigenciaFin)}
+          </span>
           <div className="flex flex-wrap items-center gap-3">
             <Titulo className="text-[28px] sm:text-[32px]">Tablero</Titulo>
             <span className={cn('rounded-full px-3 py-1 text-sm font-bold', pausado ? 'border-2 border-pagando bg-pagando-fondo text-pagando' : 'bg-primary text-primary-foreground')}>
@@ -157,6 +160,9 @@ export default function Tablero({ tablero: t, error, recargar }: { tablero: Dato
           </div>
         </div>
         <div className="flex flex-wrap gap-3">
+          <Button asChild variant="outline" className="border-2 border-foreground">
+            <Link to={`/entidad/programas/${p.id}/beneficiarios`}>Beneficiarios</Link>
+          </Button>
           <Button variant="outline" onClick={() => void alternarPausa()} disabled={enviando}>
             {pausado ? <Play aria-hidden /> : <Pause aria-hidden />}
             {pausado ? 'Reanudar' : 'Pausar'}

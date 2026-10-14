@@ -280,7 +280,11 @@ export interface PersonaRegistrada {
 /** POST /beneficiarios: el registro es la cédula y la wallet; el PIN solo hace falta para cobrar en un punto. */
 export interface PersonaEntrada {
   documento: string
-  billetera: string
+  nombre?: string
+  /** Valor propio de esta persona, en unidades mínimas (carga por Excel). */
+  valor?: string
+  /** Sin wallet (carga por Excel): la persona la enlaza después. */
+  billetera?: string
   pin?: string
   /** «llaveCedula»: su cédula queda como llave Bre-B y no se le enlaza cuenta (Plan Bre-B). */
   cobraCon?: 'wallet' | 'llaveCedula'

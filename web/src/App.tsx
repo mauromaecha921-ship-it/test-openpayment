@@ -16,7 +16,10 @@ import Inicio from '@/vistas/beneficiario/Inicio'
 import AprobarEnBanco from '@/vistas/entidad/AprobarEnBanco'
 import CerrarPrograma from '@/vistas/entidad/CerrarPrograma'
 import ConectarPrograma from '@/vistas/entidad/ConectarPrograma'
+import BeneficiariosPrograma from '@/vistas/entidad/BeneficiariosPrograma'
 import DetalleCobro from '@/vistas/entidad/DetalleCobro'
+import ListaProgramas from '@/vistas/entidad/ListaProgramas'
+import SubirExcel from '@/vistas/entidad/SubirExcel'
 import VistaPrograma from '@/vistas/entidad/VistaPrograma'
 import Entrada from '@/vistas/Entrada'
 import Equipo from '@/vistas/Equipo'
@@ -54,10 +57,13 @@ export default function App() {
         <Route path="/equipo" element={<Equipo />} />
         <Route path="/estado" element={<Estado />} />
 
+        <Route path="/entidad" element={<ListaProgramas />} />
         <Route path="/entidad/programas/nuevo" element={<ConectarPrograma />} />
         <Route path="/entidad/programas/:id/editar" element={<ConectarPrograma />} />
         <Route path="/entidad/programas/:id/aprobar" element={<AprobarEnBanco />} />
         <Route path="/entidad/programas/:id/cerrar" element={<CerrarPrograma />} />
+        <Route path="/entidad/programas/:id/beneficiarios/excel" element={<SubirExcel />} />
+        <Route path="/entidad/programas/:id/beneficiarios" element={<BeneficiariosPrograma />} />
         <Route path="/entidad/programas/:id" element={<VistaPrograma />} />
         <Route path="/entidad/cobros/:id" element={<DetalleCobro />} />
 

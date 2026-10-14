@@ -95,6 +95,11 @@ export function Encabezado({ variante, quien, rol, secciones }: Props) {
               /
             </span>
             <span className="text-noche-tenue">{quien}</span>
+            <nav aria-label="Secciones de la entidad" className="ml-3 flex gap-5">
+              <Link to="/entidad" className="inline-flex min-h-11 items-center border-b-[3px] border-ambar px-0.5 font-bold text-bloque-texto no-underline hover:text-bloque-texto">
+                Programas
+              </Link>
+            </nav>
           </>
         )}
         <span className="ml-auto flex flex-wrap items-center gap-2">
