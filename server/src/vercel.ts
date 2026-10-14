@@ -21,6 +21,16 @@ const CANDADO_RENOVACION = 720_035
 
 let listo: Promise<void> | undefined
 let ultimaRenovacion = 0
+let renovando = false
+
+/** Las tareas de segundo plano no pueden colgarse: si Open Payments no responde, se sueltan a los 45 s. */
+function conLimite<T>(p: Promise<T>, ms = 45_000): Promise<T> {
+  let reloj: NodeJS.Timeout
+  const limite = new Promise<never>((_, rechazar) => {
+    reloj = setTimeout(() => rechazar(new Error(`Sin respuesta en ${ms / 1000} s`)), ms)
+  })
+  return Promise.race([p, limite]).finally(() => clearTimeout(reloj))
+}
 
 function preparar(): Promise<void> {
   listo ??= (async () => {
@@ -32,7 +42,7 @@ function preparar(): Promise<void> {
     const nuevas = await migrar()
     log.info(`Base de datos: ${base.descripcion}`, nuevas.length ? { migracionesAplicadas: nuevas } : undefined)
     waitUntil(
-      recuperarAlArrancar()
+      conLimite(recuperarAlArrancar())
         .then((n) => n && log.info('Recuperación al arrancar terminada', { cobrosEnPagando: n }))
         .catch((e) => log.error('Falló la recuperación al arrancar', { error: e })),
     )
@@ -45,13 +55,17 @@ function preparar(): Promise<void> {
 
 function renovarSiToca() {
   const ahora = Date.now()
-  if (ahora - ultimaRenovacion < config().TOKEN_RENOVAR_CADA_SEG * 1000) return
+  // Una sola vuelta a la vez por instancia: cada una retiene una conexión del pool mientras dura
+  if (renovando || ahora - ultimaRenovacion < config().TOKEN_RENOVAR_CADA_SEG * 1000) return
   ultimaRenovacion = ahora
+  renovando = true
   waitUntil(
-    conexion()
-      .conCandado(CANDADO_RENOVACION, renovarTodos)
+    conLimite(conexion().conCandado(CANDADO_RENOVACION, renovarTodos))
       .then((r) => r && r.renovados + r.vencidos + r.fallidos && log.info('Renovación de tokens', r))
-      .catch((e) => log.warn('Falló la renovación de tokens', { error: e })),
+      .catch((e) => log.warn('Falló la renovación de tokens', { error: e }))
+      .finally(() => {
+        renovando = false
+      }),
   )
 }
 
