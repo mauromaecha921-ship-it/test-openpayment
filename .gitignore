@@ -15,6 +15,6 @@ server/data/
 node_modules/
 dist/
 coverage/
-
+scratch_proto/
 # Salida del build de Vercel (se genera en cada despliegue)
 .vercel/
