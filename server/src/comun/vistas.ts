@@ -26,6 +26,7 @@ import * as puntos from '../db/repositorios/puntos.js'
 import type { FilaPunto } from '../db/repositorios/puntos.js'
 import * as liquidacion from '../liquidacion/cliente.js'
 import type { Persona } from '../liquidacion/contrato.js'
+import { enmascararLlave } from '../puente/enmascarar.js'
 import { billeteraCorta } from './billeteras.js'
 import { log } from './log.js'
 import { aTexto } from './montos.js'
@@ -172,6 +173,9 @@ export function vistaCuenta(c: FilaCuenta | undefined, documento: string) {
     estado: c.estado,
     billetera: c.billetera,
     billeteraCorta: billeteraCorta(c.billetera),
+    // Llave Bre-B (Plan Bre-B): lo que se muestra en vez de la wallet; null si es una wallet escrita a mano
+    tipoLlave: c.tipo_llave,
+    llave: c.tipo_llave && c.llave ? enmascararLlave(c.tipo_llave, c.llave) : null,
     verificadaEn: c.verificada_en,
   }
 }

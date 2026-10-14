@@ -51,9 +51,13 @@ function posProceso() {
   codigo = codigo.replace(/timestamp\(\{ withTimezone: true \}\)/g, 'instante()')
   // Ya no se usa `timestamp` en el import de pg-core
   if (!/\btimestamp\(/.test(codigo)) codigo = codigo.replace(/(import \{[^}]*?)\btimestamp, /, '$1')
-  // Fuera de `public`, drizzle-kit nombra `programaInPiloto` o `personaInPiloto_gobierno`: se dejan
-  // `programa` y `persona`, como si estuvieran en `public` (el esquema va igual en cada consulta)
-  codigo = codigo.replace(/\b(\w+?)InPiloto_gobierno\b/g, '$1').replace(/\b(\w+?)InPiloto\b/g, '$1')
+  // Fuera de `public`, drizzle-kit nombra `programaInPiloto`, `personaInPiloto_gobierno` o
+  // `llaveInPiloto_puente`: se dejan `programa`, `persona` y `llave`, como si estuvieran en `public`
+  // (el esquema va igual en cada consulta)
+  codigo = codigo
+    .replace(/\b(\w+?)InPiloto_gobierno\b/g, '$1')
+    .replace(/\b(\w+?)InPiloto_puente\b/g, '$1')
+    .replace(/\b(\w+?)InPiloto\b/g, '$1')
   // `(table) => [` sin `table.` (lo corrige igual el pos-pull de Pablo)
   codigo = codigo.replace(/\(table\) => \[([^]*?)\]\);/g, (todo, cuerpo: string) => (cuerpo.includes('table.') ? todo : `() => [${cuerpo}]);`))
   const encabezado =

@@ -27,6 +27,8 @@ export interface EstadoSistema {
   /** Programas Activos o Pausados con el token falso de la semilla «solo UI»: nunca pagan. */
   programasConTokenFalso: number
   verificacionCuenta: 'subject' | 'simulada'
+  /** Plan Bre-B: el banco puente (simulado salvo que PUENTE_URL diga otro) y si responde. */
+  puenteBreB?: { simulado: boolean; responde: boolean }
 }
 
 // ── Programas ─────────────────────────────────────────────────────────────────
@@ -176,6 +178,8 @@ export type CodigoMotivo =
   | 'PermisoVencido'
   | 'Cancelado'
   | 'ErrorPago'
+  | 'LlaveNoExiste'
+  | 'PuenteNoResponde'
 
 export interface Motivo {
   codigo: CodigoMotivo | string
@@ -278,7 +282,12 @@ export interface PersonaEntrada {
   documento: string
   billetera: string
   pin?: string
+  /** «llaveCedula»: su cédula queda como llave Bre-B y no se le enlaza cuenta (Plan Bre-B). */
+  cobraCon?: 'wallet' | 'llaveCedula'
 }
+
+/** Tipo de llave Bre-B (Plan Bre-B, RN-14): la persona lo elige; nunca se adivina por el formato. */
+export type TipoLlave = 'cedula' | 'celular' | 'correo' | 'alfanumerica'
 
 export interface Cuenta {
   id: string
@@ -286,6 +295,26 @@ export interface Cuenta {
   estado: EstadoCuenta
   billetera: string
   billeteraCorta: string
+  /** Llave Bre-B; null (o ausente en la API simulada) si es una wallet escrita a mano. */
+  tipoLlave?: TipoLlave | null
+  /** La llave enmascarada: «300***4567». */
+  llave?: string | null
+}
+
+/** GET /cuentas/llaves/:tipo/:valor: «¿Eres Ana M*** R***?» antes de enlazar. */
+export interface LlaveConsultada {
+  tipoLlave: TipoLlave
+  llave: string
+  titular: string
+}
+
+/** Una llave en el banco puente simulado («Equipo de prueba» hace de banco). */
+export interface LlaveBanco {
+  tipo: TipoLlave
+  valor: string
+  documentoTitular: string
+  nombreTitular: string
+  billetera: string
 }
 
 export interface CuentaEntrada {

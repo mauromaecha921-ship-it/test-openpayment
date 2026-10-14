@@ -123,6 +123,17 @@ recargo de página o un doble clic siempre muestran la verdad que tiene la API. 
 - **Pantallas de regreso:** las que reciben el `?resultado=` del callback (`/entidad/programas/:id/aprobar`
   y `/beneficiario/cuenta`) cargan todo desde la URL y la API, y funcionan aunque la pestaña sea
   nueva.
+- **Ir al equipo y volver al programa** (14 oct 2026): «Registrar personas» y «Registrar comercios»
+  en «Conecta tu subsidio» llevan a `/equipo?volver=<ruta del programa>`. Antes, «Volver» en el
+  equipo siempre iba a la entrada y lo escrito sin guardar se perdía. Ahora:
+  - Lo escrito se deja en `sessionStorage` (`tatu.programa-pendiente`) y se recupera al volver,
+    también con «Atrás» del navegador. Se vuelve a validar la wallet y se pide de nuevo el total,
+    porque pudo cambiar.
+  - En el equipo, «Volver al programa» y un aviso con «Volver a terminar el programa».
+  - `volver` solo acepta rutas `/entidad/programas/…`. Con cualquier otro valor, el enlace sigue
+    yendo a la entrada.
+  - Los puntos de retiro no salen del formulario: se agregan en su sección 4 y quedan guardados en
+    la API.
 - **Encabezados:** en la entidad, «Tatú / Entidad de prueba · Entidad · Cambiar rol», con contenido
   de hasta 1200 px de ancho; en el celular, «Tatú · Ana» o «Tatú · Tienda Marta» y «Cambiar rol».
   El beneficiario tiene navegación inferior con «Inicio», «Mi cuenta» e «Historial».
@@ -156,7 +167,8 @@ recargo de página o un doble clic siempre muestran la verdad que tiene la API. 
 
 Los wireframes eran de baja fidelidad y en escala de grises. La identidad visual (P-17) ya está
 aplicada: paleta, logo y tipografía salen del manual y del prototipo del equipo (detalle y hallazgos
-en [Plan identidad visual](./Plan%20identidad%20visual.md)).
+en [Plan identidad visual](./Plan%20identidad%20visual.md)). Desde el 14 oct 2026 también hay modo
+oscuro con la paleta del logo oscuro ([Plan modo oscuro](./Plan%20modo%20oscuro.md)).
 
 | Uso | Valor | Variable del tema |
 |---|---|---|

@@ -4,7 +4,7 @@ Sep 30, 2026 · @ITMuser
 
 ## Resumen y convenciones
 
-El backlog tiene 25 historias en 7 épicas. Las 18 obligatorias (61 puntos) cubren un solo flujo, el del subsidio, que tiene que salir impecable; los 5 extras (25 puntos) solo se empiezan si ese flujo pasa la puerta del viernes a las 17:15. Está alineado con la revisión 83 del Documento Guía, del 2 de octubre.
+El backlog tiene 25 historias en 7 épicas. Las 18 obligatorias (66 puntos) cubren un solo flujo, el del subsidio, que tiene que salir impecable; los 5 extras (25 puntos) solo se empiezan si ese flujo pasa la puerta del viernes a las 17:15. Está alineado con la revisión 83 del Documento Guía, del 2 de octubre.
 
 **Qué somos.** La capa de distribución que convierte una liquidación ya aprobada en pagos bajo demanda. La entidad sigue decidiendo quién recibe y cuánto, y la plata sale de su cuenta solo cuando el beneficiario cobra.
 
@@ -12,6 +12,7 @@ El backlog tiene 25 historias en 7 épicas. Las 18 obligatorias (61 puntos) cubr
 
 **Qué cambió frente a la versión anterior**
 
+- **13 de octubre: cobrar a la llave Bre-B.** La beneficiaria con cuenta ya no necesita una wallet Open Payments: cobra a la llave Bre-B que ya tiene (cédula, celular, correo o @alias) a través de un banco puente con Rafiki, simulado en la demo (AD-21). HU-07 pasa de 5 a 8 puntos y HU-09 de 3 a 5; se agregan RN-14 a RN-18. La wallet Open Payments escrita a mano sigue como opción avanzada. Detalle en el [Plan Bre-B](./piloto/Plan%20Bre-B.md).
 - La demo es solo el subsidio: cobro a la cuenta del beneficiario y retiro en un punto con cédula digitada y PIN.
 - Hay tres rechazos visibles: subsidio ya cobrado, tope superado (lo rechaza el banco) y programa cerrado.
 - Bono con destino, QR con cámara, PDF417, contrato por hitos y despliegue público pasan a ser extras, en ese orden, y cada uno se puede apagar sin romper la demo.
@@ -19,9 +20,9 @@ El backlog tiene 25 historias en 7 épicas. Las 18 obligatorias (61 puntos) cubr
 - El tablero muestra autorizado, cobrado y lo que nunca salió, y el lenguaje sigue las reglas de los datos verificados: «pendientes al cierre ordinario» (nunca «devueltos») y conciliación que «se reduce mucho» (nunca «desaparece»).
 - Contexto 2026 verificado con el contrato del operador: el efectivo de Prosperidad Social lo paga la Unión Temporal de SuperGIROS y SuRed, con el ciclo abonado 3 días antes, una ventana fija de 17 días (Colombia Mayor) o 10 días, y reintegro en 3 días hábiles. El punto de la demo representa cualquier red de puntos, tipo Puntored.
 
-**Alcance de la demo.** Un subsidio simulado de $230.000, como Colombia Mayor, con 3 beneficiarios de prueba: dos con cuenta y uno sin celular que cobra en el punto. El tope del permiso es la suma de los subsidios. Las cuentas de prueba son la del programa, las de los dos beneficiarios y la de un punto de retiro.
+**Alcance de la demo.** Un subsidio simulado de $230.000, como Colombia Mayor, con 3 beneficiarios de prueba: dos con cuenta (una cobra a su llave Bre-B tipo cédula, sin enlazar nada) y uno sin celular que cobra en el punto. El tope del permiso es la suma de los subsidios. Las cuentas de prueba son la del programa, las de los dos beneficiarios y la de un punto de retiro.
 
-**Solo visión:** la huella validada por un operador autorizado por la Registraduría y la integración con SECOP II o SIIF. **No hace:** decidir beneficiarios, guardar la base de la entidad, validar huellas, manejar efectivo, integrarse con la caja del punto, usar dinero real, app nativa ni SMS.
+**Solo visión:** la huella validada por un operador autorizado por la Registraduría y la integración con SECOP II o SIIF. **No hace:** conectarse de verdad a Bre-B (el banco puente se simula y se dice así), decidir beneficiarios, guardar la base de la entidad, validar huellas, manejar efectivo, integrarse con la caja del punto, usar dinero real, app nativa ni SMS.
 
 | Elemento | Convención |
 | --- | --- |
@@ -40,7 +41,7 @@ El flujo principal tiene tres actores humanos y tres sistemas, y en la demo comp
 | Actor | Persona de referencia | Qué necesita | Dolor hoy, con dato | Vista y dispositivo |
 | --- | --- | --- | --- | --- |
 | Entidad financiadora | Laura, coordinadora de un subsidio en una institución con cuenta propia | Pagar sin girar por adelantado y ver lo cobrado en tiempo real | En el ciclo 7 de Colombia Mayor de 2026, 241.830 de 2.788.074 personas seguían pendientes al cierre ordinario ([Infobae](https://www.infobae.com/colombia/2026/09/15/prosperidad-social-amplio-el-plazo-para-cobrar-los-pagos-del-septimo-ciclo-de-colombia-mayor-esta-es-la-nueva-fecha/)) | Vista Entidad en computador; aprueba el permiso en su banco (Test Wallet) |
-| Beneficiaria con cuenta | Ana, 67 años, recibe un subsidio para adultos mayores y tiene billetera | Cobrar a su cuenta cuando quiera, sin ir a un punto | Menos del 1 % recibió en cuenta propia en ese ciclo; en Renta Joven 2025 se reversaron 10.000 de 160.000 abonos ([Prosperidad Social](https://prosperidadsocial.gov.co/Noticias/prosperidad-social-responde-a-inquietudes-sobre-renta-joven/)) | Vista Beneficiario en su celular: enlazar cuenta, ver «tengo $230.000» y cobrar |
+| Beneficiaria con cuenta | Ana, 67 años, recibe un subsidio para adultos mayores y tiene Nequi con su cédula registrada como llave Bre-B | Cobrar a su cuenta cuando quiera, sin ir a un punto | Menos del 1 % recibió en cuenta propia en ese ciclo; en Renta Joven 2025 se reversaron 10.000 de 160.000 abonos ([Prosperidad Social](https://prosperidadsocial.gov.co/Noticias/prosperidad-social-responde-a-inquietudes-sobre-renta-joven/)) | Vista Beneficiario en su celular: ver «tengo $230.000» y cobrar a su cédula, sin enlazar nada; o enlazar otra llave |
 | Beneficiario sin celular ni cuenta | Jorge, 72 años, recibe el mismo subsidio | Cobrar en efectivo cerca de su casa, solo con la cédula | Debe cobrar dentro de una ventana fija de 17 días; si no, el operador reintegra el giro a Prosperidad Social en 3 días hábiles (anexo técnico 2026; [El Tiempo](https://www.eltiempo.com/economia/finanzas-personales/ojo-lo-que-pasa-si-no-cobra-a-tiempo-el-giro-de-renta-ciudadana-y-devolucion-del-iva-por-hasta-500-banco-agrario-explica-3367437)) | Ninguna vista: cédula y PIN en el punto (huella en producción) |
 | Punto de retiro | Marta, tendera de una red de puntos (tipo Puntored) | Entregar efectivo y recuperarlo de inmediato | Fondea su caja antes del ciclo y recibe el reembolso después | Vista Punto en el celular de la caja: cédula, monto, PIN y resultado |
 
@@ -50,6 +51,7 @@ En los extras aparecen tres actores más: el comercio autorizado y el no autoriz
 
 - **Plataforma (nuestra API).** Aplica las reglas, guarda programas, cuentas enlazadas y cobros, y firma las peticiones Open Payments. Nunca custodia dinero ni guarda la base de beneficiarios.
 - **Liquidación de la entidad (simulada).** Responde «¿esta cédula tiene un pago disponible y por cuánto?». En la demo también valida el PIN, en lugar del operador de huella.
+- **Banco puente (simulado).** Hace el papel de un banco o SEDPE que participa en Bre-B y opera Rafiki: dice si una llave existe, a qué wallet llega y si su titular es una cédula dada. En la demo es un servicio aparte en `PUENTE_URL` que traduce cada llave a una wallet de la Test Wallet (AD-21).
 - **ASE — Interledger Test Wallet.** Custodia la cuenta del programa y las de destino, muestra las pantallas de consentimiento, ejecuta los pagos y hace cumplir el tope del permiso (`InsufficientGrant`).
 
 ## Mapa de historias
@@ -62,13 +64,13 @@ Se lee de izquierda a derecha como el recorrido del dinero: la entidad conecta y
 
 ## Épicas y backlog
 
-El cobro en el punto (E4) y el control con cierre (E5) suman 32 de los 61 puntos obligatorios. HU-04 y HU-12 forman el hito crítico del viernes 16 a las 14:00, y E7 solo se abre si el flujo principal pasa completo a las 17:15.
+El cobro en el punto (E4) y el control con cierre (E5) suman 32 de los 66 puntos obligatorios. HU-04 y HU-12 forman el hito crítico del viernes 16 a las 14:00, y E7 solo se abre si el flujo principal pasa completo a las 17:15.
 
 | Épica | Objetivo | Historias | Puntos Must / total |
 | --- | --- | --- | --- |
 | E1 Conexión del subsidio | La entidad conecta su subsidio sin entregarnos su base | HU-01 a HU-03 | 7 / 7 |
 | E2 Autorización con Open Payments | Un solo permiso con tope, aprobado en el banco | HU-04 a HU-06 | 10 / 12 |
-| E3 Cobro a la cuenta | Quien tiene cuenta cobra en segundos, cuando quiera | HU-07 a HU-09 | 10 / 10 |
+| E3 Cobro a la cuenta | Quien tiene cuenta cobra en segundos, cuando quiera, a la llave Bre-B que ya usa | HU-07 a HU-09 | 15 / 15 |
 | E4 Cobro en el punto | Quien no tiene celular cobra con su cédula y el punto recupera el efectivo al instante | HU-10 a HU-12 | 16 / 16 |
 | E5 Control del cobro y cierre | Tres rechazos claros, nadie cobra dos veces y el cierre muestra lo que nunca salió | HU-13 a HU-18 | 16 / 17 |
 | E6 Plataforma y entregables | Lo que la demo y la entrega exigen | HU-19 y HU-20 | 2 / 2 |
@@ -86,9 +88,9 @@ El equipo actualiza la columna Estado durante el evento.
 | HU-04 | Aprobar el permiso con tope en el banco | E2 | Must | 8 | 1 | Por hacer |
 | HU-05 | Manejar una aprobación rechazada o vencida | E2 | Must | 2 | 1 | Por hacer |
 | HU-06 | Rotar el token del permiso | E2 | Should | 2 | 1 | Por hacer |
-| HU-07 | Enlazar y verificar mi cuenta | E3 | Must | 5 | 1 y 3 | Por hacer |
+| HU-07 | Enlazar mi llave Bre-B (o mi wallet) | E3 | Must | 8 | 1 y 3 | Por hacer |
 | HU-08 | Ver «tengo $230.000» | E3 | Must | 2 | 3 | Por hacer |
-| HU-09 | Cobrar a mi cuenta | E3 | Must | 3 | 1 | Por hacer |
+| HU-09 | Cobrar a mi cuenta | E3 | Must | 5 | 1 | Por hacer |
 | HU-10 | Solicitar un cobro con la cédula digitada | E4 | Must | 5 | 3 y 2 | Por hacer |
 | HU-11 | Confirmar con PIN | E4 | Must | 3 | 3 | Por hacer |
 | HU-12 | Recibir el reembolso en segundos | E4 | Must | 8 | 1 | Por hacer |
@@ -183,17 +185,18 @@ Should · 2 puntos · Rol 1 · Depende de HU-04 · `token.rotate`
 
 ### E3 · Cobro a la cuenta
 
-#### HU-07 · Enlazar y verificar mi cuenta
+#### HU-07 · Enlazar mi llave Bre-B (o mi wallet)
 
-**Como** beneficiaria con cuenta, **quiero** enlazar mi wallet a mi cédula y que se verifique que es mía, **para** recibir mi subsidio sin rechazos por cuenta inválida, como los 10.000 abonos reversados de Renta Joven en 2025.
+**Como** beneficiaria con cuenta, **quiero** enlazar a mi cédula la llave Bre-B que ya uso (cédula, celular, correo o @alias) y que se verifique que es mía, **para** recibir mi subsidio en la cuenta que ya tengo, sin crear una wallet nueva y sin rechazos por cuenta inválida, como los 10.000 abonos reversados de Renta Joven en 2025.
 
-Must · 5 puntos · Rol 1 (verificación) y Rol 3 (vista) · Depende de HU-19 · `POST /cuentas` → verificación de propiedad de la wallet address (grant interactivo)
+Must · 8 puntos · Rol 1 (verificación) y Rol 3 (vista) · Depende de HU-19 · `POST /cuentas` → banco puente simulado en `PUENTE_URL`; la wallet Open Payments sigue con la verificación de propiedad (grant interactivo)
 
-- **Dado** mi cédula y mi wallet address, **cuando** pulso «Enlazar», **entonces** primero confirmo con mi PIN, para que nadie enlace su cuenta a una cédula ajena.
-- **Dado** el PIN correcto, **cuando** continúo, **entonces** la app me lleva a mi wallet para aprobar y la cuenta queda PorVerificar.
-- **Dado** que apruebo, **cuando** vuelve el callback con hash válido, **entonces** la cuenta queda Verificada y veo «Tu cuenta está lista para recibir pagos».
-- **Dado** que rechazo o pasan 10 minutos, **cuando** vuelvo, **entonces** la cuenta queda SinEnlazar y puedo intentarlo de nuevo.
-- La plataforma guarda solo la wallet address y el estado, nunca tokens de la cuenta del beneficiario.
+- **Dado** que elijo el tipo de llave (Cédula, Celular, Correo o @Llave) y la escribo, **cuando** pulso «Enlazar», **entonces** la plataforma la busca en el banco puente y me muestra el titular enmascarado: «¿Eres Ana M\*\*\* R\*\*\*?». El tipo nunca se adivina por el formato (RN-14).
+- **Dado** una llave tipo cédula que coincide con mi cédula, **cuando** confirmo, **entonces** la cuenta queda Verificada, sin PIN ni aprobación en el banco (RN-15).
+- **Dado** una llave de otro tipo, **cuando** confirmo con mi PIN, **entonces** la cuenta queda Verificada solo si el puente confirma que su titular es mi cédula; si no, veo «Esa llave no está a tu nombre» y no se enlaza (RN-16).
+- **Dado** una llave que no existe en Bre-B, **cuando** la busco, **entonces** veo «No encontramos esa llave en Bre-B» y puedo probar otra o cobrar en un punto.
+- **Dado** que elijo la opción avanzada «Tengo una wallet Open Payments», **cuando** confirmo con mi PIN, **entonces** la app me lleva a mi wallet para aprobar y la cuenta queda PorVerificar; con el callback de hash válido queda Verificada, y si rechazo o pasan 10 minutos vuelve a SinEnlazar.
+- La plataforma guarda solo el tipo de llave, la llave y el estado (o la wallet address). Nunca guarda el nombre del titular ni tokens de la cuenta del beneficiario.
 
 #### HU-08 · Ver «tengo $230.000»
 
@@ -209,11 +212,15 @@ Must · 2 puntos · Rol 3 · Depende de HU-02 · Consulta a la liquidación por 
 
 **Como** beneficiaria con cuenta verificada, **quiero** cobrar mi subsidio con un toque, **para** tener la plata en segundos, sin filas ni ventanas de pago.
 
-Must · 3 puntos · Rol 1 · Depende de HU-04, HU-07 y HU-12 (mismo adaptador de pago) · `POST /cobros` con canal cuenta
+Must · 5 puntos · Rol 1 · Depende de HU-04, HU-07 y HU-12 (mismo adaptador de pago) · `POST /cobros` con canal cuenta
 
 - **Dado** un subsidio disponible y mi cuenta Verificada, **cuando** pulso «Cobrar $230.000», **entonces** el cobro pasa de Solicitado a Pagando sin PIN, porque la cuenta ya probó ser mía.
-- **Dado** que el pago se completa, **cuando** la app consulta, **entonces** veo «Pagado» y mi Test Wallet muestra el ingreso con la referencia.
+- **Dado** que el pago se completa, **cuando** la app consulta, **entonces** veo «Pagado» y la wallet a la que llega mi llave (en la demo, una de la Test Wallet) muestra el ingreso con la referencia.
 - **Dado** una cuenta sin verificar, **cuando** intento cobrar, **entonces** veo «Primero enlaza y verifica tu cuenta».
+- **Dado** que no tengo cuenta enlazada y mi cédula es una llave Bre-B, **cuando** pulso «Cobrar $230.000», **entonces** la plataforma enlaza esa llave sola y el cobro sigue como cualquier cobro a la cuenta (RN-17 y RN-15).
+- **Dado** que no tengo cuenta ni llave Bre-B con mi cédula, **cuando** pulso «Cobrar», **entonces** veo dos opciones: «Enlazar otra llave» (HU-07) o «Cobrar en un punto».
+- **Dado** que mi llave cambió de banco o se borró después de enlazarla, **cuando** cobro, **entonces** la plataforma la vuelve a buscar antes de pagar (RN-18): el pago llega a la cuenta nueva, o el cobro queda Rechazado con «Tu llave Bre-B ya no existe» sin mover dinero.
+- El flujo de pago no cambia: en la demo el puente simulado traduce la llave a una wallet de la Test Wallet; en producción el puente publica una wallet address por llave y entrega la plata por Bre-B (AD-21).
 
 ### E4 · Cobro en el punto
 
@@ -472,7 +479,9 @@ El programa es la raíz: sus cobros le pertenecen y, si es un bono, también la 
 | Campo | Tipo | Regla o validación | Ejemplo de la demo |
 | --- | --- | --- | --- |
 | `documento` | text | Llave primaria; la cédula | Cédula de prueba de Ana |
-| `wallet_address` | text (URL) | Resuelve con `walletAddress.get` | `https://ilp.interledger-test.dev/ana` |
+| `tipo_llave` | enum | cedula, celular, correo o alfanumerica; nulo si la persona escribió una wallet Open Payments (RN-14) | cedula |
+| `llave` | text | La llave Bre-B tal como la registró la persona; va junto con `tipo_llave` | Cédula de prueba de Ana |
+| `wallet_address` | text (URL) | Resuelve con `walletAddress.get`; con llave Bre-B, la última wallet que devolvió el puente (RN-18) | `https://ilp.interledger-test.dev/ana` |
 | `estado` | enum | SinEnlazar, PorVerificar, Verificada | Verificada |
 | `nonce`, `finish_nonce` | text | Temporales, solo para verificar el hash de la verificación | — |
 | `verificada_en` | timestamptz | Fecha de la verificación | — |
@@ -509,7 +518,7 @@ El programa es la raíz: sus cobros le pertenecen y, si es un bono, también la 
 
 ## Reglas, fórmulas y variables
 
-Trece reglas de negocio gobiernan el flujo y los extras. La más importante para la demo es RN-09: la plataforma no frena los cobros por el tope; lo hace cumplir el banco, y eso es lo que el video debe mostrar.
+Dieciocho reglas de negocio gobiernan el flujo y los extras. La más importante para la demo es RN-09: la plataforma no frena los cobros por el tope; lo hace cumplir el banco, y eso es lo que el video debe mostrar.
 
 ### Reglas de negocio
 
@@ -528,6 +537,11 @@ Trece reglas de negocio gobiernan el flujo y los extras. La más importante para
 | RN-11 | Todo monto se valida y convierte en el backend con `assetScale`; nunca se confía en el navegador | Siempre | HU-10 |
 | RN-12 | Un cobro PorConfirmar sin PIN en 120 segundos pasa a Rechazado (propuesto) | Al consultar | HU-11 |
 | RN-13 | Un hito solo se paga si el supervisor lo certificó, y una sola vez | Al certificar | HU-24 |
+| RN-14 | La persona elige el tipo de llave Bre-B (Cédula, Celular, Correo o @Llave) o una wallet Open Payments; el tipo nunca se adivina por el formato | Al enlazar | HU-07 |
+| RN-15 | Una llave tipo cédula que coincide con la cédula del beneficiario queda Verificada sola (por confirmar, P-26) | Al enlazar | HU-07, HU-09 |
+| RN-16 | Una llave de otro tipo solo queda Verificada si el banco puente confirma que su titular es la cédula del beneficiario, además del PIN (en producción depende de P-27) | Al enlazar | HU-07 |
+| RN-17 | «Cobrar a mi cuenta» sin cuenta enlazada prueba primero la llave Bre-B tipo cédula; si no existe, ofrece enlazar otra llave o cobrar en un punto | Al solicitar | HU-09 |
+| RN-18 | Una cuenta con llave Bre-B se vuelve a resolver en cada cobro, antes de crear el pago entrante; si la llave ya no existe, el cobro se rechaza sin mover dinero | Al pagar | HU-09 |
 
 ### Fórmulas
 
@@ -560,6 +574,7 @@ hash = base64( SHA-256( nonce + "\n" + finish_nonce + "\n" + interact_ref + "\n"
 | `OP_PRIVATE_KEY_PATH` | `./private.key`, fuera del repo | Llave Ed25519 con la que el SDK firma |
 | `DATABASE_URL` | `postgres://…` de Supabase o Neon | Conexión a PostgreSQL |
 | `LIQUIDACION_URL` | URL del servicio simulado | Consulta por cédula y validación del PIN de prueba |
+| `PUENTE_URL` | URL del banco puente simulado | Resolver una llave Bre-B a su wallet y confirmar su titular (AD-21) |
 | `APP_BASE_URL` | URL de la web | Volver a la app después de aprobar |
 | `API_BASE_URL` | URL de la API | Callbacks: `{API_BASE_URL}/callback/:id` y de cuentas |
 | `CONFIRMACION_TTL_SEG` | `120` (propuesto) | Plazo para el PIN antes de Rechazado |
@@ -619,7 +634,9 @@ Cada requisito sigue ISO/IEC/IEEE 29148 y se clasifica con ISO/IEC 25010, pero a
 | La cuenta del programa se queda sin fondos | HU-12, HU-13 | Depositar dinero de prueba antes de grabar |
 | Un extra rompe el flujo principal | HU-21 a HU-25 | No se empieza ninguno antes de la puerta de las 17:15 y todos se pueden apagar |
 | La Test Wallet falla durante la presentación | HU-20 | Video grabado el viernes en la noche; la demo en vivo es opcional |
-| El jurado confunde el producto con el Gestor de Información Financiera o con Bre-B | HU-09, HU-20 | Respuestas ensayadas: el Gestor dispersa por fecha y Bre-B es el riel; nosotros pagamos en el cobro contra un permiso con tope (Guía, § Preguntas del jurado) |
+| El jurado confunde el producto con el Gestor de Información Financiera o con Bre-B | HU-09, HU-20 | Respuestas ensayadas: el Gestor dispersa por fecha y Bre-B es la carretera; nosotros decidimos quién pasa, cuándo y cuánto, y pagamos en el cobro contra un permiso con tope (Guía, § Preguntas del jurado) |
+| El jurado cree que la conexión a Bre-B es real | HU-07, HU-09, HU-20 | Decirlo en la demo y en la pantalla: «banco puente simulado». Lo real es Open Payments con la Test Wallet; el puente es el camino a producción (AD-21) |
+| En producción, Bre-B todavía no tiene dentro de sus reglas los pagos de empresa a persona ni las dispersiones masivas (documento técnico de Bre-B, feb. 2026) | HU-09 | El cobro de Tatú es un pago individual en el momento del cobro, no un lote; igual depende de que esos pagos queden dentro de las reglas de Bre-B (P-28) |
 | El pitch suena contra los bancos o contra el operador de giros | HU-20 | Decir «sin adelantos», no «sin bancos»: la plata siempre vive en una entidad vigilada. No mencionar el oferente único ni las denuncias del contrato |
 
 ### Supuestos técnicos por probar el 8 de octubre
@@ -634,7 +651,7 @@ Cada requisito sigue ISO/IEC/IEEE 29148 y se clasifica con ISO/IEC 25010, pero a
 
 - [ ] ¿Cómo se muestra el rechazo por tope si el tope es la suma de la liquidación? Propuesto: una novedad de $460.000 cargada después de aprobar (ver Fórmulas).
 - [ ] Retiro parcial: ¿el punto entrega siempre el valor completo (propuesto) o el beneficiario puede retirar una parte? El Documento Guía dice que el cajero digita el monto.
-- [ ] Al enlazar la cuenta, ¿basta el PIN para probar que la cédula es de quien enlaza, o en producción se exige otra validación?
+- [ ] Al enlazar la cuenta, ¿basta el PIN para probar que la cédula es de quien enlaza, o en producción se exige otra validación? Con la llave Bre-B: la tipo cédula se prueba sola (RN-15, P-26) y las demás dependen de que el puente confirme el titular (RN-16, P-27).
 - [ ] ¿El PIN de la demo lo valida el servicio de liquidación simulado (propuesto) o un servicio de identidad aparte?
 - [ ] Solo para el extra HU-21: si la compra es menor que el bono, ¿el resto se pierde (propuesto) o queda como saldo?
 - [ ] ¿El rechazo por programa cerrado se llama «orden de no pago», como en el anexo técnico 2026, y la consulta «archivo de liquidación»? (Arquitectura, P-24)
@@ -671,7 +688,7 @@ Hay dos puertas. A las 14:00 del viernes, HU-04 y HU-12 tienen que funcionar en 
 
 | Bloque | Rol 1: Open Payments | Rol 2: Backend | Rol 3: Punto y beneficiario | Rol 4: Entidad y diseño | Rol 5: Producto y pitch |
 | --- | --- | --- | --- | --- | --- |
-| Sesión 1 (vie 10:30–14:00) | HU-04 y HU-12 en un script | Repo y tablas; HU-02 (liquidación simulada) y API de HU-01 | HU-10 y HU-08 con datos falsos | HU-19; vistas de HU-01 y HU-03; maqueta de HU-15 | Cuentas de demo con saldo; liquidación de prueba con la novedad; inicio de HU-20 |
+| Sesión 1 (vie 10:30–14:00) | HU-04 y HU-12 en un script | Repo y tablas; HU-02 (liquidación simulada), banco puente simulado (AD-21) y API de HU-01 | HU-10 y HU-08 con datos falsos | HU-19; vistas de HU-01 y HU-03; maqueta de HU-15 | Cuentas de demo con saldo; liquidación de prueba con la novedad; inicio de HU-20 |
 | Sesión 2 (vie 15:00–17:15) | HU-04 con callback; HU-12 desde la API; HU-07 y HU-09 | HU-13, HU-14 y HU-16 | HU-11 conectada; vistas de HU-07 y HU-09 | HU-15 conectado; vista de HU-04 | Prueba de los pasos 2 a 5: puerta de las 17:15 |
 | Noche (remota) | HU-17, dato de cobrado de HU-15, HU-05 y HU-06; después, HU-24 si pasó la puerta | HU-18 y tests de RNF-07; después, HU-21 y HU-25 | Estados de error; después, HU-22 o HU-23 | RNF-03 y RNF-04: pulido móvil y accesibilidad | Video v1 del flujo principal, README y slides |
 | Sesión 3 (sáb 08:00–11:00) | Solo correcciones | Solo correcciones | Solo correcciones | Solo correcciones | HU-20 completa: video final y entrega |
@@ -685,7 +702,7 @@ Hay dos puertas. A las 14:00 del viernes, HU-04 y HU-12 tienen que funcionar en 
 | Experiencia de usuario | HU-08, HU-09, HU-10 y HU-11 | 3 y 4 |
 | Calidad técnica | HU-05, HU-14, HU-16 y RNF-10 | 5 y 6 |
 | Presentación | HU-20 y la tesis del evento válido | Todo el video |
-| Inclusión | HU-10 y HU-11: sin celular, sin app y sin cuenta, solo la cédula | 4 |
+| Inclusión | HU-10 y HU-11: sin celular, sin app y sin cuenta, solo la cédula; HU-09: con cuenta, cobra a la llave Bre-B que ya tiene, sin crear una wallet | 3 y 4 |
 | Innovación | HU-04 y HU-17, y los extras HU-21 y HU-24: el mismo motor con distinto evento | 2, 7 y 8 |
 | Impacto | HU-15: plata girada por adelantado en $0, reembolso en segundos y lo que nunca salió | 7 |
 
@@ -693,7 +710,7 @@ Hay dos puertas. A las 14:00 del viernes, HU-04 y HU-12 tienen que funcionar en 
 
 1. Contexto con un dato real: en el ciclo 7 de Colombia Mayor, 241.830 personas seguían pendientes al cierre ordinario.
 2. La entidad conecta un subsidio de $230.000 y lo aprueba una vez en la Test Wallet, con la pantalla de consentimiento a la vista (HU-01, HU-02, HU-04).
-3. Una beneficiaria ve «tengo $230.000», cobra y ve llegar el pago a su cuenta en segundos (HU-07, HU-08, HU-09).
+3. Una beneficiaria ve «tengo $230.000», cobra a su cédula (llave Bre-B) sin enlazar nada y ve llegar el pago en segundos, con el puente simulado a la vista (HU-07, HU-08, HU-09).
 4. Un beneficiario sin celular cobra en un punto: el cajero digita su cédula, él confirma con PIN y el punto ve «Pagado» y su reembolso en la Test Wallet (HU-10, HU-11, HU-12).
 5. La misma cédula otra vez: «este subsidio ya fue cobrado» (HU-13, HU-14).
 6. Un cobro que supera el tope: lo rechaza el banco, no nosotros (HU-02, HU-13).

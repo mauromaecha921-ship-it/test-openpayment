@@ -8,6 +8,7 @@ import { rutasComercios } from './comercios/rutas.js'
 import { rutasCuentas } from './cuentas/rutas.js'
 import { rutasExtras } from './extras.js'
 import { routerLiquidacion } from './liquidacion/router.js'
+import { routerPuente } from './puente/router.js'
 import { documentoOpenApi, RUTAS } from './openapi.js'
 import { rutasProgramas } from './programas/rutas.js'
 import { rutasPuntos } from './puntos/rutas.js'
@@ -19,6 +20,7 @@ function montadas(): string[] {
     ['', rutasSalud()],
     ['', rutasExtras()],
     ['/liquidacion', routerLiquidacion()],
+    ['/puente', routerPuente()],
     ['', rutasProgramas()],
     ['', rutasPuntos()],
     ['', rutasComercios()],
@@ -41,8 +43,9 @@ describe('Swagger (OpenAPI)', () => {
     const documentadas = RUTAS.map((r) => `${r.metodo.toUpperCase()} ${r.ruta}`)
     expect([...documentadas].sort()).toEqual(montadas().sort())
     expect(new Set(documentadas).size).toBe(documentadas.length)
-    // docs/piloto/API del piloto.md: 43 del piloto más 3 del gobierno simulado en piloto-v2 (nombres y PIN)
-    expect(documentadas).toHaveLength(46)
+    // docs/piloto/API del piloto.md: 43 del piloto más 3 del gobierno simulado en piloto-v2 (nombres y PIN),
+    // más 6 del Plan Bre-B: la consulta de la llave en Tatú y 5 del banco puente simulado
+    expect(documentadas).toHaveLength(52)
   })
 
   it('arma un OpenAPI 3.1 con el cuerpo que validan las rutas', () => {

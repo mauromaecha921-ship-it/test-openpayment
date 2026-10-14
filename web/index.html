@@ -4,8 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#13203A" />
+    <meta name="theme-color" content="#F5F0E6" />
     <title>Tatú</title>
+    <script>
+      // Modo oscuro antes de pintar (Plan modo oscuro § 3): lo que eligió la persona o, si no eligió, el sistema.
+      ;(function () {
+        var t = null
+        try { t = localStorage.getItem('tatu.tema') } catch (e) {}
+        var oscuro = t ? t === 'oscuro' : window.matchMedia('(prefers-color-scheme: dark)').matches
+        document.documentElement.dataset.tema = oscuro ? 'oscuro' : 'claro'
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -7,6 +7,7 @@ import { ESTADOS_COBRO } from './cobros/estados.js'
 import { EntradaComercio, EntradaSede } from './comercios/rutas.js'
 import { EntradaCuenta } from './cuentas/rutas.js'
 import { Inscripcion, NuevoPin, PagoDisponible, PedidoPin, Persona as PersonaDelGobierno, Personas, Resumen, RespuestaPin, SinPago } from './liquidacion/contrato.js'
+import { Coincidencia, Llave, Llaves, PedidoPertenece, Resolucion } from './puente/contrato.js'
 import { ESTADOS_PROGRAMA } from './programas/estados.js'
 import { Callback, Cierre, EdicionPrograma, EntradaPrograma } from './programas/rutas.js'
 import { EntradaPunto, Periodo } from './puntos/rutas.js'
@@ -76,6 +77,8 @@ const Cuenta = z.object({
   estado: z.enum(['SinEnlazar', 'PorVerificar', 'Verificada']),
   billetera: z.string(),
   billeteraCorta: z.string(),
+  tipoLlave: z.enum(['cedula', 'celular', 'correo', 'alfanumerica']).nullable().describe('Llave Bre-B (Plan Bre-B); null si es una wallet escrita a mano'),
+  llave: z.string().nullable().describe('La llave enmascarada: «300***4567»'),
   verificadaEn: z.string().nullable(),
 })
 
@@ -129,7 +132,7 @@ const COMPONENTES = { Error: ErrorRespuesta, Moneda, Programa, Punto, Comercio, 
 type Respuesta = string | { descripcion: string; esquema: z.ZodType | keyof typeof COMPONENTES | Array<keyof typeof COMPONENTES> }
 
 interface Ruta {
-  metodo: 'get' | 'post' | 'patch'
+  metodo: 'get' | 'post' | 'patch' | 'delete'
   ruta: string
   etiqueta: string
   resumen: string
@@ -145,6 +148,7 @@ const COBROS = 'Cobros'
 const PUNTOS = 'Puntos y wallets'
 const COMERCIOS = 'Comercios y bonos'
 const LIQUIDACION = 'Liquidación simulada'
+const PUENTE = 'Banco puente Bre-B (simulado)'
 const SALUD = 'Salud y configuración'
 
 const ok = (descripcion: string, esquema: Exclude<Respuesta, string>['esquema']) => ({ descripcion, esquema })
@@ -287,7 +291,7 @@ export const RUTAS: Ruta[] = [
     ruta: '/beneficiarios',
     etiqueta: PERSONAS,
     resumen: 'Registra una persona con su cédula y su wallet',
-    descripcion: 'El nombre y el PIN son opcionales. La cuenta queda verificada.',
+    descripcion: 'El nombre y el PIN son opcionales. Con `cobraCon: wallet` la cuenta queda verificada. Con `llaveCedula` (Plan Bre-B) su cédula queda como llave Bre-B en el banco puente simulado, apuntando a esa wallet, y no se le enlaza cuenta: al cobrar, RN-17 la encuentra sola.',
     cuerpo: EntradaPersona,
     respuestas: { 201: ok('La persona registrada', z.object({}).loose()), 400: 'Entrada inválida', 404: 'La wallet no existe', 409: 'PersonaExiste, BilleteraEnUso' },
   },
@@ -326,10 +330,31 @@ export const RUTAS: Ruta[] = [
     metodo: 'post',
     ruta: '/cuentas',
     etiqueta: PERSONAS,
-    resumen: 'Enlaza o cambia la wallet de la persona',
-    descripcion: 'Con `VERIFICACION_CUENTA=subject` devuelve `redirect` para confirmarla en el banco; con `simulada`, queda verificada.',
+    resumen: 'Enlaza una llave Bre-B o una wallet a la persona',
+    descripcion:
+      'Con **llave Bre-B** (`tipoLlave` + `llave`, Plan Bre-B): la tipo cédula que es la cédula de la persona queda verificada sola (RN-15); las demás piden el PIN y que el banco puente confirme el titular (RN-16). `redirect` es null.\n\n' +
+      'Con **wallet** (`billetera`): con `VERIFICACION_CUENTA=subject` devuelve `redirect` para confirmarla en el banco; con `simulada`, queda verificada.',
     cuerpo: EntradaCuenta,
-    respuestas: { 201: ok('La cuenta', ConRedirect('cuenta', 'Cuenta')), 400: 'Entrada inválida', 404: 'Cédula o wallet no encontrada', 409: 'BilleteraEnUso', 422: 'PIN incorrecto o falta el PIN' },
+    respuestas: {
+      201: ok('La cuenta', ConRedirect('cuenta', 'Cuenta')),
+      400: 'Entrada inválida o LlaveInvalida',
+      404: 'Cédula o wallet no encontrada, o LlaveNoExiste',
+      409: 'BilleteraEnUso',
+      422: 'PIN incorrecto, falta el PIN o LlaveDeOtraPersona',
+      503: 'PuenteNoResponde',
+    },
+  },
+  {
+    metodo: 'get',
+    ruta: '/cuentas/llaves/:tipo/:valor',
+    etiqueta: PERSONAS,
+    resumen: '«¿Eres Ana M*** R***?»: la llave y su titular enmascarado, antes de enlazar',
+    respuestas: {
+      200: ok('La llave enmascarada y el titular', z.object({ tipoLlave: z.string(), llave: z.string(), titular: z.string() })),
+      400: 'Tipo o llave inválidos',
+      404: 'LlaveNoExiste',
+      503: 'PuenteNoResponde',
+    },
   },
   {
     metodo: 'get',
@@ -533,7 +558,51 @@ export const RUTAS: Ruta[] = [
     respuestas: { 200: ok('Tiene PIN', z.object({ documento: z.string(), tienePin: z.literal(true) })), 400: 'Entrada inválida', 404: 'Esa cédula no está en la liquidación', 503: 'LIQUIDACION_SIMULAR_FALLA=true' },
   },
 
-  // 7. Salud, estado y configuración
+  // 7. Banco puente de Bre-B (simulado)
+  {
+    metodo: 'get',
+    ruta: '/puente/llaves/:tipo/:valor',
+    etiqueta: PUENTE,
+    resumen: 'A qué wallet llega una llave y el titular enmascarado',
+    descripcion: 'Lo que el banco le responde a cualquiera que consulta una llave. Tatú lo usa al enlazar y antes de cada cobro (RN-18).',
+    respuestas: { 200: ok('La llave', Resolucion), 404: 'LlaveNoExiste', 503: 'PUENTE_SIMULAR_FALLA=true' },
+  },
+  {
+    metodo: 'post',
+    ruta: '/puente/llaves/:tipo/:valor/pertenece',
+    etiqueta: PUENTE,
+    resumen: '¿La llave es de esta cédula? (sí o no)',
+    descripcion: 'RN-16: responde sin revelar de quién es la llave.',
+    cuerpo: PedidoPertenece,
+    respuestas: { 200: ok('El resultado', Coincidencia), 404: 'LlaveNoExiste', 503: 'PUENTE_SIMULAR_FALLA=true' },
+  },
+  {
+    metodo: 'get',
+    ruta: '/puente/llaves',
+    etiqueta: PUENTE,
+    resumen: 'Las llaves de una persona',
+    descripcion: '«Equipo de prueba» hace de banco de cada persona.',
+    consulta: z.object({ documento: z.string().describe('Cédula del titular') }),
+    respuestas: { 200: ok('Sus llaves', Llaves), 400: 'Documento inválido', 503: 'PUENTE_SIMULAR_FALLA=true' },
+  },
+  {
+    metodo: 'post',
+    ruta: '/puente/llaves',
+    etiqueta: PUENTE,
+    resumen: 'Registra una llave (o cambia a qué wallet llega)',
+    descripcion: '«Equipo de prueba» hace de banco. Si la llave ya era de esa persona, cambia la wallet (así se prueba RN-18). Una llave tipo cédula solo la registra su titular.',
+    cuerpo: Llave,
+    respuestas: { 201: ok('Creada', Llave), 200: ok('Actualizada', Llave), 400: 'Entrada inválida', 409: 'LlaveEnUso: es de otra persona', 422: 'CedulaAjena', 503: 'PUENTE_SIMULAR_FALLA=true' },
+  },
+  {
+    metodo: 'delete',
+    ruta: '/puente/llaves/:tipo/:valor',
+    etiqueta: PUENTE,
+    resumen: 'Borra una llave',
+    respuestas: { 204: 'Borrada', 404: 'LlaveNoExiste', 503: 'PUENTE_SIMULAR_FALLA=true' },
+  },
+
+  // 8. Salud, estado y configuración
   {
     metodo: 'get',
     ruta: '/salud',
@@ -551,7 +620,7 @@ export const RUTAS: Ruta[] = [
     respuestas: {
       200: ok(
         'El estado',
-        z.object({ pagosReales: z.boolean(), faltan: z.array(z.string()), openPayments: z.object({}).loose(), programasConTokenFalso: z.number().int(), verificacionCuenta: z.enum(['subject', 'simulada']), baseDeDatos: z.object({ tipo: z.enum(['postgres', 'pglite']), donde: z.string().describe('Servidor y base, nunca la contraseña') }) }),
+        z.object({ pagosReales: z.boolean(), faltan: z.array(z.string()), openPayments: z.object({}).loose(), programasConTokenFalso: z.number().int(), verificacionCuenta: z.enum(['subject', 'simulada']), baseDeDatos: z.object({ tipo: z.enum(['postgres', 'pglite']), donde: z.string().describe('Servidor y base, nunca la contraseña') }), puenteBreB: z.object({ simulado: z.boolean(), responde: z.boolean() }).describe('El banco puente de Bre-B (Plan Bre-B)') }),
       ),
     },
   },
@@ -597,6 +666,8 @@ const DESCRIPCION_PARAMETRO: Record<string, string> = {
   id: 'Id (UUID)',
   programaId: 'Id del programa (UUID)',
   documento: 'Cédula, sin puntos ni espacios',
+  tipo: 'Tipo de llave Bre-B: cedula, celular, correo o alfanumerica',
+  valor: 'La llave: 3001234567, nombre@correo.com, @alias…',
 }
 
 function operacion(r: Ruta): Json {
@@ -658,7 +729,7 @@ export function documentoOpenApi(): Json {
         '⚠️ «Try it out» llama a la API de verdad: con el `.env` lleno, los cobros mueven dinero de prueba en la Test Wallet.',
     },
     servers: [{ url: '/api' }],
-    tags: [PROGRAMAS, PERSONAS, COBROS, PUNTOS, COMERCIOS, LIQUIDACION, SALUD].map((name) => ({ name })),
+    tags: [PROGRAMAS, PERSONAS, COBROS, PUNTOS, COMERCIOS, LIQUIDACION, PUENTE, SALUD].map((name) => ({ name })),
     paths,
     components: { schemas: Object.fromEntries(Object.entries(COMPONENTES).map(([k, v]) => [k, esquemaJson(v, 'output')])) },
   }

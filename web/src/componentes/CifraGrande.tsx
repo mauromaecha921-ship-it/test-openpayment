@@ -2,33 +2,37 @@ import type { ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
-/** Etiqueta, monto grande (36 a 40 px, nunca menos de 24 px) y texto de apoyo. */
+/**
+ * Etiqueta, monto grande (36 a 40 px, nunca menos de 24 px) y texto de apoyo. `noche`: la cifra que
+ * importa va en tarjeta Noche, como en el prototipo; `ambar` la pinta en ámbar (lo que sigue en la
+ * cuenta, lo que puso el punto por adelantado).
+ */
 export function CifraGrande({
   etiqueta,
   children,
   apoyo,
-  destacada = false,
-  azul = false,
+  noche = false,
+  ambar = false,
   className,
 }: {
   etiqueta: string
   children: ReactNode
   apoyo?: ReactNode
-  destacada?: boolean
-  azul?: boolean
+  noche?: boolean
+  ambar?: boolean
   className?: string
 }) {
   return (
     <section
       className={cn(
-        'flex min-w-0 flex-[1_1_260px] flex-col gap-1.5 rounded-xl bg-card',
-        destacada ? 'border-2 border-foreground px-[23px] py-[21px]' : 'border border-border px-6 py-[22px]',
+        'flex min-w-0 flex-[1_1_260px] flex-col gap-1.5 rounded-2xl px-6 py-[22px]',
+        noche ? 'bloque' : 'border border-border bg-card',
         className,
       )}
     >
-      <h2 className="m-0 text-base font-normal text-muted-foreground">{etiqueta}</h2>
-      <span className={cn('text-[36px] leading-[1.1] font-bold [overflow-wrap:anywhere] sm:text-[40px]', azul && 'text-enlace')}>{children}</span>
-      {apoyo && <span className="text-sm text-tenue">{apoyo}</span>}
+      <h2 className={cn('m-0 text-base font-bold', noche ? 'text-bloque-texto' : 'text-foreground')}>{etiqueta}</h2>
+      <span className={cn('cifra text-[34px] [overflow-wrap:anywhere] sm:text-[40px]', ambar && 'text-ambar')}>{children}</span>
+      {apoyo && <span className={cn('text-sm', noche ? 'text-noche-tenue' : 'text-tenue')}>{apoyo}</span>}
     </section>
   )
 }

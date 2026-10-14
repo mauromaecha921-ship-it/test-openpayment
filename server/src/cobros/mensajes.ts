@@ -22,6 +22,9 @@ export const MOTIVOS = {
   // Nuevo en el piloto: respuesta definitiva del banco que no es el tope (4xx, o failed sin
   // causa confirmada; V-15 dirá si es SinFondos). Va a Resultados del piloto.
   ErrorPago: { mensaje: 'El banco no pudo procesar el pago. No se movió dinero', estado: 'Fallido' },
+  // Llave Bre-B (Plan Bre-B): RN-18 la vuelve a resolver antes de pagar
+  LlaveNoExiste: { mensaje: 'Tu llave Bre-B ya no existe: enlaza otra o cobra en un punto', estado: 'Rechazado' },
+  PuenteNoResponde: { mensaje: 'No pudimos consultar Bre-B; intenta en un momento', estado: 'Rechazado' },
 } as const satisfies Record<string, { mensaje: string; estado: 'Rechazado' | 'Fallido' }>
 
 export type Motivo = keyof typeof MOTIVOS

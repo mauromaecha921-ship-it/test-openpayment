@@ -6,6 +6,10 @@
  *
  * Tatú guarda lo mínimo (Plan Supabase y pnpm § 3): la cédula y la wallet. El nombre y el PIN los
  * inscribe «Equipo de prueba» en el gobierno (la liquidación simulada), por HTTP.
+ *
+ * Plan Bre-B: con `cobraCon: 'llaveCedula'`, «Equipo de prueba» hace también de banco de la persona
+ * y registra su cédula como llave Bre-B en el banco puente simulado, apuntando a su wallet. Tatú no
+ * le enlaza cuenta: al cobrar, RN-17 encuentra la llave sola.
  */
 import { randomUUID } from 'node:crypto'
 import * as reglas from '../cobros/reglas.js'
@@ -26,6 +30,7 @@ import * as liquidacion from '../liquidacion/cliente.js'
 import type { Persona } from '../liquidacion/contrato.js'
 import * as op from '../openPaymentsService.js'
 import { resolverWallet } from '../programas/servicio.js'
+import * as puente from '../puente/cliente.js'
 
 export interface EntradaPersona {
   documento: string
@@ -33,6 +38,8 @@ export interface EntradaPersona {
   /** Si no llega, se usa el nombre público de la wallet. */
   nombre?: string
   pin?: string
+  /** «llaveCedula»: su cédula queda como llave Bre-B y Tatú no le enlaza cuenta (Plan Bre-B). */
+  cobraCon?: 'wallet' | 'llaveCedula'
 }
 
 const YA_EXISTE = 'Esa cédula ya está registrada'
@@ -60,7 +67,8 @@ export async function registrar(e: EntradaPersona) {
   if (await repo.porDocumento(e.documento)) throw conflicto('PersonaExiste', YA_EXISTE)
   const w = await resolverWallet(e.billetera)
   const billetera = w.id.replace(/\/+$/, '')
-  const otra = await cuentas.vigentePorBilletera(billetera)
+  const conLlave = e.cobraCon === 'llaveCedula'
+  const otra = conLlave ? undefined : await cuentas.vigentePorBilletera(billetera)
   if (otra) {
     const duena = await repo.obtener(otra.beneficiario_id)
     const nombres = duena ? await nombresDe([duena.numero_documento]) : new Map<string, Persona>()
@@ -69,12 +77,17 @@ export async function registrar(e: EntradaPersona) {
 
   // 1. El gobierno (por HTTP). Inscribir es idempotente: si lo que sigue falla, se puede repetir.
   const inscrita = await liquidacion.inscribir(e.documento, nombreParaInscribir(e.nombre || w.nombre, e.documento), e.pin)
+  // 1b. Su banco (el puente simulado): la cédula como llave Bre-B. También idempotente.
+  if (conLlave) {
+    await puente.registrarLlave({ tipo: 'cedula', valor: e.documento, documentoTitular: e.documento, nombreTitular: inscrita.nombre, billetera })
+  }
 
   // 2. Tatú: solo la cédula y la cuenta
   let b: FilaBeneficiario
   try {
     b = await transaccion(async () => {
       const nueva = await repo.crear({ numero_documento: e.documento })
+      if (conLlave) return nueva
       const cuentaId = randomUUID()
       await cuentas.crear({ id: cuentaId, beneficiario_id: nueva.id, billetera, estado: 'Verificada', verificada_en: ahoraIso() })
       await eventos.registrar({

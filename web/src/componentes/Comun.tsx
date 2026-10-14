@@ -1,9 +1,11 @@
-import { ArrowLeft, LoaderCircle, TriangleAlert } from 'lucide-react'
+import { ChevronLeft, TriangleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
 import { Button } from '@/componentes/ui/button'
 import { cn } from '@/lib/utils'
+
+import { TatuAnimado } from './TatuAnimado'
 
 /** Tarjeta blanca con borde, como las secciones de los wireframes. */
 export function Tarjeta({ children, className, as: Etiqueta = 'section', ...resto }: { children: ReactNode; className?: string; as?: 'section' | 'aside' | 'div' | 'article' } & { 'aria-labelledby'?: string }) {
@@ -46,21 +48,68 @@ export function Aviso({ icono, children, className }: { icono?: ReactNode; child
   )
 }
 
+/** Volver, como en el prototipo: el ‹ en un cuadro claro, junto al texto. */
 export function Volver({ to, children }: { to: string; children: ReactNode }) {
   return (
-    <Link to={to} className="inline-flex min-h-11 items-center gap-1.5 self-start text-base">
-      <ArrowLeft aria-hidden className="size-[18px]" />
+    <Link to={to} className="group inline-flex min-h-11 items-center gap-2.5 self-start text-base font-bold text-foreground no-underline hover:text-foreground">
+      <span aria-hidden className="flex size-10 items-center justify-center rounded-[10px] border border-border bg-card group-hover:border-control">
+        <ChevronLeft className="size-5" strokeWidth={2.5} />
+      </span>
       {children}
     </Link>
   )
 }
 
+const TONO_BLOQUE = {
+  noche: 'bloque',
+  pagado: 'bg-pagado-relleno text-white',
+  rechazo: 'bg-rechazo-relleno text-white',
+  ambar: 'bg-ambar text-noche',
+}
+
+/**
+ * Bloque de color lleno del prototipo: Noche (pagando, cifras), verde (solo «Pagado»), rojo (no
+ * entregues efectivo) y ámbar (el PIN). Todos los textos dan ≥ 4,5:1 sobre su fondo (H-7).
+ */
+export function Bloque({
+  tono,
+  children,
+  className,
+  role,
+}: {
+  tono: keyof typeof TONO_BLOQUE
+  children: ReactNode
+  className?: string
+  role?: 'status' | 'alert'
+}) {
+  return (
+    <div role={role} className={cn('flex min-w-0 flex-col gap-2 rounded-2xl p-5 sm:p-6', TONO_BLOQUE[tono], className)}>
+      {children}
+    </div>
+  )
+}
+
+/**
+ * Mientras carga una pantalla: el tatú del logo rodando, centrado (con «reducir movimiento» queda
+ * quieto). El trazo sale del color del texto, así que sirve en claro y en oscuro. Solo se anima con
+ * `transform` (GPU) y aparece a los 200 ms: no le quita tiempo a la carga.
+ */
 export function Cargando({ texto = 'Cargando…' }: { texto?: string }) {
   return (
-    <p role="status" className="m-0 flex items-center gap-2 py-8 text-muted-foreground">
-      <LoaderCircle aria-hidden className="size-5 animate-spin motion-reduce:animate-none" />
+    <div role="status" className="aparece-tarde flex min-h-[45dvh] flex-1 flex-col items-center justify-center gap-4 py-12 text-muted-foreground">
+      <TatuAnimado estado="pagando" variante="cerradura" className="size-24" />
+      <span className="text-[17px]">{texto}</span>
+    </div>
+  )
+}
+
+/** Lo mismo, en chico, para una lista que todavía no llega (los cobros de hoy, el historial). */
+export function CargandoEnLinea({ texto = 'Cargando…' }: { texto?: string }) {
+  return (
+    <span role="status" className="aparece-tarde inline-flex items-center gap-2.5">
+      <TatuAnimado estado="pagando" variante="rodar" className="size-8" />
       {texto}
-    </p>
+    </span>
   )
 }
 

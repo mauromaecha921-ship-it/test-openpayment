@@ -1,4 +1,5 @@
-import { useEffect, type Dispatch, type SetStateAction } from 'react'
+import { Delete } from 'lucide-react'
+import { useEffect, type Dispatch, type ReactNode, type SetStateAction } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -10,7 +11,7 @@ export function agregarDigito(pin: string, d: string): string {
 }
 
 /**
- * Teclado de 3 × 4 del wireframe 15: 1 a 9, «Borrar», 0 y «Limpiar». El PIN vive solo en el estado
+ * Teclado de 3 × 4 del wireframe 15 con el estilo del prototipo: 1 a 9, «Limpiar», 0 y ⌫ (borrar). El PIN vive solo en el estado
  * del componente que lo usa; también se puede digitar con el teclado físico. Usa actualizaciones
  * funcionales: dos toques seguidos antes de volver a pintar no pierden un dígito.
  */
@@ -30,11 +31,11 @@ export function TecladoPin({ onChange, deshabilitado = false }: { onChange: Disp
     return () => window.removeEventListener('keydown', alTeclear)
   })
 
-  const teclas: Array<{ texto: string; aria: string; accion: () => void; chica?: boolean }> = [
+  const teclas: Array<{ texto: ReactNode; aria: string; accion: () => void; chica?: boolean; plana?: boolean }> = [
     ...'123456789'.split('').map((d) => ({ texto: d, aria: `Dígito ${d}`, accion: () => agregar(d) })),
-    { texto: 'Borrar', aria: 'Borrar un dígito', accion: borrar, chica: true },
+    { texto: 'Limpiar', aria: 'Limpiar: borrar todo el PIN', accion: limpiar, chica: true, plana: true },
     { texto: '0', aria: 'Dígito 0', accion: () => agregar('0') },
-    { texto: 'Limpiar', aria: 'Limpiar: borrar todo el PIN', accion: limpiar, chica: true },
+    { texto: <Delete className="mx-auto size-7" />, aria: 'Borrar un dígito', accion: borrar, plana: true },
   ]
 
   return (
@@ -47,8 +48,9 @@ export function TecladoPin({ onChange, deshabilitado = false }: { onChange: Disp
           disabled={deshabilitado}
           onClick={t.accion}
           className={cn(
-            'h-[60px] rounded-[10px] border border-border bg-muted font-bold text-foreground active:bg-secondary disabled:opacity-50',
-            t.chica ? 'text-base' : 'text-2xl',
+            'h-[60px] rounded-xl font-bold text-foreground disabled:opacity-50',
+            t.plana ? 'bg-transparent active:bg-muted' : 'border border-border bg-card active:bg-muted',
+            t.chica ? 'text-base text-muted-foreground' : 'text-[26px]',
           )}
         >
           {t.texto}
@@ -58,12 +60,20 @@ export function TecladoPin({ onChange, deshabilitado = false }: { onChange: Disp
   )
 }
 
-/** Los 4 puntos del PIN, con su lectura para lector de pantalla («2 de 4 dígitos»). */
+/** Las 4 casillas del PIN, con su lectura para lector de pantalla («2 de 4 dígitos»). */
 export function PuntosPin({ largo }: { largo: number }) {
   return (
-    <div role="img" aria-label={`${largo} de ${LARGO} dígitos`} className="flex gap-3.5 py-1.5">
+    <div role="img" aria-label={`${largo} de ${LARGO} dígitos`} className="flex gap-2.5">
       {Array.from({ length: LARGO }, (_, i) => (
-        <span key={i} className={cn('size-5 rounded-full border-2 border-foreground', i < largo ? 'bg-foreground' : 'bg-background')} />
+        <span
+          key={i}
+          className={cn(
+            'flex h-14 w-[52px] items-center justify-center rounded-xl border-2 bg-white',
+            i < largo || i === largo ? 'border-noche' : 'border-white',
+          )}
+        >
+          {i < largo && <span className="size-3.5 rounded-full bg-noche" />}
+        </span>
       ))}
     </div>
   )

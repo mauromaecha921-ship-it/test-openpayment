@@ -20,7 +20,7 @@ export interface RespuestaCruda {
   cuerpo: unknown
 }
 
-type Metodo = 'GET' | 'POST' | 'PATCH'
+type Metodo = 'GET' | 'POST' | 'PATCH' | 'DELETE'
 
 export const API_SIMULADA =
   import.meta.env.MODE === 'simulada' || import.meta.env.VITE_API_SIMULADA === 'true'
@@ -72,6 +72,7 @@ export const api = {
   get: <T>(ruta: string) => pedir<T>('GET', ruta),
   post: <T>(ruta: string, cuerpo: unknown = {}) => pedir<T>('POST', ruta, cuerpo),
   patch: <T>(ruta: string, cuerpo: unknown) => pedir<T>('PATCH', ruta, cuerpo),
+  borrar: <T>(ruta: string) => pedir<T>('DELETE', ruta),
 }
 
 /** Mensaje para mostrar de cualquier error que lance `api`. */

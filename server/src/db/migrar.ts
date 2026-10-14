@@ -1,13 +1,13 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { baseDeDatos } from '../config.js'
-import { abrirBd, cerrarBd, conexion, ESQUEMA, ESQUEMA_GOBIERNO } from './conexion.js'
+import { abrirBd, cerrarBd, conexion, ESQUEMA, ESQUEMA_GOBIERNO, ESQUEMA_PUENTE } from './conexion.js'
 
 const CARPETA_MIGRACIONES = path.join(import.meta.dirname, 'migraciones')
 
 /**
- * Las tablas del piloto, todas en el esquema `piloto`. `db:reset` borra los esquemas `piloto` y
- * `piloto_gobierno` enteros, y `vaciar` deja estas tablas sin filas. Nada de esto toca `public`,
+ * Las tablas del piloto, todas en el esquema `piloto`. `db:reset` borra los esquemas `piloto`,
+ * `piloto_gobierno` y `piloto_puente` enteros, y `vaciar` deja estas tablas sin filas. Nada de esto toca `public`,
  * donde están las tablas de la rama de Pablo en la misma base de Supabase.
  */
 const TABLAS = [
@@ -68,10 +68,11 @@ export async function migrar(): Promise<string[]> {
   return aplicadas
 }
 
-/** Borra los dos esquemas del piloto, para empezar de cero. `public` no se toca. */
+/** Borra los esquemas del piloto, para empezar de cero. `public` no se toca. */
 export async function borrarTodo() {
   await exigirEsquemaDelPiloto()
   await conexion().script(`
+    DROP SCHEMA IF EXISTS ${ESQUEMA_PUENTE} CASCADE;
     DROP SCHEMA IF EXISTS ${ESQUEMA_GOBIERNO} CASCADE;
     DROP SCHEMA IF EXISTS ${ESQUEMA} CASCADE;`)
 }
@@ -84,7 +85,7 @@ export async function borrarTodo() {
 export async function vaciar() {
   await conexion().script(`
     SET session_replication_role = replica;
-    TRUNCATE ${TABLAS.join(', ')}, ${ESQUEMA_GOBIERNO}.persona;
+    TRUNCATE ${TABLAS.join(', ')}, ${ESQUEMA_GOBIERNO}.persona, ${ESQUEMA_PUENTE}.llave;
     SET session_replication_role = DEFAULT;
     ALTER SEQUENCE ${ESQUEMA}.cobro_referencia_seq RESTART;
     ALTER SEQUENCE ${ESQUEMA}.evento_id_seq RESTART;`)
@@ -106,7 +107,7 @@ async function cli(orden: string | undefined) {
   try {
     await borrarTodo()
     const aplicadas = await migrar()
-    console.log(`Base nueva: ${base.descripcion} (esquemas ${ESQUEMA} y ${ESQUEMA_GOBIERNO}); migraciones: ${aplicadas.join(', ')}`)
+    console.log(`Base nueva: ${base.descripcion} (esquemas ${ESQUEMA}, ${ESQUEMA_GOBIERNO} y ${ESQUEMA_PUENTE}); migraciones: ${aplicadas.join(', ')}`)
     // Las semillas usan los repositorios; se cargan solo aquí para que migrar() no los arrastre
     const { sembrarBase, sembrarSoloUi } = await import('./semillas/base.js')
     if (orden === 'limpia') {

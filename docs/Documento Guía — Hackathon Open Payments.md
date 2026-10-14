@@ -421,7 +421,7 @@ Contexto verificado: en 2025 PuntoRed fue punto aliado del Banco Agrario para co
 - **Pluxee y Edenred:** bonos de alimentación con saldos asignados en una tarjeta o QR del operador y red cerrada de comercios. Aquí no hay saldo en un operador: la plata sigue en la cuenta del financiador.
 - **Bono de Lectura 2026:** la librería fotografía cédula y certificado del Sisbén y cobra al mes siguiente; aquí, cédula y segundo paso, y cobro en segundos.
 - **Gestor de Información Financiera (julio de 2026):** Prosperidad Social paga directo desde el SIIF a cuentas verificadas, pero sigue siendo una dispersión masiva por fecha. Nosotros pagamos cuando alguien cobra y cubrimos también a quien sigue en efectivo.
-- **Bre-B:** el riel de pagos inmediatos del Banco de la República hoy solo hace pagos entre personas y a comercios; la dispersión masiva llegaría en 2027. Open Payments no compite con él: define quién puede ordenar el pago y con qué tope.
+- **Bre-B:** el riel de pagos inmediatos del Banco de la República hoy solo hace pagos entre personas y a comercios; la dispersión masiva llegaría en 2027. Open Payments no compite con él: define quién puede ordenar el pago y con qué tope. **Bre-B es la carretera; Tatú decide quién pasa, cuándo y cuánto.** Por eso lo usamos como riel de llegada: el beneficiario cobra a la llave Bre-B que ya tiene, a través de un banco puente con Rafiki (Arquitectura, AD-21). Según el documento técnico de Bre-B (febrero de 2026), al 31 de enero de 2026 había 99 millones de llaves de 33,9 millones de clientes.
 
 ### Viabilidad frente a la rúbrica
 
@@ -603,17 +603,17 @@ El video de demo debe mostrar en 2 a 3 minutos la solicitud, la autorización, l
 | --- | --- | --- | --- |
 | Gancho | 20 s | Una persona real y su problema, con nombre y barrio | Definición del problema |
 | Problema | 40 s | Un dato verificable y el dolor concreto | Definición del problema, Impacto |
-| Solución | 30 s | La app en una frase: el dinero va de wallet a wallet y nunca pasa por nosotros | Experiencia de usuario |
+| Solución | 30 s | La app en una frase: la plata sale de la cuenta de la entidad solo cuando la persona cobra, y llega a la llave Bre-B que ya tiene o en efectivo a un punto; nunca pasa por nosotros. Lo que nadie cobra nunca sale | Experiencia de usuario |
 | Demo | 90 s | El video: solicitud, autorización, ejecución, completado y momento wow | Uso de Open Payments, Calidad técnica |
 | Cómo usamos Open Payments | 40 s | Qué grants pide la app, qué aprueba el usuario y con qué límites | Uso de Open Payments, Innovación |
-| Inclusión e impacto | 30 s | A quién llega, qué cambia y una métrica | Inclusión, Impacto |
-| Aprendizajes y siguiente paso | 20 s | Qué aprendimos y qué sigue | Presentación |
+| Inclusión e impacto | 30 s | A quién llega: con cuenta, a la llave que ya usa, sin crear nada (la lección de Bizum); sin cuenta, en un punto con su cédula. Qué cambia y una métrica | Inclusión, Impacto |
+| Aprendizajes y siguiente paso | 20 s | Qué aprendimos y qué sigue: un banco o SEDPE con Rafiki conectado a Bre-B (banco puente), sin cambiar el código de Tatú | Presentación |
 
 ### Guion del video
 
 1. Contexto con un dato real: «en el ciclo 7 de Colombia Mayor, 241.830 personas no habían cobrado al cierre ordinario; lo no cobrado se devuelve».
 2. La entidad conecta un subsidio de $230.000 y lo aprueba una vez en la Test Wallet: se ve la pantalla de consentimiento.
-3. Una beneficiaria ve «tengo $230.000», cobra y ve el pago llegar a su cuenta en segundos.
+3. Una beneficiaria ve «tengo $230.000», cobra a su cédula (llave Bre-B) sin enlazar nada y ve el pago llegar en segundos. La pantalla dice «banco puente simulado».
 4. Un beneficiario sin celular cobra en un punto: el cajero digita su cédula, él confirma con PIN y el punto ve «Pagado» y su reembolso en la Test Wallet.
 5. La misma cédula otra vez: «este subsidio ya fue cobrado».
 6. Un cobro que supera el tope: lo rechaza el banco, no nosotros.
@@ -637,9 +637,12 @@ El video de demo debe mostrar en 2 a 3 minutos la solicitud, la autorización, l
 - ¿Tienen biometría? El MVP usa PIN; en producción, el segundo paso lo valida un operador autorizado por la Registraduría.
 - ¿Guardan la base de beneficiarios? No: la consultamos a la entidad y solo registramos cada cobro.
 - ¿Van a reemplazar a Prosperidad Social? No: somos la capa de distribución que convierte una liquidación ya aprobada en pagos bajo demanda.
-- ¿Cómo llega a producción? Con una entidad colombiana que instale Rafiki y una institución con cuenta propia para el piloto.
+- ¿Cómo llega a producción? Con un banco o SEDPE que participe en Bre-B e instale Rafiki (el banco puente) y una institución con cuenta propia para el piloto. Tatú no cambia: sigue hablando solo Open Payments.
+- ¿El beneficiario tiene que crear una wallet? No. Cobra a la llave Bre-B que ya tiene: cédula, celular, correo o @alias. Sin cuenta, cobra en un punto con su cédula. Solo la entidad y los puntos necesitan una wallet Open Payments. En la demo, el banco puente es simulado.
 - ¿Esto no es el Gestor de Información Financiera? No: el Gestor dispersa por fecha a cuentas registradas; nosotros pagamos en el momento del cobro, a la cuenta o en efectivo, contra un permiso con tope.
-- ¿Por qué no Bre-B? Bre-B mueve la plata; Open Payments decide quién puede ordenar el pago y con qué límite. Si una entidad colombiana expone Open Payments, el pago podría viajar por Bre-B.
+- ¿Por qué no Bre-B directo? Bre-B es la carretera: mueve la plata cuando quien paga la empuja. No decide quién debe recibir, cuándo ni con qué límite. No le paga a quien no tiene cuenta, y una vez abonada la plata queda libre, así que no sirve para un bono con destino. Con un lote por Bre-B la plata sale para todos, cobren o no. Además, los pagos masivos y los de empresa a persona todavía están en su agenda de ampliación. Por eso lo usamos como riel de llegada, no como reemplazo.
+- ¿Y si un banco construye lo mismo? Puede, pero amarra a la entidad a ese banco. Con Open Payments, Tatú funciona con cualquier banco que lo implemente, y el tope lo hace cumplir el banco de la entidad, no un sistema con acceso amplio a su cuenta.
+- ¿Y si alguien enlaza el @alias de otra persona? Solo la llave tipo cédula se acepta sola. Las demás piden el PIN y que el banco confirme que el titular es esa cédula. Tatú no le paga a un alias: le paga a una persona.
 - ¿Quitan a los bancos? No: la plata siempre vive en una entidad vigilada. Quitamos el adelanto del ciclo, la ventana fija y el reintegro; el punto cobra en segundos y el Estado paga solo por cobro.
 - ¿Qué hizo la IA y qué hicieron ustedes? Responder con `AI_USAGE.md` en la mano.
 

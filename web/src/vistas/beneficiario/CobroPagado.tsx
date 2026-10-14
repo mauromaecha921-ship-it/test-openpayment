@@ -5,17 +5,16 @@ import { useConfig } from '@/api/config'
 import type { Cobro, EventoCobro } from '@/api/tipos'
 import { usePolling } from '@/api/usePolling'
 import { BilleteraCorta } from '@/componentes/BilleteraCorta'
-import { Cargando, ErrorCarga, ListaDatos } from '@/componentes/Comun'
+import { Bloque, Cargando, ErrorCarga, ListaDatos } from '@/componentes/Comun'
 import { EsperaPagando } from '@/componentes/EsperaPagando'
 import { MarcoBeneficiario } from '@/componentes/Marcos'
 import { textoMonto } from '@/componentes/Monto'
-import { PasosDelPago } from '@/componentes/PasosDelPago'
 import { TatuPagado } from '@/componentes/TatuAnimado'
 import { TarjetaRechazo } from '@/componentes/TarjetaRechazo'
 import { Titulo } from '@/componentes/Titulo'
 import { Button } from '@/componentes/ui/button'
 import { esEstadoFinal } from '@/lib/pantallas'
-import { formatFechaHora } from '@/lib/textos'
+import { formatFechaHora, formatSegundos } from '@/lib/textos'
 
 export function inicioPagando(eventos: EventoCobro[]): string | null {
   return eventos.find((e) => e.hacia === 'Pagando')?.creado ?? null
@@ -36,22 +35,26 @@ export default function CobroPagado() {
         {c && (c.estado === 'Pagando' || c.estado === 'Solicitado' || c.estado === 'PorConfirmar') && (
           <>
             <h1 className="sr-only">Pagando</h1>
-            <EsperaPagando desde={inicioPagando(c.eventos) ?? c.creado} paraPunto={false} />
-            <PasosDelPago cobro={c} />
-            <p className="m-0 text-center text-muted-foreground">Puedes quedarte en esta pantalla: se actualiza sola.</p>
+            <EsperaPagando desde={inicioPagando(c.eventos) ?? c.creado} paraPunto={false} cobro={c}>
+              Estamos enviando {textoMonto(c.monto, c.moneda)} a tu cuenta.
+            </EsperaPagando>
+            <p className="m-0 text-muted-foreground">Puedes quedarte en esta pantalla: se actualiza sola.</p>
           </>
         )}
 
         {c?.estado === 'Pagado' && (
           <>
-            <div role="status" className="flex flex-col items-center gap-2.5 pt-1 text-center">
-              <TatuPagado className="size-28" />
-              <Titulo className="text-[32px]">Pagado</Titulo>
-              <p className="m-0 text-xl">{textoMonto(c.monto, c.moneda)} llegaron a tu cuenta</p>
-            </div>
-            <PasosDelPago cobro={c} />
+            <Bloque tono="pagado" role="status" className="gap-1.5">
+              <TatuPagado medallon className="mb-2 size-[88px]" />
+              <Titulo className="text-[40px] sm:text-[44px]">Pagado</Titulo>
+              <p className="m-0 text-lg font-bold">{textoMonto(c.monto, c.moneda)} llegaron a tu cuenta</p>
+              <span className="text-[15px]">
+                Referencia <span className="mono">{c.referencia}</span>
+                {c.segundosHastaPagado !== null && ` · en ${formatSegundos(c.segundosHastaPagado)}`}
+              </span>
+            </Bloque>
             <ListaDatos
-              className="rounded-[14px] border border-border px-[18px] py-1"
+              className="rounded-2xl border border-border bg-card px-[18px] py-1"
               filas={[
                 ['Referencia', <span key="r" className="mono">{c.referencia}</span>],
                 ['Cuenta', c.cuenta ? <BilleteraCorta key="c" url={c.cuenta.billetera} /> : '—'],
@@ -72,7 +75,7 @@ export default function CobroPagado() {
               paraPunto={false}
               datos={
                 <ListaDatos
-                  className="rounded-[14px] border border-border px-[18px] py-1"
+                  className="rounded-2xl border border-border bg-card px-[18px] py-1"
                   filas={[
                     ['Programa', c.programa.nombre],
                     ['Cobro', c.estado],

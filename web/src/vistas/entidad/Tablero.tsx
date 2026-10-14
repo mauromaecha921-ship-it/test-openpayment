@@ -192,7 +192,7 @@ export default function Tablero({ tablero: t, error, recargar }: { tablero: Dato
         >
           {textoMonto(t.cobrado, m)}
         </CifraGrande>
-        <CifraGrande etiqueta="Todavía no ha salido" apoyo="Sigue en la cuenta del programa" destacada azul>
+        <CifraGrande etiqueta="Todavía no ha salido" apoyo="Sigue en la cuenta del programa" noche ambar>
           {textoMonto(t.noHaSalido, m)}
         </CifraGrande>
       </div>
@@ -202,7 +202,7 @@ export default function Tablero({ tablero: t, error, recargar }: { tablero: Dato
           value={Math.min(100, pct)}
           aria-label={`Cobrado: ${Math.round(pct)} % del tope`}
           aria-valuetext={`${Math.round(pct)} %`}
-          className="h-3.5 bg-secondary"
+          className="h-3.5 bg-secondary *:data-[slot=progress-indicator]:bg-foreground oscuro:*:data-[slot=progress-indicator]:bg-ambar"
         />
         <div className="flex justify-between text-sm text-muted-foreground">
           <span>Cobrado {Math.round(pct)} %</span>
@@ -222,7 +222,7 @@ export default function Tablero({ tablero: t, error, recargar }: { tablero: Dato
                   ['En un punto', Store, t.porCanal.retiro],
                 ] as const)
             ).map(([nombre, Icono, d]) => (
-              <div key={nombre} className="flex flex-[1_1_180px] items-center gap-3 rounded-[10px] border border-border px-3.5 py-3">
+              <div key={nombre} className="flex flex-[1_1_180px] items-center gap-3 rounded-xl bg-muted px-3.5 py-3">
                 <Icono aria-hidden className="size-[22px]" />
                 <div className="flex flex-col">
                   <strong>{nombre}</strong>
@@ -234,20 +234,21 @@ export default function Tablero({ tablero: t, error, recargar }: { tablero: Dato
             ))}
           </div>
         </Tarjeta>
-        <Tarjeta className="flex-[1_1_300px] justify-center gap-2 py-5 text-[15px]">
-          <div className="flex justify-between gap-3">
-            <span className="text-muted-foreground">Reembolso al punto</span>
-            <strong>{t.reembolsoSegundos !== null ? `${formatSegundos(t.reembolsoSegundos)} tras el PIN` : '—'}</strong>
-          </div>
-          <div className="flex justify-between gap-3">
-            <span className="text-muted-foreground">Plata girada por adelantado</span>
-            <strong>{textoMonto(t.giradoPorAdelantado, m)}</strong>
-          </div>
-          <div className="flex justify-between gap-3">
-            <span className="text-muted-foreground">Sin cobrar todavía</span>
-            <strong>{t.sinCobrar ? plural(t.sinCobrar.cedulas, 'cédula') : '—'}</strong>
-          </div>
-        </Tarjeta>
+        {/* Mini-datos del prototipo: la cifra ancha y qué es. */}
+        <dl className="m-0 flex flex-[1_1_300px] flex-col gap-2">
+          {(
+            [
+              [textoMonto(t.giradoPorAdelantado, m), 'girado por adelantado'],
+              [t.reembolsoSegundos !== null ? formatSegundos(t.reembolsoSegundos) : '—', 'reembolso al punto después del PIN'],
+              [t.sinCobrar ? plural(t.sinCobrar.cedulas, 'cédula') : '—', 'sin cobrar todavía'],
+            ] as const
+          ).map(([valor, texto]) => (
+            <div key={texto} className="flex flex-1 flex-wrap items-baseline gap-x-3 gap-y-0.5 rounded-xl bg-muted px-4 py-3">
+              <dt className="order-last text-sm text-muted-foreground">{texto}</dt>
+              <dd className="cifra m-0 text-xl">{valor}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
 
       <Tarjeta className="gap-3.5 py-5">

@@ -1,4 +1,4 @@
-import { Wallet } from 'lucide-react'
+import { Clock, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 
@@ -6,12 +6,12 @@ import { api, ErrorApi, mensajeDeError } from '@/api/client'
 import { useConfig } from '@/api/config'
 import type { Cobro } from '@/api/tipos'
 import { usePolling, type Consulta } from '@/api/usePolling'
-import { Cargando, ErrorCarga, ListaDatos, MensajeError } from '@/componentes/Comun'
+import { Bloque, Cargando, ErrorCarga, ListaDatos, MensajeError } from '@/componentes/Comun'
 import { CuentaRegresiva, useCuentaRegresiva } from '@/componentes/CuentaRegresiva'
 import { EsperaPagando } from '@/componentes/EsperaPagando'
 import { MarcoPunto } from '@/componentes/Marcos'
 import { textoMonto } from '@/componentes/Monto'
-import { PasosDelPago } from '@/componentes/PasosDelPago'
+import { PasosCobroPunto } from '@/componentes/PasosCobroPunto'
 import { TatuPagado } from '@/componentes/TatuAnimado'
 import { TarjetaRechazo } from '@/componentes/TarjetaRechazo'
 import { PuntosPin, TecladoPin } from '@/componentes/TecladoPin'
@@ -97,25 +97,37 @@ function ConfirmarPin({ cobro: c, consulta }: { cobro: Cobro; consulta: Consulta
 
   return (
     <>
-      <section className="flex flex-col gap-0.5 rounded-[14px] border border-control px-4 py-3.5">
-        <span className="text-[15px] text-muted-foreground">{c.canal === 'compra' ? 'El bono cubre' : 'Pago disponible'}</span>
-        <span className="text-[36px] leading-[1.1] font-bold">{textoMonto(c.monto, c.moneda)}</span>
-        <span className="text-[15px]">{personaTexto(c)}</span>
-        <span className="text-sm text-tenue">
-          {c.canal === 'compra' ? `${c.programa.nombre} · ${textoCompra(c)}` : `${c.programa.nombre} · se entrega el valor completo`}
+      <PasosCobroPunto paso="PIN" />
+      <section className="flex flex-col gap-1 rounded-2xl border border-border bg-card px-5 py-4">
+        <span className="text-[15px] text-muted-foreground">
+          {c.canal === 'compra' ? `${c.programa.nombre} · el bono cubre` : `${c.programa.nombre} · valor completo`}
         </span>
+        <span className="cifra text-[36px]">{textoMonto(c.monto, c.moneda)}</span>
+        <span className="text-[15px]">{personaTexto(c)}</span>
+        {c.canal === 'compra' && <span className="text-sm text-tenue">{textoCompra(c)}</span>}
       </section>
 
-      <div className="flex flex-col items-center gap-2 pt-1 text-center">
-        <span className="text-sm text-muted-foreground">Entrega el celular a {nombre}</span>
-        <Titulo className="text-2xl">Digita tu PIN</Titulo>
-        <PuntosPin largo={pin.length} />
-        <span className="text-sm text-muted-foreground">
-          {c.intentosRestantes !== null && `Te ${c.intentosRestantes === 1 ? 'queda' : 'quedan'} ${plural(c.intentosRestantes, 'intento')} · `}
-          <CuentaRegresiva segundos={restante} />
-        </span>
-        <MensajeError>{error}</MensajeError>
-      </div>
+      <span className="-mb-2 text-center text-sm text-muted-foreground">Entrega el celular a {nombre}</span>
+      <Bloque tono="ambar" className="gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <Titulo className="text-[22px]">{c.persona.nombre ? `${c.persona.nombre}, digita tu PIN` : 'Digita tu PIN'}</Titulo>
+          <span className="inline-flex items-center gap-1.5 text-[15px] font-bold">
+            <Clock aria-hidden className="size-4" />
+            <CuentaRegresiva segundos={restante} />
+          </span>
+        </div>
+        <div className="flex justify-center py-1">
+          <PuntosPin largo={pin.length} />
+        </div>
+        {c.intentosRestantes !== null && (
+          <span className="text-center text-[15px]">Te {c.intentosRestantes === 1 ? 'queda' : 'quedan'} {plural(c.intentosRestantes, 'intento')}</span>
+        )}
+      </Bloque>
+      {error && (
+        <div className="rounded-xl bg-rechazo-fondo px-4 py-3">
+          <MensajeError>{error}</MensajeError>
+        </div>
+      )}
 
       <TecladoPin onChange={setPin} deshabilitado={enviando || vencido} />
 
@@ -133,12 +145,12 @@ function Pagando({ cobro: c }: { cobro: Cobro }) {
   return (
     <>
       <h1 className="sr-only">Pagando</h1>
-      <div className="pt-2">
-        <EsperaPagando desde={inicioPagando(c.eventos) ?? c.actualizado} paraPunto />
-      </div>
-      <PasosDelPago cobro={c} />
+      <PasosCobroPunto paso="Resultado" />
+      <EsperaPagando desde={inicioPagando(c.eventos) ?? c.actualizado} paraPunto cobro={c}>
+        Estamos pagando {textoMonto(c.monto, c.moneda)} desde la cuenta del programa a la billetera de tu {c.canal === 'compra' ? 'comercio' : 'tienda'}.
+      </EsperaPagando>
       <ListaDatos
-        className="rounded-[14px] border border-border px-[18px] py-1"
+        className="rounded-2xl border border-border bg-card px-[18px] py-1"
         filas={[
           ['Persona', personaTexto(c)],
           ['Monto', textoMonto(c.monto, c.moneda)],
@@ -153,17 +165,21 @@ function Pagado({ cobro: c }: { cobro: Cobro }) {
   const monto = textoMonto(c.monto, c.moneda)
   return (
     <>
-      <div role="status" className="flex flex-col items-center gap-2.5 pt-1 text-center">
-        <TatuPagado className="size-28" />
-        <Titulo className="text-[34px]">Pagado</Titulo>
-        <p className="m-0 text-[26px] leading-tight font-bold">
-          {c.canal === 'compra' ? `El bono cubrió ${monto}. ${textoCompra(c)}` : `Entrega ${monto} a ${c.persona.nombre ?? 'la persona'}`}
+      <PasosCobroPunto paso="Resultado" />
+      <Bloque tono="pagado" role="status" className="gap-1.5">
+        <TatuPagado medallon className="mb-2 size-[88px]" />
+        <Titulo className="text-[40px] sm:text-[44px]">Pagado</Titulo>
+        <p className="m-0 text-lg font-bold">
+          {c.canal === 'compra' ? `El bono cubrió ${monto}. ${textoCompra(c)}` : `Entrega a ${c.persona.nombre ?? 'la persona'}`}
         </p>
-        <span className="mono text-muted-foreground">Ref. {c.referencia}</span>
-      </div>
-      <PasosDelPago cobro={c} />
-      <section className="flex items-start gap-3.5 rounded-[14px] border border-control p-4">
-        <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary">
+        {c.canal !== 'compra' && <p className="cifra m-0 text-[40px] sm:text-[44px]">{monto}</p>}
+        <span className="text-[15px]">
+          Referencia <span className="mono">{c.referencia}</span>
+          {c.segundosHastaPagado !== null && ` · en ${formatSegundos(c.segundosHastaPagado)}`}
+        </span>
+      </Bloque>
+      <section className="flex items-start gap-3.5 rounded-2xl border border-border bg-card p-4">
+        <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-bloque text-ambar">
           <Wallet className="size-[22px]" />
         </span>
         <div className="flex min-w-0 flex-col gap-1">
@@ -186,12 +202,13 @@ function Rechazo({ cobro: c }: { cobro: Cobro }) {
   const codigo = c.motivo?.codigo
   return (
     <>
+      <PasosCobroPunto paso="Resultado" />
       <TarjetaRechazo
         cobro={c}
         paraPunto
         datos={
           <ListaDatos
-            className="rounded-[14px] border border-border px-[18px] py-1"
+            className="rounded-2xl border border-border bg-card px-[18px] py-1"
             filas={[
               ['Cédula', personaTexto(c)],
               ['Programa', `${c.programa.nombre}${codigo === 'ProgramaCerrado' ? ' · Cerrado' : ''}`],

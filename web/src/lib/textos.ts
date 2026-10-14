@@ -1,7 +1,7 @@
 // Nombres en español sencillo, fechas y horas. Los mensajes de rechazo los manda la API (P-16);
 // aquí solo vive la explicación de apoyo que muestran los wireframes 17 a 19 debajo del título.
 
-import type { EstadoCobro, EstadoCuenta, EstadoPrograma } from '@/api/tipos'
+import type { EstadoCobro, EstadoCuenta, EstadoPrograma, TipoLlave } from '@/api/tipos'
 
 export const NOMBRE_ESTADO_COBRO: Record<EstadoCobro, string> = {
   Solicitado: 'Solicitado',
@@ -44,6 +44,21 @@ export const MOTIVO_CORTO: Record<string, string> = {
   ErrorPago: 'error del banco',
   ComercioNoAutorizado: 'comercio no autorizado',
   SoloEnComercios: 'solo en comercios',
+  LlaveNoExiste: 'llave Bre-B borrada',
+  PuenteNoResponde: 'Bre-B sin respuesta',
+}
+
+/** Cómo se llama cada tipo de llave Bre-B en pantalla (RN-14). */
+export const NOMBRE_TIPO_LLAVE: Record<TipoLlave, string> = {
+  cedula: 'Cédula',
+  celular: 'Celular',
+  correo: 'Correo',
+  alfanumerica: '@Llave',
+}
+
+/** «Celular 300***4567», «Cédula ******7890» o, si es un @alias, solo «@seb***» (ya dice qué es). */
+export function textoLlave(tipo: TipoLlave, llave: string): string {
+  return tipo === 'alfanumerica' ? llave : `${NOMBRE_TIPO_LLAVE[tipo]} ${llave}`
 }
 
 /** Explicación debajo del mensaje de la API (wireframes 17 a 19). */
@@ -67,6 +82,10 @@ export function explicacionMotivo(codigo: string | undefined, estado: EstadoCobr
       return 'La cuenta del programa no tiene saldo en este momento. La plata no se movió.'
     case 'PermisoVencido':
       return 'La entidad debe aprobar de nuevo el permiso en su banco. La plata no se movió.'
+    case 'LlaveNoExiste':
+      return 'Tu llave Bre-B ya no existe en tu banco. Enlaza otra llave o cobra en un punto. No se movió dinero.'
+    case 'PuenteNoResponde':
+      return 'No pudimos consultar Bre-B. Intenta en un momento. No se movió dinero.'
     case 'LiquidacionNoResponde':
       return 'Intenta de nuevo en un momento. No se creó ningún pago.'
     case 'Cancelado':

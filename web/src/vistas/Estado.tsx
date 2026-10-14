@@ -126,6 +126,15 @@ export default function Estado() {
                     ? 'Al cambiar de cuenta en «Mi cuenta», la persona la confirma en su Test Wallet. Las personas registradas en «Equipo de prueba» quedan listas de una vez.'
                     : 'Simulada (plan B de HU-07): las cuentas quedan verificadas sin pasar por la Test Wallet.'}
                 </Paso>
+                {estado.puenteBreB && (
+                  <Paso estado={estado.puenteBreB.responde ? 'ok' : 'falla'} titulo="Banco puente de Bre-B">
+                    {estado.puenteBreB.responde
+                      ? estado.puenteBreB.simulado
+                        ? 'Simulado por esta API: cada llave Bre-B apunta a una wallet de la Test Wallet (las registra «Equipo de prueba»). El dinero sí se mueve en la Test Wallet.'
+                        : 'Responde el banco puente que indica PUENTE_URL.'
+                      : 'No responde: cobrar a una llave Bre-B no funciona. Revisa PUENTE_URL o PUENTE_SIMULAR_FALLA en el .env.'}
+                  </Paso>
+                )}
               </ul>
             </Tarjeta>
           </>

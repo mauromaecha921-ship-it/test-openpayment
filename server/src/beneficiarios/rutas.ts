@@ -20,6 +20,9 @@ export const EntradaPersona = z.object({
     .optional()
     .transform((v) => v || undefined)
     .pipe(z.string().regex(/^\d{4}$/, 'el PIN tiene 4 dígitos').optional()),
+  // Plan Bre-B: «llaveCedula» registra su cédula como llave Bre-B (en el banco puente simulado) y no
+  // le enlaza cuenta en Tatú; al cobrar, RN-17 la encuentra sola
+  cobraCon: z.enum(['wallet', 'llaveCedula']).default('wallet'),
 })
 
 /** Beneficiarios (D-05): cédulas de prueba y resumen (HU-08). */

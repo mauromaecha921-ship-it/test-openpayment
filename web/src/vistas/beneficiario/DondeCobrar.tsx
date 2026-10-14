@@ -26,16 +26,22 @@ export default function DondeCobrar() {
       {/* En PC: los pasos a la izquierda y los puntos a la derecha. */}
       <div className="grid items-start gap-[18px] md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-10">
       <div className="flex min-w-0 flex-col gap-[18px]">
-      <ol className="m-0 flex list-none flex-col gap-2.5 p-0 text-[17px]">
-        {['Lleva tu cédula original.', (r?.pagos.length ?? 0) > 1 ? 'En el punto digitan tu número y eliges cuál de tus subsidios cobrar.' : 'En el punto digitan tu número.', `Confirmas con tu PIN y recibes ${monto ?? 'tu subsidio'} en efectivo.`].map((t, i) => (
+      <section aria-labelledby="titulo-como" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-5">
+      <h2 id="titulo-como" className="m-0 text-lg font-bold">Así cobras</h2>
+      <ol className="m-0 flex list-none flex-col gap-3 p-0 text-[17px]">
+        {['Lleva tu cédula original.', (r?.pagos.length ?? 0) > 1 ? 'En el punto digitan tu número y eliges cuál de tus subsidios cobrar.' : 'En el punto digitan tu número.', `Confirmas con tu PIN y recibes ${monto ?? 'tu subsidio'} en efectivo.`].map((t, i, todos) => (
           <li key={i} className="flex items-start gap-3">
-            <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-foreground text-[15px] font-bold">
+            <span
+              aria-hidden
+              className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[15px] font-bold ${i === todos.length - 1 ? 'bg-ambar text-noche' : 'bg-foreground text-background'}`}
+            >
               {i + 1}
             </span>
             {t}
           </li>
         ))}
       </ol>
+      </section>
       {unico && (
         <p className="m-0 flex items-center gap-2">
           <Clock aria-hidden className="size-[18px] shrink-0" />
@@ -48,8 +54,8 @@ export default function DondeCobrar() {
       <h2 id="titulo-puntos" className="mt-1.5 mb-0 text-xl font-bold md:mt-0">Puntos cerca</h2>
       {puntos.error && <ErrorCarga mensaje={puntos.error} reintentar={() => void puntos.recargar()} />}
       {puntos.datos?.map((p) => (
-        <article key={p.id} className="flex items-start gap-3.5 rounded-[14px] border border-control p-4">
-          <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-secondary">
+        <article key={p.id} className="flex items-start gap-3.5 rounded-2xl border border-border bg-card p-4">
+          <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-ambar text-noche">
             <Store className="size-[22px]" />
           </span>
           <div className="flex flex-col gap-1">

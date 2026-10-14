@@ -80,20 +80,20 @@ export default function CerrarPrograma() {
             }}
             className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-[560px] gap-[18px] overflow-y-auto rounded-[14px] p-6 sm:max-w-[560px] sm:p-7">
             <AlertDialogHeader className="items-start text-left sm:text-left">
-              <AlertDialogTitle className="text-[26px] font-bold">¿Cerrar el programa?</AlertDialogTitle>
+              <AlertDialogTitle className="titular text-[28px] font-extrabold">¿Cerrar el programa?</AlertDialogTitle>
               <AlertDialogDescription className="text-base text-muted-foreground">
                 Revocamos el permiso en tu banco y nadie podrá volver a cobrar. Esto no se puede deshacer.
               </AlertDialogDescription>
             </AlertDialogHeader>
 
             <div className="flex flex-wrap gap-3">
-              <div className="flex flex-[1_1_200px] flex-col gap-0.5 rounded-[10px] border border-border px-4 py-3.5">
-                <span className="text-sm text-tenue">Cobrado</span>
-                <span className="text-[26px] font-bold">{textoMonto(t.cobrado, t.programa.moneda)}</span>
+              <div className="flex flex-[1_1_200px] flex-col gap-0.5 rounded-xl bg-muted px-4 py-3.5">
+                <span className="text-sm text-muted-foreground">Cobrado</span>
+                <span className="cifra text-[26px]">{textoMonto(t.cobrado, t.programa.moneda)}</span>
               </div>
-              <div className="flex flex-[1_1_200px] flex-col gap-0.5 rounded-[10px] border-2 border-foreground px-[15px] py-[13px]">
-                <span className="text-sm text-tenue">Se queda en tu cuenta</span>
-                <span className="text-[26px] font-bold text-enlace">{textoMonto(t.noHaSalido, t.programa.moneda)}</span>
+              <div className="flex flex-[1_1_200px] flex-col gap-0.5 bloque rounded-xl px-4 py-3.5">
+                <span className="text-sm font-bold">Se queda en tu cuenta</span>
+                <span className="cifra text-[26px] text-ambar">{textoMonto(t.noHaSalido, t.programa.moneda)}</span>
               </div>
             </div>
             <p className="m-0 text-[15px] text-muted-foreground">
@@ -127,7 +127,7 @@ export default function CerrarPrograma() {
               <Button variant="outline" size="lg" className="text-base" onClick={volver}>
                 Cancelar
               </Button>
-              <Button size="lg" className="text-base" onClick={() => void cerrar()} disabled={!confirmado || hayPagando || enviando}>
+              <Button size="lg" className="bg-rechazo-relleno text-base text-white hover:bg-[#7f1d16]" onClick={() => void cerrar()} disabled={!confirmado || hayPagando || enviando}>
                 Cerrar programa
               </Button>
             </AlertDialogFooter>

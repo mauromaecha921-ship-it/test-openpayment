@@ -10,10 +10,10 @@ import { cn } from '@/lib/utils'
 const ESTILO: Record<Estado, string> = {
   Solicitado: 'border-control bg-background text-foreground',
   PorConfirmar: 'border-control bg-background text-foreground',
-  Pagando: 'border-pagando bg-pagando-fondo text-pagando',
+  Pagando: 'border-pagando-fondo bg-pagando-fondo text-pagando',
   Pagado: 'border-pagado-relleno bg-pagado-relleno text-primary-foreground',
-  Rechazado: 'border-dashed border-rechazo bg-rechazo-fondo text-rechazo',
-  Fallido: 'border-dashed border-rechazo bg-rechazo-fondo text-rechazo',
+  Rechazado: 'border-rechazo-fondo bg-rechazo-fondo text-rechazo',
+  Fallido: 'border-rechazo-fondo bg-rechazo-fondo text-rechazo',
 }
 
 const ICONO = {

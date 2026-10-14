@@ -22,7 +22,8 @@ export default function BancoSimulado() {
   const responder = (aprobado: boolean) => navegar(resolverConsentimiento(tipo, id, aprobado), { replace: true })
 
   return (
-    <div className="min-h-dvh bg-[#eef1f6] px-4 py-10">
+    // Imita otro banco: siempre en claro, aunque el piloto esté en modo oscuro.
+    <div data-tema="claro" className="min-h-dvh bg-[#eef1f6] px-4 py-10 text-foreground">
       <main className="mx-auto flex max-w-[520px] flex-col gap-5 rounded-2xl border border-border bg-background p-6 shadow-sm">
         <span className="self-start rounded-full border border-dashed border-control px-3 py-0.5 text-sm text-muted-foreground">
           Test Wallet simulada · no es tu banco real

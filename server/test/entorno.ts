@@ -14,4 +14,5 @@ Object.assign(process.env, {
   DEMO_WALLET_PUNTO: 'https://ilp.interledger-test.dev/prueba-punto',
   VERIFICACION_CUENTA: 'subject',
   LIQUIDACION_SIMULAR_FALLA: 'false',
+  PUENTE_SIMULAR_FALLA: 'false',
 })

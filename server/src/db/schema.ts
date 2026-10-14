@@ -1,11 +1,12 @@
 // Generado con «pnpm --filter api db:pull» (scripts/esquema.ts) desde src/db/migraciones/.
 // No se edita a mano: se cambia la migración y se vuelve a generar.
 import { instante } from './tipos.js'
-import { pgSchema, pgTable, uuid, bigserial, text, pgEnum, integer, boolean, jsonb, bigint, smallint, index, uniqueIndex, foreignKey, primaryKey, unique, check } from "drizzle-orm/pg-core"
+import { pgSchema, pgTable, text, uuid, bigserial, pgEnum, integer, boolean, jsonb, bigint, smallint, index, uniqueIndex, foreignKey, primaryKey, unique, check } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const piloto = pgSchema("piloto");
 export const piloto_gobierno = pgSchema("piloto_gobierno");
+export const piloto_puente = pgSchema("piloto_puente");
 export const tipo_programa = piloto.enum("tipo_programa", ["subsidio", "bono"])
 export const destino_programa = piloto.enum("destino_programa", ["libre", "restringido"])
 export const estado_programa = piloto.enum("estado_programa", ["Borrador", "EsperandoAprobacion", "Activo", "Pausado", "Cerrado"])
@@ -14,6 +15,7 @@ export const estado_cuenta = piloto.enum("estado_cuenta", ["SinEnlazar", "PorVer
 export const canal_cobro = piloto.enum("canal_cobro", ["cuenta", "retiro", "compra"])
 export const estado_cobro = piloto.enum("estado_cobro", ["Solicitado", "PorConfirmar", "Pagando", "Pagado", "Rechazado", "Fallido"])
 export const tipo_doc = piloto.enum("tipo_doc", ["CC", "TI", "CE", "PPT", "PA"])
+export const tipo_llave = piloto.enum("tipo_llave", ["cedula", "celular", "correo", "alfanumerica"])
 
 export const cobro_referencia_seq = piloto.sequence("cobro_referencia_seq", { startWith: "1", increment: "1", minValue: "1", maxValue: "9223372036854775807", cache: "1", cycle: false, })
 
@@ -90,9 +92,11 @@ export const cuenta_beneficiario = piloto.table.withRLS("cuenta_beneficiario", {
 	uri_continuacion: text(),
 	token_continuacion: text(),
 	creado_en: instante().default(sql`now()`).notNull(),
+	tipo_llave: tipo_llave(),
+	llave: text(),
 }, (table) => [
 	uniqueIndex("una_cuenta_vigente").using("btree", table.beneficiario_id.asc().nullsLast()).where(sql`(estado = ANY (ARRAY['PorVerificar'::piloto.estado_cuenta, 'Verificada'::piloto.estado_cuenta]))`),
-	unique("cuenta_de_beneficiario").on(table.id, table.beneficiario_id),check("cuenta_beneficiario_billetera_check", sql`(billetera ~~ 'https://%'::text)`),check("verificada_con_fecha", sql`((estado = 'Verificada'::piloto.estado_cuenta) = (verificada_en IS NOT NULL))`),]);
+	unique("cuenta_de_beneficiario").on(table.id, table.beneficiario_id),check("cuenta_beneficiario_billetera_check", sql`(billetera ~~ 'https://%'::text)`),check("cuenta_beneficiario_llave_check", sql`((char_length(llave) >= 3) AND (char_length(llave) <= 80))`),check("llave_con_tipo", sql`((tipo_llave IS NULL) = (llave IS NULL))`),check("verificada_con_fecha", sql`((estado = 'Verificada'::piloto.estado_cuenta) = (verificada_en IS NOT NULL))`),]);
 
 export const evento = piloto.table.withRLS("evento", {
 	id: bigserial({ mode: 'number' }).primaryKey(),
@@ -168,3 +172,14 @@ export const persona = piloto_gobierno.table.withRLS("persona", {
 	creado_en: instante().default(sql`now()`).notNull(),
 }, () => [
 check("persona_documento_check", sql`(documento ~ '^[A-Za-z0-9]{3,20}$'::text)`),check("persona_nombre_check", sql`((char_length(nombre) >= 1) AND (char_length(nombre) <= 120))`),check("persona_veces_check", sql`(veces >= 1)`),]);
+
+export const llave = piloto_puente.table.withRLS("llave", {
+	tipo: text().notNull(),
+	valor: text().notNull(),
+	documento_titular: text().notNull(),
+	nombre_titular: text().notNull(),
+	billetera: text().notNull(),
+	creado_en: instante().default(sql`now()`).notNull(),
+}, (table) => [
+	primaryKey({ columns: [table.tipo, table.valor], name: "llave_pkey"}),
+check("cedula_del_titular", sql`((tipo <> 'cedula'::text) OR (valor = documento_titular))`),check("llave_billetera_check", sql`(billetera ~~ 'https://%'::text)`),check("llave_documento_titular_check", sql`(documento_titular ~ '^[A-Za-z0-9]{3,20}$'::text)`),check("llave_nombre_titular_check", sql`((char_length(nombre_titular) >= 1) AND (char_length(nombre_titular) <= 120))`),check("llave_tipo_check", sql`(tipo = ANY (ARRAY['cedula'::text, 'celular'::text, 'correo'::text, 'alfanumerica'::text]))`),check("llave_valor_check", sql`((char_length(valor) >= 3) AND (char_length(valor) <= 80))`),]);
