@@ -1,4 +1,4 @@
-import { Check, Clock, LoaderCircle, TriangleAlert, X } from 'lucide-react'
+import { Ban, Check, Clock, Landmark, LoaderCircle } from 'lucide-react'
 
 import type { EstadoCobro as Estado, Motivo } from '@/api/tipos'
 import { MOTIVO_CORTO, NOMBRE_ESTADO_COBRO } from '@/lib/textos'
@@ -11,9 +11,9 @@ const ESTILO: Record<Estado, string> = {
   Solicitado: 'border-control bg-background text-foreground',
   PorConfirmar: 'border-control bg-background text-foreground',
   Pagando: 'border-pagando-fondo bg-pagando-fondo text-pagando',
-  Pagado: 'border-pagado-relleno bg-pagado-relleno text-primary-foreground',
-  Rechazado: 'border-rechazo-fondo bg-rechazo-fondo text-rechazo',
-  Fallido: 'border-rechazo-fondo bg-rechazo-fondo text-rechazo',
+  Pagado: 'border-[#15803d] bg-[#15803d] text-white',
+  Rechazado: 'border-[#f8e4df] bg-[#f8e4df] text-[#a3261c]',
+  Fallido: 'border-[#f8e4df] bg-[#f8e4df] text-[#a3261c]',
 }
 
 const ICONO = {
@@ -21,18 +21,28 @@ const ICONO = {
   PorConfirmar: Clock,
   Pagando: LoaderCircle,
   Pagado: Check,
-  Rechazado: X,
-  Fallido: TriangleAlert,
+  Rechazado: Ban,
+  Fallido: Landmark,
 } satisfies Record<Estado, unknown>
 
-export function EstadoCobro({ estado, motivo, grande = false }: { estado: Estado; motivo?: Motivo | null; grande?: boolean }) {
+export function EstadoCobro({
+  estado,
+  motivo,
+  grande = false,
+  soloEstado = false,
+}: {
+  estado: Estado
+  motivo?: Motivo | null
+  grande?: boolean
+  soloEstado?: boolean
+}) {
   const Icono = ICONO[estado]
-  const corto = motivo ? (MOTIVO_CORTO[motivo.codigo] ?? motivo.mensaje) : null
+  const corto = !soloEstado && motivo ? (MOTIVO_CORTO[motivo.codigo] ?? motivo.mensaje) : null
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full border whitespace-nowrap',
-        grande ? 'px-3 py-1 text-[15px] font-bold' : 'px-2.5 py-0.5 text-sm',
+        grande ? 'px-3 py-1 text-[15px] font-bold' : 'px-2.5 py-0.5 text-xs sm:text-sm font-semibold',
         ESTILO[estado],
       )}
     >

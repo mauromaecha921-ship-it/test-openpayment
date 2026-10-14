@@ -28,6 +28,7 @@ export const PERSONAS: PersonaLiquidacion[] = [
   { documento: '900000001', nombre: 'Ana', etiqueta: 'C.C. de prueba 1', veces: 1, pin: '1111', novedad: false, usaApp: true },
   { documento: '900000002', nombre: 'Luis', etiqueta: 'C.C. de prueba 2', veces: 1, pin: '2222', novedad: false, usaApp: true },
   { documento: '900000003', nombre: 'Jorge', etiqueta: 'C.C. de prueba 3', veces: 1, pin: '3333', novedad: false, usaApp: false },
+  { documento: '71234567', nombre: 'Jorge P.', etiqueta: 'C.C. ··· 567', veces: 1, pin: '3333', novedad: false, usaApp: false },
   { documento: '900000004', nombre: 'Rosa', etiqueta: 'C.C. de prueba 4', veces: 2, pin: '4444', novedad: true, usaApp: false },
 ]
 

@@ -85,7 +85,10 @@ export function Encabezado({ variante, quien, rol, secciones }: Props) {
   return (
     <header className={cn('border-b', oscuro ? 'border-bloque bg-bloque text-bloque-texto' : 'border-border bg-background')}>
       <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-3 px-4 py-2 sm:px-6">
-        <Logo oscuro={oscuro} />
+        {/* En la entrada, el celular ya muestra la marca grande debajo: la barra queda en una sola fila */}
+        <span className={cn(variante === 'entrada' && 'max-md:hidden')}>
+          <Logo oscuro={oscuro} />
+        </span>
         {variante === 'escritorio' && quien && (
           <>
             <span aria-hidden className="text-noche-tenue">
@@ -99,7 +102,8 @@ export function Encabezado({ variante, quien, rol, secciones }: Props) {
           <AvisoSimulada oscuro={oscuro} />
           {variante === 'entrada' ? (
             <Link to="/equipo" className={cn(pastilla, 'border-foreground font-bold text-foreground no-underline hover:bg-muted hover:text-foreground')}>
-              Equipo de prueba
+              <span className="md:hidden">Dinero de prueba</span>
+              <span className="hidden md:inline">Equipo de prueba</span>
             </Link>
           ) : (
             rol && <span className={cn(pastilla, 'border-ambar font-bold text-ambar')}>{rol}</span>

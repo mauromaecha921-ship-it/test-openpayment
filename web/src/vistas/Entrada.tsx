@@ -1,4 +1,4 @@
-import { Building2, Store, TriangleAlert, User } from 'lucide-react'
+import { Building2, ChevronRight, Monitor, Store, TriangleAlert, User } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
 
@@ -33,27 +33,54 @@ const COLOR_ROL = {
   punto: 'bg-ambar text-noche',
 }
 
+/**
+ * Móvil: fila compacta (ícono + título + subtítulo + flecha).
+ * Desktop: tarjeta completa con descripción, selector y botón.
+ */
 function TarjetaRol({
   icono,
   color,
   titulo,
+  subtitulo,
   texto,
+  onEntrar,
   children,
 }: {
   icono: ReactNode
   color: keyof typeof COLOR_ROL
   titulo: string
+  /** Texto corto que se muestra en móvil bajo el título */
+  subtitulo?: string
   texto: string
+  onEntrar: () => void
   children: ReactNode
 }) {
   return (
-    <section className="flex min-w-0 flex-[1_1_300px] flex-col gap-4 rounded-2xl border border-border bg-card p-6 sm:p-7">
-      <div aria-hidden className={cn('flex size-12 items-center justify-center rounded-xl [&_svg]:size-6', COLOR_ROL[color])}>
+    <section className="min-w-0 rounded-2xl border border-border bg-card sm:flex sm:flex-[1_1_300px] sm:flex-col sm:gap-3 sm:p-5">
+      {/* Móvil: fila compacta */}
+      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 p-3 sm:hidden">
+        <div aria-hidden className={cn('flex size-11 items-center justify-center rounded-xl [&_svg]:size-5', COLOR_ROL[color])}>
+          {icono}
+        </div>
+        <div className="min-w-0">
+          <p className="m-0 font-bold">{titulo}</p>
+          {subtitulo && <p className="m-0 text-sm text-muted-foreground">{subtitulo}</p>}
+        </div>
+        <button
+          onClick={onEntrar}
+          aria-label={`Entrar como ${titulo.toLowerCase()}`}
+          className="flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
+        >
+          <ChevronRight className="size-5" />
+        </button>
+      </div>
+      {/* Desktop: tarjeta completa */}
+      <div aria-hidden className={cn('hidden size-12 items-center justify-center rounded-xl [&_svg]:size-6 sm:flex', COLOR_ROL[color])}>
         {icono}
       </div>
-      <h2 className="m-0 text-2xl font-bold">{titulo}</h2>
-      <p className="m-0 text-muted-foreground">{texto}</p>
-      {children}
+      <h2 className="m-0 hidden text-2xl font-bold sm:block">{titulo}</h2>
+      <p className="m-0 hidden text-muted-foreground sm:block">{texto}</p>
+      <div className="hidden sm:contents">{children}</div>
     </section>
   )
 }
@@ -108,31 +135,35 @@ export default function Entrada() {
   return (
     <div className="flex min-h-dvh flex-col bg-background">
       <Encabezado variante="entrada" />
-      <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 pt-8 pb-12 sm:px-6 sm:pt-12">
-        <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:gap-6 sm:text-left">
-          <img src="/marca/tatu-logo-claro.svg" alt="" className="size-28 shrink-0 oscuro:hidden sm:size-32" />
-          <img src="/marca/tatu-logo-oscuro.svg" alt="" className="hidden size-28 shrink-0 rounded-3xl oscuro:block sm:size-32" />
-          <div className="flex flex-col gap-2">
-            <p className="marca m-0 text-[50px] sm:text-[64px]">Tatú</p>
-            <p className="m-0 max-w-[420px] text-lg leading-snug">
+      <main className="mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-2 px-4 py-3 sm:px-6 sm:py-6 md:justify-center md:gap-4 md:py-6">
+        <div className="flex flex-col items-center gap-1 text-center sm:flex-row sm:gap-6 sm:text-left">
+          <img src="/marca/tatu-logo-claro.svg" alt="" className="size-20 shrink-0 oscuro:hidden sm:size-20" />
+          <img src="/marca/tatu-logo-oscuro.svg" alt="" className="hidden size-20 shrink-0 rounded-3xl oscuro:block sm:size-20" />
+          <div className="flex flex-col gap-1 sm:gap-2">
+            <p className="marca m-0 text-4xl sm:text-5xl">Tatú</p>
+            <p className="m-0 max-w-[420px] text-sm leading-snug sm:text-base">
               La plata del subsidio sale de la cuenta de la entidad solo cuando alguien cobra.
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Titulo className="text-[32px] sm:text-[40px]">¿Con qué rol entras?</Titulo>
-          <p className="m-0 max-w-[640px] text-lg text-muted-foreground">
-            Elige un rol para ver su vista. Puedes cambiarlo cuando quieras desde la barra superior.
-          </p>
+        <div className="flex flex-col gap-1">
+          <Titulo className="text-xl sm:text-3xl">¿Cómo quieres entrar?</Titulo>
         </div>
 
         {error && <ErrorCarga mensaje={error} reintentar={() => void recargar()} />}
         <AvisoPagos />
-        <ComoProbar />
+        {/* <ComoProbar /> */}
 
-        <div className="flex flex-wrap items-stretch gap-6" aria-busy={cargando}>
-          <TarjetaRol icono={<Building2 />} color="entidad" titulo="Entidad" texto="Conecta el subsidio, apruébalo una vez en tu banco y sigue lo cobrado.">
+        <div className="flex flex-col gap-2 sm:flex-wrap sm:flex-row sm:items-stretch sm:gap-4" aria-busy={cargando}>
+          <TarjetaRol
+            icono={<Building2 />}
+            color="entidad"
+            titulo="Entidad"
+            subtitulo={(() => { const p = datos?.programas.find((x) => x.id === programaId); return p ? `${p.nombre} · ${NOMBRE_ESTADO_PROGRAMA[p.estado]}` : 'Sus programas y lo que se ha cobrado' })()}
+            texto="Conecta el subsidio, apruébalo una vez en tu banco y sigue lo cobrado."
+            onEntrar={entrarEntidad}
+          >
             <label className="flex flex-col gap-1.5 text-sm font-bold">
               Programa
               <select className={claseSelect} value={programaId} onChange={(e) => setProgramaId(e.target.value)} disabled={cargando}>
@@ -149,7 +180,14 @@ export default function Entrada() {
             </Button>
           </TarjetaRol>
 
-          <TarjetaRol icono={<User />} color="beneficiario" titulo="Beneficiario" texto="Mira cuánto tienes y cóbralo a tu wallet o en un punto.">
+          <TarjetaRol
+            icono={<User />}
+            color="beneficiario"
+            titulo="Beneficiaria"
+            subtitulo={(() => { const b = datos?.beneficiarios.find((x) => x.documento === documento); return b ? `${b.nombre} · sus subsidios por cobrar` : 'Sus subsidios por cobrar' })()}
+            texto="Mira cuánto tienes y cóbralo a tu wallet o en un punto."
+            onEntrar={entrarBeneficiario}
+          >
             {datos && datos.beneficiarios.length === 0 ? (
               <SinRegistros texto="Todavía no hay personas registradas." boton="Registrar personas" />
             ) : (
@@ -178,7 +216,9 @@ export default function Entrada() {
             icono={<Store />}
             color="punto"
             titulo="Punto de retiro"
+            subtitulo={(() => { const p = datos?.puntos.find((x) => x.id === puntoId); return p ? `${p.nombre} · en el celular` : 'En el celular' })()}
             texto="Digita la cédula, el beneficiario confirma con su PIN y recuperas el efectivo al instante."
+            onEntrar={entrarPunto}
           >
             {datos && datos.puntos.length === 0 ? (
               <SinRegistros texto="Todavía no hay puntos registrados." boton="Agregar un punto" />
@@ -202,11 +242,18 @@ export default function Entrada() {
           </TarjetaRol>
         </div>
 
-        <p className="m-0 text-sm text-tenue">
+        {/* Punto de retiro en computador */}
+        <div className="flex flex-col items-center gap-0.5 text-center">
+          <Link to="/punto" className="inline-flex items-center gap-2 text-sm font-bold underline text-foreground hover:text-foreground">
+            <Monitor aria-hidden className="size-4" />
+            Punto de retiro en computador
+          </Link>
+          <p className="m-0 text-xs text-tenue">Jorge no usa la app: cobra en el punto con su cédula</p>
+        </div>
+
+        <p className="m-0 text-center text-xs text-tenue">
           El rol elegido se recuerda al recargar. Todo usa cuentas de la Interledger Test Wallet: el dinero es de prueba.
         </p>
-
-        {API_SIMULADA && <HerramientasSimulada alCambiar={() => void recargar()} />}
       </main>
     </div>
   )
@@ -241,7 +288,7 @@ function AvisoPagos() {
 }
 
 /** Los tres pasos para enviarse dinero entre el equipo. */
-function ComoProbar() {
+export function ComoProbar() {
   const pasos = [
     { titulo: 'Registren al equipo', texto: 'Cédula y wallet de cada persona, en «Equipo de prueba».', a: '/equipo' },
     { titulo: 'Creen un programa', texto: 'Con la wallet de quien paga y el monto por persona; se aprueba en su Test Wallet.', a: null },
@@ -275,7 +322,7 @@ function ComoProbar() {
   )
 }
 
-function HerramientasSimulada({ alCambiar }: { alCambiar: () => void }) {
+export function HerramientasSimulada({ alCambiar }: { alCambiar: () => void }) {
   const rol = useRol()
   const usar = async (accion: 'escenario' | 'reiniciar') => {
     const m = await import('@/api/simulada/servidor')
