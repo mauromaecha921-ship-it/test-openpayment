@@ -82,7 +82,8 @@ function abrirPostgres(base: Extract<BaseDeDatos, { tipo: 'postgres' }>): Conexi
     prepare: url.port !== '6543',
     // Pocas conexiones: el pooler gratuito tiene un límite (§ 12). En Vercel cada instancia abre las
     // suyas, así que se usan menos (y conviene el pooler en modo «Transaction», puerto 6543).
-    max: process.env.VERCEL ? 3 : 5,
+    // 8 en Vercel: la renovación y la recuperación retienen una conexión cada una en segundo plano
+    max: process.env.VERCEL ? 8 : 5,
     idle_timeout: 30,
     connect_timeout: 15,
     onnotice: () => {},

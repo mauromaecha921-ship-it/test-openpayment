@@ -137,7 +137,11 @@ export async function diagnosticoLlave(): Promise<{ configurado: boolean; coinci
   const publica = createPublicKey(llave).export({ format: 'jwk' }) as { x?: string }
   try {
     const c = await cliente()
-    const jwks = await c.walletAddress.getKeys({ url: datos.walletAddressUrl })
+    // Sin límite propio, un jwks que no responde cuelga /estado hasta el timeout de la función
+    const jwks = await Promise.race([
+      c.walletAddress.getKeys({ url: datos.walletAddressUrl }),
+      new Promise<never>((_, rechazar) => setTimeout(() => rechazar(new Error('timeout')), 8000).unref()),
+    ])
     const publicada = jwks.keys.find((k) => k.kid === datos.keyId)
     if (!publicada) return { configurado: true, coincide: false, detalle: 'El OP_KEY_ID no está en el jwks.json de la wallet cliente' }
     const coincide = publicada.x === publica.x
