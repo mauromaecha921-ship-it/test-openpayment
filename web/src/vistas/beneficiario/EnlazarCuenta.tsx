@@ -177,7 +177,7 @@ export default function EnlazarCuenta() {
 
   return (
     <MarcoBeneficiario>
-      <Volver to="/beneficiario">Inicio</Volver>
+      <Volver to="/beneficiario" className="hidden md:inline-flex">Inicio</Volver>
       <div className="flex items-center justify-between gap-2">
         <Titulo className="text-[26px] md:text-[32px]">Enlaza tu cuenta</Titulo>
         {cuenta !== undefined && <Pastilla>{NOMBRE_ESTADO_CUENTA[estado]}</Pastilla>}

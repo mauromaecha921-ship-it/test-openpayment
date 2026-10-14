@@ -35,18 +35,9 @@ export function EncabezadoPuntoRetiro({
     <>
       {/* VISTA MÓVIL (< 768px): Exacta a P0-P7 del prototipo */}
       <header className="flex md:hidden flex-col gap-1 w-full pt-1 pb-1">
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={manejarVolver}
-            aria-label="Volver"
-            className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border-[1.5px] border-[#E2D8C4] bg-[#FFFDF8] text-[#13203A] active:scale-95 transition-transform"
-          >
-            <ChevronLeft aria-hidden className="size-6 stroke-[2.4]" />
-          </button>
-
+        <div className="flex items-center justify-between gap-2.5">
           {esInicio ? (
-            <>
+            <div className="flex items-center gap-2">
               <img
                 src="/marca/tatu-icono-pequeno.svg"
                 alt=""
@@ -57,20 +48,30 @@ export function EncabezadoPuntoRetiro({
                 alt=""
                 className="hidden size-8 shrink-0 oscuro:block rounded-lg"
               />
-              <span className="text-[21px] font-extrabold tracking-tight text-[#13203A]">
+              <span className="text-[22px] font-extrabold tracking-tight text-[#13203A]">
                 Tatú
               </span>
-            </>
+            </div>
           ) : (
-            <div className="flex flex-col min-w-0">
-              <span className="text-[18px] font-extrabold leading-tight text-[#13203A] truncate">
-                {titulo}
-              </span>
-              {subtitulo && (
-                <span className="text-[14px] text-[#4A5468] truncate leading-tight mt-0.5">
-                  {subtitulo}
+            <div className="flex items-center gap-2.5 min-w-0">
+              <button
+                type="button"
+                onClick={manejarVolver}
+                aria-label="Volver"
+                className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border-[1.5px] border-[#E2D8C4] bg-[#FFFDF8] text-[#13203A] active:scale-95 transition-transform"
+              >
+                <ChevronLeft aria-hidden className="size-6 stroke-[2.4]" />
+              </button>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[18px] font-extrabold leading-tight text-[#13203A] truncate">
+                  {titulo}
                 </span>
-              )}
+                {subtitulo && (
+                  <span className="text-[14px] text-[#4A5468] truncate leading-tight mt-0.5">
+                    {subtitulo}
+                  </span>
+                )}
+              </div>
             </div>
           )}
 

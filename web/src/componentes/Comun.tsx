@@ -49,9 +49,23 @@ export function Aviso({ icono, children, className }: { icono?: ReactNode; child
 }
 
 /** Volver, como en el prototipo: el ‹ en un cuadro claro, junto al texto. */
-export function Volver({ to, children }: { to: string; children: ReactNode }) {
+export function Volver({
+  to,
+  children,
+  className,
+}: {
+  to: string
+  children: ReactNode
+  className?: string
+}) {
   return (
-    <Link to={to} className="group inline-flex min-h-11 items-center gap-2.5 self-start text-base font-bold text-foreground no-underline hover:text-foreground">
+    <Link
+      to={to}
+      className={cn(
+        'group inline-flex min-h-11 items-center gap-2.5 self-start text-base font-bold text-foreground no-underline hover:text-foreground',
+        className,
+      )}
+    >
       <span aria-hidden className="flex size-10 items-center justify-center rounded-[10px] border border-border bg-card group-hover:border-control">
         <ChevronLeft className="size-5" strokeWidth={2.5} />
       </span>
