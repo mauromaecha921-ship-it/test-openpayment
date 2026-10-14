@@ -327,7 +327,7 @@ Criterios de aceptación:
 **Could · 2 pts** · Rol 2 · `EXTRA_DEPLOY`.
 
 Criterios de aceptación:
-- **CA-25.01:** La web corre en Vercel y la API en Render/Railway con HTTPS; el enlace va en README y slides.
+- **CA-25.01:** La web y la API corren juntas en Vercel, en un solo dominio con HTTPS (<https://test-openpayment.vercel.app>); el enlace va en README y slides.
 - **CA-25.02:** Los callbacks del permiso y de la verificación de cuentas usan `API_BASE_URL` (no localhost).
 - **CA-25.03:** La cámara (HU-22/HU-23) solo funciona con HTTPS: sin este extra, esos dos necesitan un túnel.
 

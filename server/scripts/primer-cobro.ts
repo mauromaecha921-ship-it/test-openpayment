@@ -7,7 +7,7 @@
  *   pnpm --filter api primer-cobro --cancelar   también prueba grant.cancel (paso 12)
  *
  * Usa el adaptador openPaymentsService.ts (AD-07: el SDK se importa solo allí). Imprime una
- * tabla de resultados y la guarda en api/data/primer-cobro-<fecha>.json, SIN tokens.
+ * tabla de resultados y la guarda en server/data/primer-cobro-<fecha>.json, SIN tokens.
  * Montos pequeños: MONTO_PRUEBA ($10.000 por defecto) y un tope de dos pagos.
  */
 import '../src/certificados.js'
@@ -109,12 +109,12 @@ async function main() {
   const cfg = config()
   const MONTO = Number(process.env.MONTO_PRUEBA ?? '1000000')
   const faltan = ['DEMO_WALLET_PROGRAMA', 'DEMO_WALLET_ANA', 'DEMO_WALLET_PUNTO'].filter((k) => !cfg[k as keyof typeof cfg])
-  if (faltan.length) throw new Error(`Faltan en api/.env: ${faltan.join(', ')}`)
+  if (faltan.length) throw new Error(`Faltan en el .env: ${faltan.join(', ')}`)
 
   // 1 · Cliente y llave frente al jwks.json
   const llave = await op.diagnosticoLlave()
   anotar('1', 'Llave y keyId', llave.detalle, llave.coincide)
-  if (!llave.coincide) throw new Error('La llave no coincide: corrige api/.env antes de seguir')
+  if (!llave.coincide) throw new Error('La llave no coincide: corrige el .env antes de seguir')
 
   // 2 · Wallets: moneda y escala (V-03)
   const programa = await op.leerWallet(cfg.DEMO_WALLET_PROGRAMA!)

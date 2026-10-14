@@ -95,13 +95,13 @@ export default function Estado() {
                 </Button>
               </div>
               <ul className="m-0 list-none p-0">
-                <Paso estado={op?.configurado ? 'ok' : 'falla'} titulo="Llave de desarrollador en api/.env">
+                <Paso estado={op?.configurado ? 'ok' : 'falla'} titulo="Llave de desarrollador configurada">
                   {op?.configurado ? (
                     'Están la wallet cliente, el Key ID y la llave privada.'
                   ) : (
                     <>
                       {op?.detalle}. Llena <Cmd>OP_CLIENT_WALLET_ADDRESS</Cmd>, <Cmd>OP_KEY_ID</Cmd> y <Cmd>OP_PRIVATE_KEY_PATH</Cmd> (o{' '}
-                      <Cmd>OP_PRIVATE_KEY_BASE64</Cmd>) y reinicia la API.
+                      <Cmd>OP_PRIVATE_KEY_BASE64</Cmd>) en el <Cmd>.env</Cmd> y reinicia la API. En Vercel van en las variables del proyecto y se vuelve a desplegar.
                     </>
                   )}
                 </Paso>
@@ -109,7 +109,7 @@ export default function Estado() {
                   estado={op?.coincide === true ? 'ok' : op?.coincide === false ? 'falla' : 'duda'}
                   titulo="La llave coincide con la que publicó la Test Wallet"
                 >
-                  {op?.configurado ? op.detalle : 'Se revisa cuando la llave esté en api/.env.'}
+                  {op?.configurado ? op.detalle : 'Se revisa cuando la llave esté configurada.'}
                 </Paso>
                 <Paso estado={estado.programasConTokenFalso ? 'falla' : 'ok'} titulo="Sin programas de la semilla «solo UI»">
                   {estado.programasConTokenFalso ? (
@@ -154,11 +154,12 @@ export default function Estado() {
               de desarrollador). Guarda la llave privada <strong>fuera del repositorio</strong> y copia el Key ID.
             </li>
             <li>
-              En <Cmd>api/.env</Cmd>: <Cmd>OP_CLIENT_WALLET_ADDRESS</Cmd> con esa wallet, <Cmd>OP_KEY_ID</Cmd> con el Key ID y{' '}
-              <Cmd>OP_PRIVATE_KEY_PATH</Cmd> con la ruta del archivo de la llave.
+              En el <Cmd>.env</Cmd> de la raíz: <Cmd>OP_CLIENT_WALLET_ADDRESS</Cmd> con esa wallet, <Cmd>OP_KEY_ID</Cmd> con el Key ID y{' '}
+              <Cmd>OP_PRIVATE_KEY_PATH</Cmd> con la ruta del archivo de la llave. En Vercel van en las variables del proyecto, con la llave
+              en <Cmd>OP_PRIVATE_KEY_BASE64</Cmd>.
             </li>
             <li>
-              Corre <Cmd>pnpm --filter api db:reset</Cmd> (BD limpia) y arranca todo con <Cmd>pnpm dev</Cmd>.
+              En local, corre <Cmd>pnpm --filter api db:reset</Cmd> (BD limpia) y arranca todo con <Cmd>pnpm dev</Cmd>.
             </li>
             <li>Registren a las personas en «Equipo de prueba», creen el programa con la wallet de quien paga y apruébenlo en su Test Wallet.</li>
           </ol>

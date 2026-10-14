@@ -1,5 +1,10 @@
 # Piloto 1: plan Bre-B (cobrar a tu llave, sin crear wallet)
 
+> **Nota (14 de octubre de 2026):** documento histórico; se conserva como se escribió. En `piloto-v2`
+> la carpeta `api/` ahora se llama `server/`, la base es Supabase (PostgreSQL con Drizzle) y la web
+> y la API están desplegadas juntas en Vercel (<https://test-openpayment.vercel.app>). Lo vigente:
+> [Arquitectura, § 3.6](../Documento%20de%20Arquitectura%20—%20Hackathon%20Open%20Payments.md) y [`server/README.md`](../../server/README.md).
+
 > Parte del [plan general](./README.md). **Estado (13 de octubre de 2026): ejecutado.** Documentos
 > del evento (§ 5), backend (§ 3) y frontend (§ 4) hechos y probados; lo que cambió frente al plan y lo
 > que falta probar está en el § 10. Nace de la comparación con Bizum: la gente adopta un medio de pago

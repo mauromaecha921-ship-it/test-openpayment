@@ -3,12 +3,12 @@ import path from 'node:path'
 import { z } from 'zod'
 import { normalizarBilletera } from './comun/billeteras.js'
 
-/** Carpeta `api/`, para resolver `.env` y `data/` sin depender del directorio actual. */
+/** Carpeta `server/`, para resolver `.env` y `data/` sin depender del directorio actual. */
 export const RAIZ_API = path.resolve(import.meta.dirname, '..')
 /** Raíz del repositorio: ahí vive el `.env`, como en la rama de Pablo. */
 export const RAIZ_REPO = path.resolve(RAIZ_API, '..')
 
-/** Sin DATABASE_URL, la API usa PostgreSQL local (PGlite) en `api/data/pglite`. */
+/** Sin DATABASE_URL, la API usa PostgreSQL local (PGlite) en `server/data/pglite`. */
 const BASE_LOCAL = 'pglite:./data/pglite'
 
 const booleano = z
@@ -82,10 +82,10 @@ export type Config = z.infer<typeof esquema>
 let cache: Config | undefined
 
 /**
- * Lee el `.env` de la raíz y luego `api/.env` (si existen) y valida todo con Zod. Node no pisa
- * una variable ya definida, así que manda el de la raíz y el de `api/` completa lo que falte
- * (la rama `piloto` usaba `api/.env`). Si algo falla, el error lista las variables con su
- * problema, nunca sus valores.
+ * Lee el `.env` de la raíz y luego `server/.env` (si existen) y valida todo con Zod. Node no pisa
+ * una variable ya definida, así que manda el de la raíz y el de `server/` completa lo que falte.
+ * En Vercel no hay archivos: las variables vienen del proyecto. Si algo falla, el error lista las
+ * variables con su problema, nunca sus valores.
  */
 export function config(): Config {
   if (cache) return cache
@@ -155,7 +155,7 @@ export function baseDeDatos(): BaseDeDatos {
   const valor = config().DATABASE_URL
   if (valor.startsWith('pglite:')) return local(valor)
   if (valor.startsWith('file:')) {
-    // api/.env de la rama `piloto` (SQLite): en v2 se usa la base local hasta que llegue la de Supabase
+    // El .env de la rama `piloto` (SQLite): en v2 se usa la base local hasta que llegue la de Supabase
     return local(BASE_LOCAL, 'DATABASE_URL apunta a SQLite (rama piloto); piloto-v2 usa PostgreSQL: se usa la base local')
   }
   if (!/^postgres(ql)?:\/\//.test(valor)) {

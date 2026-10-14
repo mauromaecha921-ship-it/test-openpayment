@@ -1,5 +1,10 @@
 # Piloto 1: resultados
 
+> **Nota (14 de octubre de 2026):** documento histórico; se conserva como se escribió. En `piloto-v2`
+> la carpeta `api/` ahora se llama `server/`, la base es Supabase (PostgreSQL con Drizzle) y la web
+> y la API están desplegadas juntas en Vercel (<https://test-openpayment.vercel.app>). Lo vigente:
+> [Arquitectura, § 3.6](../Documento%20de%20Arquitectura%20—%20Hackathon%20Open%20Payments.md) y [`server/README.md`](../../server/README.md).
+
 > Parte del [plan general](./README.md). Cada verificación (§ 7 del plan) y cada hallazgo (§ 5) se
 > marca con ✅ funciona · ⚠️ funciona con ajustes · ❌ no funciona · ⏳ sin probar, con su
 > evidencia y la acción que se propone para `docs/`.

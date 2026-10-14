@@ -1,5 +1,10 @@
 # Piloto 1: plan del frontend
 
+> **Nota (14 de octubre de 2026):** documento histórico; se conserva como se escribió. En `piloto-v2`
+> la carpeta `api/` ahora se llama `server/`, la base es Supabase (PostgreSQL con Drizzle) y la web
+> y la API están desplegadas juntas en Vercel (<https://test-openpayment.vercel.app>). Lo vigente:
+> [Arquitectura, § 3.6](../Documento%20de%20Arquitectura%20—%20Hackathon%20Open%20Payments.md) y [`server/README.md`](../../server/README.md).
+
 > Parte del [plan general](./README.md). Web en React, Vite, Tailwind CSS y shadcn/ui (AD-04),
 > construida a partir de las 22 pantallas de `wireframe/Wireframes de la app.html` y conectada a la
 > API del [Plan backend](./Plan%20backend.md). **Estado (12 de octubre de 2026): construido en

@@ -1,5 +1,10 @@
 # Plan: aplicar la identidad visual de Tatú al front del piloto
 
+> **Nota (14 de octubre de 2026):** documento histórico; se conserva como se escribió. En `piloto-v2`
+> la carpeta `api/` ahora se llama `server/`, la base es Supabase (PostgreSQL con Drizzle) y la web
+> y la API están desplegadas juntas en Vercel (<https://test-openpayment.vercel.app>). Lo vigente:
+> [Arquitectura, § 3.6](../Documento%20de%20Arquitectura%20—%20Hackathon%20Open%20Payments.md) y [`server/README.md`](../../server/README.md).
+
 **Estado:** primera pasada (§ 2 a § 5) y segunda pasada (§ 6) aplicadas en `piloto-v2` (13 oct
 2026). Lo que quedó fuera está en § 6.6.
 

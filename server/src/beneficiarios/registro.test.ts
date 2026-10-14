@@ -134,8 +134,8 @@ describe('GET /estado (pagos reales o simulados)', () => {
   })
 
   it('sin la llave configurada dice qué falta', async () => {
-    vi.mocked(op.diagnosticoLlave).mockResolvedValueOnce({ configurado: false, coincide: null, detalle: 'Faltan en api/.env: OP_KEY_ID' })
+    vi.mocked(op.diagnosticoLlave).mockResolvedValueOnce({ configurado: false, coincide: null, detalle: 'Faltan en el .env (o en las variables de Vercel): OP_KEY_ID' })
     const e = (await request(a).get('/api/estado').expect(200)).body
-    expect(e).toMatchObject({ pagosReales: false, faltan: ['Faltan en api/.env: OP_KEY_ID'] })
+    expect(e).toMatchObject({ pagosReales: false, faltan: ['Faltan en el .env (o en las variables de Vercel): OP_KEY_ID'] })
   })
 })

@@ -8,7 +8,7 @@
  *
  * GUION_API cambia la URL (por defecto http://localhost:3100/api). Gasta 2 × el monto base de la
  * liquidación (Ana y Jorge); bájalo con LIQUIDACION_MONTO_BASE si falta saldo.
- * Guarda los resultados en api/data/guion-<fecha>.json.
+ * Guarda los resultados en server/data/guion-<fecha>.json.
  */
 import { randomUUID } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -65,7 +65,7 @@ const resumen = (c: Json) => `${c.estado}${c.motivo ? ` · ${c.motivo.codigo}` :
 
 async function main() {
   const cfg = config()
-  if (!cfg.DEMO_WALLET_PROGRAMA) throw new Error('Falta DEMO_WALLET_PROGRAMA en api/.env')
+  if (!cfg.DEMO_WALLET_PROGRAMA) throw new Error('Falta DEMO_WALLET_PROGRAMA en el .env')
 
   const salud = await llamar('GET', '/salud').catch(() => null)
   if (!salud) throw new Error(`No hay API en ${API}. Arráncala con pnpm --filter api start:3100`)

@@ -1,5 +1,10 @@
 # Piloto 1: plan del backend
 
+> **Nota (14 de octubre de 2026):** documento histórico; se conserva como se escribió. En `piloto-v2`
+> la carpeta `api/` ahora se llama `server/`, la base es Supabase (PostgreSQL con Drizzle) y la web
+> y la API están desplegadas juntas en Vercel (<https://test-openpayment.vercel.app>). Lo vigente:
+> [Arquitectura, § 3.6](../Documento%20de%20Arquitectura%20—%20Hackathon%20Open%20Payments.md) y [`server/README.md`](../../server/README.md).
+
 > Parte del [plan general](./README.md). API en Node 24 con Express, el SDK de Open Payments 7.4.0
 > y SQLite (`node:sqlite`), siguiendo `Estructura del proyecto.md`, la API de la Guía, las
 > Historias y `db/001_esquema.sql`.

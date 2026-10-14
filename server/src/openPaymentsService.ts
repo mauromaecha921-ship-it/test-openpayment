@@ -89,7 +89,7 @@ export function cargarLlave(): KeyObject {
   } else if (OP_PRIVATE_KEY_PATH) {
     llave = createPrivateKey(readFileSync(path.resolve(RAIZ_API, OP_PRIVATE_KEY_PATH)))
   } else {
-    throw new ErrorOP('NoConfigurado', undefined, undefined, 'Falta OP_PRIVATE_KEY_BASE64 u OP_PRIVATE_KEY_PATH en api/.env')
+    throw new ErrorOP('NoConfigurado', undefined, undefined, 'Falta OP_PRIVATE_KEY_BASE64 u OP_PRIVATE_KEY_PATH en el .env (o en las variables de Vercel)')
   }
   if (llave.asymmetricKeyType !== 'ed25519') {
     throw new ErrorOP('NoConfigurado', undefined, undefined, 'La llave privada no es Ed25519')
@@ -100,7 +100,7 @@ export function cargarLlave(): KeyObject {
 function datosCliente() {
   const { OP_CLIENT_WALLET_ADDRESS, OP_KEY_ID } = config()
   const faltan = [!OP_CLIENT_WALLET_ADDRESS && 'OP_CLIENT_WALLET_ADDRESS', !OP_KEY_ID && 'OP_KEY_ID'].filter(Boolean)
-  if (faltan.length) throw new ErrorOP('NoConfigurado', undefined, undefined, `Faltan en api/.env: ${faltan.join(', ')}`)
+  if (faltan.length) throw new ErrorOP('NoConfigurado', undefined, undefined, `Faltan en el .env (o en las variables de Vercel): ${faltan.join(', ')}`)
   return { walletAddressUrl: OP_CLIENT_WALLET_ADDRESS!, keyId: OP_KEY_ID! }
 }
 

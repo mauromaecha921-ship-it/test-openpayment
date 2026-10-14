@@ -212,7 +212,7 @@ Recomendación: TypeScript de punta a punta, con Node.js 24 LTS y el SDK oficial
 | Códigos QR | `qrcode.react` para generar y `html5-qrcode` para leer con la cámara | El comercio escanea desde el navegador, sin app nativa | Un lector 2D conectado al computador, que escribe el código como un teclado |
 | Pruebas | Vitest para las reglas y los estados del cobro | Una tabla de casos demuestra calidad técnica en minutos | Jest |
 | Repositorio | GitHub, ramas cortas y merge frecuente a `main` | La entrega exige repo público con todo en `main` | Ninguna: la entrega es en GitHub |
-| Despliegue | Vercel para la web y Render o Railway para la API, desde el viernes | La cámara del navegador solo abre en HTTPS, y da un link para el jurado | Un túnel con HTTPS hacia el portátil |
+| Despliegue | Vercel para la web y la API juntas (la API como función de Node, en el mismo dominio), desde el viernes. *Probado en piloto-v2 el 13 de octubre: <https://test-openpayment.vercel.app>; ver Arquitectura, AD-17 y § 3.6* | La cámara del navegador solo abre en HTTPS, y da un link para el jurado | Un túnel con HTTPS hacia el portátil |
 | Video y slides | OBS o Loom; plantilla oficial de Google Slides | La organización entrega la plantilla | Grabador de pantalla del sistema |
 
 ### Qué no usar

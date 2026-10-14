@@ -412,7 +412,7 @@ Could · 8 puntos · Rol 1 (pagos) y Rol 4 (tablero público) · Depende de HU-0
 
 Could · 2 puntos · Rol 2 · `EXTRA_DEPLOY`
 
-- La web corre en Vercel y la API en Render o Railway con HTTPS; el enlace va en el README y en las slides.
+- La web y la API corren juntas en Vercel, en un solo dominio con HTTPS; el enlace va en el README y en las slides. *(Así quedó en piloto-v2, 13 de octubre: Arquitectura, AD-17.)*
 - Los callbacks del permiso y de la verificación de cuentas usan `API_BASE_URL`.
 - La cámara de HU-22 y HU-23 solo funciona con HTTPS: sin este extra, esos dos necesitan un túnel.
 

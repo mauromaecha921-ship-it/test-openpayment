@@ -3,10 +3,13 @@
 > **Léelo primero.** Este documento junta lo importante para el hackathon (Medellín, 16 y 17 de
 > octubre de 2026): qué es Tatú, qué ya probamos con dinero de prueba real, qué aprendimos y qué
 > decidir antes del evento. Los demás documentos de `docs/` son el detalle y el contexto para la IA;
-> no hace falta leerlos para entender el proyecto. Actualizado el **13 de octubre de 2026** (cobro a la llave Bre-B, § 1).
+> no hace falta leerlos para entender el proyecto. Actualizado el **14 de octubre de 2026** (despliegue
+> en Vercel con Supabase, § 2 y § 5; cobro a la llave Bre-B, § 1).
 >
-> **Está basado en lo que se construyó y probó en la rama `piloto`** (10 a 12 de octubre): un piloto
-> desechable con pagos reales en la Interledger Test Wallet. El código del evento se escribe desde cero.
+> **Está basado en lo que se construyó y probó en el piloto** (10 a 14 de octubre): primero la rama
+> `piloto` (SQLite, en local) y ahora **`piloto-v2`** (Supabase, desplegada en Vercel en
+> <https://test-openpayment.vercel.app>). Es un piloto desechable con pagos reales en la Interledger
+> Test Wallet. El código del evento se escribe desde cero.
 
 ---
 
@@ -56,9 +59,11 @@ Plan y diagrama: [`piloto/Plan Bre-B.md`](./piloto/Plan%20Bre-B.md).
 
 ## 2. Qué ya funciona con dinero de prueba real (piloto, 10 a 12 de octubre)
 
-Armamos un **piloto desechable** (rama `piloto`; nunca se mezcla a `main`, porque la Guía
-descalifica el código hecho antes del evento) con SQLite en lugar de Supabase. Lo probamos contra la
-**Interledger Test Wallet** con wallets del equipo, todas en **COP**:
+Armamos un **piloto desechable** (nunca se mezcla a `main`, porque la Guía descalifica el código
+hecho antes del evento). La primera versión (rama `piloto`) usó SQLite en local; la actual
+(**`piloto-v2`**) usa **Supabase** (PostgreSQL) y está **desplegada en Vercel**: la web y la API en
+un solo dominio, sin instalar nada. Lo probamos contra la **Interledger Test Wallet** con wallets
+del equipo, todas en **COP**:
 
 | Rol | Persona |
 |---|---|
@@ -67,7 +72,7 @@ descalifica el código hecho antes del evento) con SQLite en lugar de Supabase. 
 | Punto de pago | Fernando |
 
 Las direcciones de las wallets y la llave quedan fuera del repo (convención del equipo); viven en
-`api/.env` y en la app («Equipo de prueba»).
+las variables del proyecto en Vercel (o en el `.env` de cada PC, en local) y en la app («Equipo de prueba»).
 
 **Probado de punta a punta, con la plata moviéndose en la Test Wallet:**
 
@@ -84,7 +89,9 @@ Las direcciones de las wallets y la llave quedan fuera del repo (convención del
 - ✅ Rechazos claros: ya cobrado, PIN errado, programa pausado o cerrado, permiso vencido.
 - ✅ Vistas que se adaptan a **PC y celular**.
 - ✅ **Bonos con destino** en comercios verificados por categoría (construido; falta probarlo con la Test Wallet).
-- ✅ 158 pruebas automáticas de la API y 20 de la web, en verde.
+- ✅ **Desplegado en Vercel** con la base en Supabase: <https://test-openpayment.vercel.app>. La
+  entidad puede aprobar desde cualquier equipo, porque el banco devuelve a una URL pública.
+- ✅ 185 pruebas automáticas de la API y 20 de la web, en verde (14 de octubre).
 
 ---
 
@@ -116,15 +123,18 @@ Los cinco primeros pueden tumbar la demo si no se conocen.
 
 1. **El token del permiso dura 10 minutos.** La app tiene que renovarlo antes de que venza. Si la
    API estuvo apagada mucho tiempo (un día), el banco ya no acepta renovarlo y hay que aprobar de
-   nuevo. La app lo hace sola cada 4 minutos y, si no puede, el tablero muestra **«Renovar permiso»**
+   nuevo. En local la API lo renueva cada 4 minutos; en Vercel no hay un proceso prendido, así que lo
+   renueva cuando alguien usa la app. Si no puede, el tablero muestra **«Renovar permiso»**
    (aprobar otra vez por lo que falta del tope; lo cobrado se conserva). *(D-34, D-35)*
 2. **Con el token vencido, la Test Wallet responde 403 «Inactive Token», no 401.** Si se toma como
    «se acabó el tope», la app muestra un error falso. Ya está corregido. *(D-34)*
 3. **Un antivirus que inspecciona HTTPS bloquea a Node.** En un PC así, ninguna llamada a la Test
    Wallet sale y parece «sin respuesta». La API confía en los certificados de Windows
-   (`api/src/certificados.ts`). Revisarlo en cada PC del equipo antes del evento. *(D-32)*
-4. **La aprobación del banco vuelve a `localhost`.** Quien aprueba (la entidad) tiene que hacerlo en
-   el navegador del PC donde corre la app. Si aprueba desde otro computador, el regreso falla.
+   (`server/src/certificados.ts`). Revisarlo en cada PC del equipo antes del evento. *(D-32)* En
+   Vercel no pasa: la API corre en sus servidores.
+4. **En local, la aprobación del banco vuelve a `localhost`.** Quien aprueba (la entidad) tiene que
+   hacerlo en el navegador del PC donde corre la app. **En Vercel ya no pasa:** vuelve a
+   `test-openpayment.vercel.app` y se puede aprobar desde cualquier equipo.
 5. **Todas las wallets en la misma moneda (COP).** Una wallet en EUR o USD como entidad, beneficiario
    o punto hace que los cobros se rechacen. La Test Wallet deja tener varias wallets por cuenta.
 6. **El tope se fija con las personas registradas al aprobar.** Quien se registre después queda por
@@ -136,8 +146,8 @@ Los cinco primeros pueden tumbar la demo si no se conocen.
    tienen: registrar al equipo, ver si los pagos son reales, la caja del punto. *(D-30, D-36)*
 9. **Una persona puede tener subsidios en varios programas.** Los documentos suponen uno; la app
    ahora los muestra todos y el punto elige cuál pagar. *(D-21)*
-10. **Faltaban rutas.** Las 9 rutas de la API de la Guía no alcanzan: el piloto usa **43** (21 para
-    las pantallas y 13 que salieron de probar). Lista completa, con qué hace cada una y de dónde salió:
+10. **Faltaban rutas.** Las 9 rutas de la API de la Guía no alcanzan: el piloto usaba **43** (21 para
+    las pantallas y 13 que salieron de probar) y hoy usa **52** (con Bre-B y el gobierno simulado). Lista completa, con qué hace cada una y de dónde salió:
     [API del piloto](./piloto/API%20del%20piloto.md). *(D-05)*
 
 ### Contradicciones en los documentos que conviene resolver
@@ -153,23 +163,41 @@ Los cinco primeros pueden tumbar la demo si no se conocen.
 
 ---
 
-## 5. Cómo correr el piloto
+## 5. Cómo usar y correr el piloto
 
-Requisitos: Node 24 y una wallet en COP con llave de desarrollador en la Test Wallet.
+### En Vercel (sin instalar nada)
 
-1. `npm install` en la raíz.
-2. Copiar `api/.env.example` a `api/.env` y llenar `OP_CLIENT_WALLET_ADDRESS`, `OP_KEY_ID` y
-   `OP_PRIVATE_KEY_PATH` (la llave privada va **fuera del repo**; nunca por chat).
-3. `npm run db:reset -w api` (base de datos limpia; con la API apagada).
-4. `npm run dev` (API y web). Abrir **http://localhost:5173**.
-5. **`/estado`** debe decir «Pagos reales». Si no, dice qué falta.
-6. **«Equipo de prueba»** (`/equipo`): registrar a cada persona (cédula y wallet; PIN si va a cobrar
+1. Abrir **<https://test-openpayment.vercel.app>**.
+2. **`/estado`** debe decir «Pagos reales». Si no, dice qué falta.
+3. **«Equipo de prueba»** (`/equipo`): registrar a cada persona (cédula y wallet; PIN si va a cobrar
    en un punto) y los puntos.
-7. **Entidad → Nuevo programa:** la wallet de quien paga y el monto por persona → aprobar en la Test
-   Wallet.
-8. Entrar como **beneficiario** y cobrar, o como **punto** y hacer un retiro.
+4. **Entidad → Nuevo programa:** la wallet de quien paga y el monto por persona → aprobar en la Test
+   Wallet (desde cualquier equipo).
+5. Entrar como **beneficiario** y cobrar, o como **punto** y hacer un retiro.
 
-Más detalle: [`api/README.md`](../api/README.md).
+Las llaves y la base viven en las variables del proyecto en Vercel. Cada push a la rama de producción
+(`produccion`) despliega solo. Cómo funciona por dentro: Arquitectura, § 3.6.
+
+### En local (para programar)
+
+Requisitos: Node 24, pnpm 12.9.1 y una wallet en COP con llave de desarrollador en la Test Wallet.
+
+1. `pnpm install` en la raíz.
+2. Copiar `.env.example` a `.env` (en la raíz) y llenar `OP_CLIENT_WALLET_ADDRESS`, `OP_KEY_ID` y
+   `OP_PRIVATE_KEY_PATH` (la llave privada va **fuera del repo**; nunca por chat).
+3. **Sin `DATABASE_URL`** la API usa una base local (PGlite, en `server/data/`), separada de la de
+   Vercel. Es lo recomendado para programar.
+4. `pnpm --filter api db:reset` (base limpia; con la API apagada) y `pnpm dev`: API en el 3000 y
+   web en el 5173. Abrir **http://localhost:5173** (la web pasa `/api` a la API, así que el
+   navegador solo usa ese puerto).
+5. Seguir los pasos 2 a 5 de arriba en `localhost:5173`.
+
+> **Cuidado con la base de Vercel.** Si pones en tu `.env` la `DATABASE_URL` de Supabase, tu API
+> local usa **la misma base que producción**. En ese caso, `db:reset` borra los datos de producción
+> y, si las dos APIs renuevan el mismo permiso a la vez, el permiso puede quedar vencido. Usa la
+> base local salvo que de verdad necesites los datos de producción.
+
+Más detalle: [`server/README.md`](../server/README.md).
 
 ---
 
@@ -177,18 +205,23 @@ Más detalle: [`api/README.md`](../api/README.md).
 
 - [ ] **Cada persona del equipo tiene su wallet en COP** con llave de desarrollador, y quien hace de
       entidad tiene saldo de prueba.
-- [ ] **Probar `npm run dev` y `/estado` en el PC del evento** (antivirus y HTTPS, D-32).
-- [ ] **Cambiar las llaves** que se compartieron por chat. Nunca subir `api/.env` ni la llave.
+- [ ] **Probar `pnpm dev` y `/estado` en el PC del evento** (antivirus y HTTPS, D-32), o usar la
+      versión de Vercel, que no depende del PC.
+- [ ] **Cambiar las llaves** que se compartieron por chat (también en las variables de Vercel).
+      Nunca subir el `.env` ni la llave.
 - [ ] **Decidir qué entra:** las 18 historias obligatorias ya se probaron en el piloto. Proponemos
       sumar al backlog **«Mi caja» del punto** (HU-26 propuesta), **varios subsidios por persona** y
       **«Renovar permiso»**, que salieron de probar.
 - [ ] **Decidir qué pasa con quien no cobra a tiempo** (D-37): ¿se le explica que cerró?, ¿lo no
       cobrado pasa al siguiente ciclo o nunca sale? Hoy no se acumula. Prueba en
       `piloto/Plan de ajustes.md` § 9.
-- [ ] **Base de datos:** el evento usa Supabase (PostgreSQL). El esquema está en `db/` de `main`
-      (`001` a `003`: beneficiario mínimo, bloqueo por PIN y RLS). Falta sumar lo que el piloto
-      necesitó: la liquidación con PIN opcional, el monto por persona y la renovación del permiso
-      (`api/src/db/migraciones/003` y `004` de la rama `piloto`).
+- [ ] **Base de datos:** el evento usa Supabase (PostgreSQL), como `piloto-v2`. El esquema está en
+      `db/` de `main` (`001` a `003`: beneficiario mínimo, bloqueo por PIN y RLS). Falta sumar lo
+      que el piloto necesitó: la liquidación con PIN opcional, el monto por persona, la renovación
+      del permiso y la llave Bre-B (`server/src/db/migraciones/010` a `031` de `piloto-v2`).
+- [ ] **Despliegue:** `piloto-v2` ya corre en Vercel (web y API en un solo dominio). Para el evento
+      se puede repetir igual desde el viernes: es `vercel.json` más `scripts/build-vercel.mjs`
+      (Arquitectura, AD-17 y § 3.6).
 - [ ] **Actualizar la API de la Guía** con las rutas que de verdad hacen falta: la lista está en
       [API del piloto](./piloto/API%20del%20piloto.md) (§ 9: pendientes que tocan la API).
 - [ ] **Reescribir en el evento** lo que haga falta: el piloto **no se copia** (regla de la Guía). Lo
@@ -218,11 +251,12 @@ Más detalle: [`api/README.md`](../api/README.md).
 | Las historias de usuario y sus criterios | `Historias de Usuario — Bonos con Destino.md` |
 | Las reglas de negocio en corto | `Reglas de negocio.md` |
 | Las decisiones técnicas | `Documento de Arquitectura — Hackathon Open Payments.md` |
+| Cómo está desplegado (Vercel, Supabase, entornos y cuidados) | Arquitectura, § 3.6 |
 | Cómo hablar con Open Payments | `Hallazgos — Investigación de Fuentes.md` y `ENDPOINTS.md` |
-| Todos los endpoints de la API del piloto (43) y los pendientes que la tocan | [`piloto/API del piloto.md`](./piloto/API%20del%20piloto.md) · para probarlos, Swagger en `/api/docs` con la API prendida |
+| Todos los endpoints de la API del piloto (52) y los pendientes que la tocan | [`piloto/API del piloto.md`](./piloto/API%20del%20piloto.md) · para probarlos, Swagger en <https://test-openpayment.vercel.app/api/docs> |
 | Todo lo que hizo y encontró el piloto (D-01 a D-36) | `piloto/Resultados del piloto.md` y `piloto/Plan de ajustes.md` |
 | Cobrar a la llave Bre-B: plan, diagrama y qué se simula | [`piloto/Plan Bre-B.md`](./piloto/Plan%20Bre-B.md) |
-| Correr la API del piloto | `api/README.md` |
+| Correr la API del piloto | [`server/README.md`](../server/README.md) |
 
 **Glosario.** *Permiso (grant):* la autorización con tope que aprueba la entidad. *Token:* la llave
 temporal (10 min) con la que la app usa el permiso. *Wallet address:* la «dirección» de una cuenta,

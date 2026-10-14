@@ -1,5 +1,10 @@
 # Piloto v2: plan para montar el piloto en Supabase y pnpm
 
+> **Nota (14 de octubre de 2026):** documento histórico; se conserva como se escribió. En `piloto-v2`
+> la carpeta `api/` ahora se llama `server/`, la base es Supabase (PostgreSQL con Drizzle) y la web
+> y la API están desplegadas juntas en Vercel (<https://test-openpayment.vercel.app>). Lo vigente:
+> [Arquitectura, § 3.6](../Documento%20de%20Arquitectura%20—%20Hackathon%20Open%20Payments.md) y [`server/README.md`](../../server/README.md).
+
 > Parte del [plan general](./README.md). **Estado (12 de octubre de 2026): fases 0 a 4 hechas en la rama
 > `piloto-v2`** (pnpm, PostgreSQL con Drizzle, esquema de `main` y gobierno simulado; 169 pruebas de la
 > API y 20 de la web en verde). La base vive en el Supabase del equipo, en los esquemas `piloto` y

@@ -1,5 +1,10 @@
 # Estructura del proyecto
 
+> **Nota (14 de octubre de 2026):** este es el diseño del repositorio **del evento** y lo decide el
+> Rol 1. El piloto (`piloto-v2`) usa `server/` en lugar de `api/`, Supabase con Drizzle y un solo
+> despliegue en Vercel para la web y la API, lo que ya cierra P-02 y P-20: ver
+> [Arquitectura, § 3.5 y § 3.6](./Documento%20de%20Arquitectura%20—%20Hackathon%20Open%20Payments.md).
+
 > **Estado: diseño, sin código.** Este documento define cómo quedará el repositorio cuando
 > empiece la implementación. Hoy solo existe documentación (ver `docs/README.md`); no hay
 > carpetas `api/`, `web/`, ni archivos de código. Es la referencia que seguirá quien construya

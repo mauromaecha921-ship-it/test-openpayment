@@ -21,7 +21,7 @@ export interface Config {
 /** GET /estado: si los pagos salen de verdad hacia la Test Wallet y, si no, qué falta. */
 export interface EstadoSistema {
   pagosReales: boolean
-  /** Lo que falta, en español («Falta OP_KEY_ID en api/.env»). Vacío cuando pagosReales. */
+  /** Lo que falta, en español («Faltan en el .env (o en las variables de Vercel): OP_KEY_ID»). Vacío cuando pagosReales. */
   faltan: string[]
   openPayments: { configurado: boolean; coincide: boolean | null; detalle: string }
   /** Programas Activos o Pausados con el token falso de la semilla «solo UI»: nunca pagan. */

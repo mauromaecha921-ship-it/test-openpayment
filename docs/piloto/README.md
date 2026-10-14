@@ -5,7 +5,13 @@
 > reembolso en segundos, varios subsidios por persona, renovación del permiso y la caja del punto.
 > 147 pruebas de la API y 19 de la web en verde. Lo importante está en el
 > [Resumen para el equipo](../Resumen%20para%20el%20equipo.md); el detalle y los hallazgos D-23…D-36,
-> en [Resultados del piloto](./Resultados%20del%20piloto.md). Cómo correr la API: [`api/README.md`](../../api/README.md).
+> en [Resultados del piloto](./Resultados%20del%20piloto.md). Cómo correr la API: [`server/README.md`](../../server/README.md).
+>
+> **Actualización (14 de octubre de 2026): `piloto-v2`.** El piloto pasó de SQLite a **Supabase**
+> (PostgreSQL con Drizzle; [Plan Supabase y pnpm](./Plan%20Supabase%20y%20pnpm.md)), la carpeta
+> `api/` se llama ahora `server/` y la web y la API están **desplegadas juntas en Vercel**:
+> <https://test-openpayment.vercel.app> (§ 11). Lo que sigue en este plan habla de la primera versión,
+> con SQLite; lo vigente está en la [Arquitectura, § 3.6](../Documento%20de%20Arquitectura%20—%20Hackathon%20Open%20Payments.md).
 >
 > **Qué es:** un primer piloto **desechable** que arma el proyecto tal como lo describen `docs/`,
 > `db/` y `wireframe/`, con **SQLite en lugar de Supabase**, para comprobar qué de la
@@ -21,7 +27,7 @@
 |---|---|---|
 | **El piloto es desechable** | La Guía dice: «Todo se escribe durante el evento; presentar código hecho antes es causal de descalificación» y «No llegar con código del proyecto» | El código vive en la rama `piloto`, que nunca se mezcla a `main`, y no se copia al repo del evento. Lo que sí se reutiliza son los aprendizajes, que vuelven a `docs/`. Encaja con el «ensayo general con un proyecto desechable» del 11 de octubre (Guía § Checklist). `openPaymentsService.ts` lo reescribe el equipo en el evento (Guía § Estructura del repositorio) |
 | **La llave privada** | Ya la tenemos y el repo será público | Va solo en `api/.env` (ignorado por git) como `OP_PRIVATE_KEY_BASE64`, o en un archivo fuera del repo. Como se compartió por chat, conviene rotarla en la Test Wallet antes de que algún repo sea público |
-| **Vercel queda pendiente** | Así se pidió | El piloto corre en local (`localhost`), pero queda listo para desplegar después (§ 11) |
+| **Vercel queda pendiente** | Así se pidió | El piloto corre en local (`localhost`), pero queda listo para desplegar después (§ 11). *Hecho en `piloto-v2` el 13 de octubre* |
 
 ---
 
@@ -214,7 +220,15 @@ excepción es Vite: el 6 de octubre salió un parche en todas sus ramas a la vez
 
 ---
 
-## 11. Despliegue en Vercel (pendiente, fuera de este piloto)
+## 11. Despliegue en Vercel (resuelto en `piloto-v2`)
+
+> **Resuelto el 13 de octubre de 2026** con el camino 3: PostgreSQL gestionado (Supabase), y la web y
+> la API **juntas en Vercel** (no en Render ni Railway), en un solo dominio:
+> <https://test-openpayment.vercel.app>. La API corre como una función de Node (no Edge), la llave va
+> en `OP_PRIVATE_KEY_BASE64` y las URLs de los callbacks salen solas del dominio. Cómo funciona y qué
+> cuidar: [Arquitectura, § 3.6](../Documento%20de%20Arquitectura%20—%20Hackathon%20Open%20Payments.md)
+> y [`server/README.md`](../../server/README.md#despliegue-en-vercel). Lo que sigue es el análisis
+> original, del 10 de octubre.
 
 Lo que hay que resolver cuando se retome:
 

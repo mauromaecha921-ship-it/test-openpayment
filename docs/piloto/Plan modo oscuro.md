@@ -1,5 +1,10 @@
 # Plan: modo oscuro del piloto con los colores del logo
 
+> **Nota (14 de octubre de 2026):** documento histórico; se conserva como se escribió. En `piloto-v2`
+> la carpeta `api/` ahora se llama `server/`, la base es Supabase (PostgreSQL con Drizzle) y la web
+> y la API están desplegadas juntas en Vercel (<https://test-openpayment.vercel.app>). Lo vigente:
+> [Arquitectura, § 3.6](../Documento%20de%20Arquitectura%20—%20Hackathon%20Open%20Payments.md) y [`server/README.md`](../../server/README.md).
+
 **Estado:** aplicado en `piloto-v2` (14 oct 2026), con paleta Noche y «sistema + interruptor». Resultado en § 7. Sigue al [Plan identidad visual](Plan%20identidad%20visual.md).
 
 ## 1. De dónde salen los colores

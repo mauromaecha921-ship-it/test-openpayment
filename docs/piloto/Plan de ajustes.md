@@ -1,5 +1,10 @@
 # Piloto 1: plan de ajustes (probar de verdad y vistas que se adaptan)
 
+> **Nota (14 de octubre de 2026):** documento histórico; se conserva como se escribió. En `piloto-v2`
+> la carpeta `api/` ahora se llama `server/`, la base es Supabase (PostgreSQL con Drizzle) y la web
+> y la API están desplegadas juntas en Vercel (<https://test-openpayment.vercel.app>). Lo vigente:
+> [Arquitectura, § 3.6](../Documento%20de%20Arquitectura%20—%20Hackathon%20Open%20Payments.md) y [`server/README.md`](../../server/README.md).
+
 > Parte del [plan general](./README.md). **Estado (12 de octubre de 2026): ejecutado y probado con
 > pagos reales en la Test Wallet.** Resultado y evidencia en el § 7; después se agregaron la
 > renovación del permiso (D-35), varios subsidios por persona y la caja del punto (§ 8, D-36).

@@ -3,11 +3,15 @@
 > Parte del [piloto](./README.md). Catálogo único de las **52 rutas** que usa hoy la API del piloto
 > (rama `piloto-v2`, 13 de octubre de 2026; la rama `piloto` tiene las 43 primeras), con lo que hace
 > cada una, quién la usa y de dónde salió.
-> Todas van bajo `/api` (por ejemplo, `GET /api/programas`). El código está en `api/src/*/rutas.ts`.
+> Todas van bajo `/api` (por ejemplo, `GET /api/programas`). El código está en `server/src/*/rutas.ts`.
 >
-> **Swagger:** con la API prendida, `http://localhost:3000/api/docs` (o el 3100) muestra estas rutas
+> **Dónde:** en Vercel, <https://test-openpayment.vercel.app/api> (web y API en el mismo dominio); en
+> local, `http://localhost:3000/api` (o detrás del proxy de la web, en el 5173).
+>
+> **Swagger:** <https://test-openpayment.vercel.app/api/docs> o, con la API local prendida,
+> `http://localhost:3000/api/docs` (o el 3100) muestra estas rutas
 > con sus campos y deja probarlas; el JSON está en `/api/openapi.json`. Los cuerpos salen de los
-> mismos esquemas Zod que validan las rutas, y `api/src/openapi.test.ts` falla si se agrega una ruta
+> mismos esquemas Zod que validan las rutas, y `server/src/openapi.test.ts` falla si se agrega una ruta
 > sin documentarla. Ojo: «Try it out» llama a la API de verdad y, con el `.env` lleno, mueve dinero
 > de prueba.
 
