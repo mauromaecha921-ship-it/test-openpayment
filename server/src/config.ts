@@ -60,7 +60,7 @@ const esquema = z.object({
   POLL_INTERVALO_MS: entero(1000),
   APROBACION_TTL_MIN: entero(10),
   // D-35: el token del permiso dura 600 s en la Test Wallet; se rota antes de que venza
-  TOKEN_RENOVAR_CADA_SEG: entero(240),
+  TOKEN_RENOVAR_CADA_SEG: entero(120),
   VERIFICACION_CUENTA: z.enum(['subject', 'simulada']).default('subject'),
   LIQUIDACION_SIMULAR_FALLA: booleano,
   // Monto base de la liquidación simulada en unidades mínimas ($230.000 con escala 2)
