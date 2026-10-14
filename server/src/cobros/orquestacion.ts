@@ -25,7 +25,7 @@ import * as liquidacion from '../liquidacion/cliente.js'
 import { LiquidacionNoResponde } from '../liquidacion/cliente.js'
 import * as op from '../openPaymentsService.js'
 import { ErrorOP } from '../openPaymentsService.js'
-import { conToken, PermisoVencido } from '../programas/servicio.js'
+import { conToken, PermisoVencido, renovarPermiso } from '../programas/servicio.js'
 import { despuesDeSolicitado, exigirTransicion, type Canal, type EstadoCobro } from './estados.js'
 import { MOTIVOS, mensajePinIncorrecto, type Motivo } from './mensajes.js'
 import * as reglas from './reglas.js'
@@ -482,6 +482,13 @@ async function manejarErrorPago(id: string, e: unknown) {
   const c = await exigir(id)
   if (c.estado !== 'Pagando') return
   if (e instanceof PermisoVencido) {
+    // El permiso venció (API apagada o rotación sin efecto): se pide uno nuevo automáticamente,
+    // por lo que falte del tope, así la entidad solo lo aprueba en el banco, sin pulsar «Renovar».
+    try {
+      await renovarPermiso(c.programa_id)
+    } catch (err) {
+      log.warn('No se pudo iniciar la renovación automática del permiso', { error: err, cobro: id })
+    }
     await mover(c, 'Fallido', { motivo_rechazo: 'PermisoVencido' }, {}, 'banco')
     return
   }
