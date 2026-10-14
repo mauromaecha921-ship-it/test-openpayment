@@ -14,6 +14,7 @@ import * as bloqueos from '../db/repositorios/bloqueos.js'
 import * as repo from '../db/repositorios/cobros.js'
 import type { FilaCobro } from '../db/repositorios/cobros.js'
 import * as cuentas from '../db/repositorios/cuentas.js'
+import * as servicioCuentas from '../cuentas/servicio.js'
 import * as eventos from '../db/repositorios/eventos.js'
 import { actorBeneficiario, actorPunto, type Actor } from '../db/repositorios/eventos.js'
 import * as programas from '../db/repositorios/programas.js'
@@ -26,6 +27,7 @@ import { LiquidacionNoResponde } from '../liquidacion/cliente.js'
 import * as op from '../openPaymentsService.js'
 import { ErrorOP } from '../openPaymentsService.js'
 import { conToken, PermisoVencido } from '../programas/servicio.js'
+import { PuenteNoResponde } from '../puente/cliente.js'
 import { despuesDeSolicitado, exigirTransicion, type Canal, type EstadoCobro } from './estados.js'
 import { MOTIVOS, mensajePinIncorrecto, type Motivo } from './mensajes.js'
 import * as reglas from './reglas.js'
@@ -269,6 +271,22 @@ export async function solicitar(e: EntradaCobro): Promise<VistaCobro> {
   // RN-04 · cuenta Verificada y en la misma moneda
   if (!motivo && e.canal === 'cuenta') {
     cuenta = await cuentas.vigenteDe(persona.id)
+    try {
+      // RN-17 · sin cuenta enlazada, se prueba la llave Bre-B tipo cédula (Plan Bre-B)
+      cuenta ??= await servicioCuentas.cuentaPorCedula(persona)
+      // RN-18 · una llave Bre-B se vuelve a resolver antes de pagar
+      if (cuenta?.estado === 'Verificada' && cuenta.tipo_llave) {
+        const r = await servicioCuentas.refrescarLlave(cuenta)
+        if (r === 'LlaveNoExiste') motivo = 'LlaveNoExiste'
+        else cuenta = r
+      }
+    } catch (err) {
+      // Sin ninguna cuenta no hay dónde dejar el rechazo: el 503 llega tal cual
+      if (!(err instanceof PuenteNoResponde) || !cuenta) throw err
+      motivo = 'PuenteNoResponde'
+    }
+  }
+  if (!motivo && e.canal === 'cuenta') {
     let monedaCuenta: { codigo: string; escala: number } | null = null
     if (cuenta?.estado === 'Verificada') {
       try {
@@ -347,8 +365,8 @@ export async function solicitar(e: EntradaCobro): Promise<VistaCobro> {
   }
 
   if (!creado) {
-    // Canal cuenta sin ninguna cuenta: se responde sin dejar cobro (ver crearRechazado)
-    throw new ErrorApi(409, 'CuentaNoVerificada', MOTIVOS.CuentaNoVerificada.mensaje)
+    // Canal cuenta sin ninguna cuenta ni llave cédula (RN-17): se responde sin dejar cobro (ver crearRechazado)
+    throw new ErrorApi(409, 'CuentaNoVerificada', 'No tienes una cuenta enlazada ni tu cédula registrada como llave Bre-B. Enlaza una llave o cobra en un punto')
   }
   // P-09: en el canal cuenta se paga sin esperar
   if (creado.estado === 'Pagando') disparar(creado.id)

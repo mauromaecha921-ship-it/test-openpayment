@@ -9,6 +9,7 @@ import { routerLiquidacion } from './liquidacion/router.js'
 import { rutasOpenApi } from './openapi.js'
 import { rutasProgramas } from './programas/rutas.js'
 import { rutasPuntos } from './puntos/rutas.js'
+import { routerPuente } from './puente/router.js'
 import { rutasSalud } from './salud.js'
 
 /** Arma la app y monta los routers bajo /api. La usan main.ts y los tests. */
@@ -22,6 +23,7 @@ export function crearApp() {
   api.use(rutasExtras())
   api.use(rutasOpenApi())
   api.use('/liquidacion', routerLiquidacion())
+  api.use('/puente', routerPuente())
   api.use(rutasProgramas())
   api.use(rutasPuntos())
   api.use(rutasComercios())

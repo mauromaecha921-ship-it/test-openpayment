@@ -24,7 +24,7 @@ const comun = {
   dialect: 'postgresql',
   schema: './src/db/schema.ts',
   out: './data/introspeccion',
-  schemaFilter: ['piloto', 'piloto_gobierno'],
+  schemaFilter: ['piloto', 'piloto_gobierno', 'piloto_puente'],
   tablesFilter: ['!migracion'],
   introspect: { casing: 'preserve' },
 } as const

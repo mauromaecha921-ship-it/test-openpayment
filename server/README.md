@@ -56,12 +56,16 @@ con el `.env` lleno, los cobros mueven dinero de prueba.
   `003_ajustes.sql` son copia exacta de `db/` de `main`; `010_piloto.sql` agrega lo que el piloto
   resolvió y el esquema original no tenía (D-03, D-35, D-38, D-39, D-41), y `020_gobierno.sql` crea el
   sistema del gobierno simulado.
+- **Banco puente de Bre-B simulado** ([Plan Bre-B](../docs/piloto/Plan%20Bre-B.md)): `030_puente.sql` crea el esquema
+  `piloto_puente`, donde cada llave Bre-B apunta a una wallet de la Test Wallet, y `031_llaves.sql` deja
+  que la cuenta del beneficiario sea una llave. La API lo consulta por HTTP en `/api/puente`
+  (`PUENTE_URL`; vacío, el simulador), nunca con SQL. «Equipo de prueba» registra las llaves.
 - **Tatú guarda lo mínimo**: la cédula, la wallet, los programas y los cobros. El nombre, el PIN y el
   monto de cada persona viven en el esquema `piloto_gobierno`, y la API los pide por HTTP
   (`/api/liquidacion/*`), nunca con SQL.
-- **La base de Supabase es la del equipo (la de Pablo)**: el piloto vive solo en los esquemas `piloto` y
-  `piloto_gobierno` y nunca toca `public`, donde están las tablas de Pablo. `db:reset` borra y vuelve a
-  crear solo esos dos esquemas. Corre con la API apagada.
+- **La base de Supabase es la del equipo (la de Pablo)**: el piloto vive solo en los esquemas `piloto`,
+  `piloto_gobierno` y `piloto_puente`, y nunca toca `public`, donde están las tablas de Pablo. `db:reset`
+  borra y vuelve a crear solo esos tres esquemas. Corre con la API apagada.
 
 ### Pagos reales entre el equipo
 

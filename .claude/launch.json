@@ -4,38 +4,66 @@
     {
       "name": "api-3100",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "api", "dev:3100"],
+      "runtimeArgs": [
+        "--filter",
+        "api",
+        "dev:3100"
+      ],
       "port": 3100
     },
     {
       "name": "web-api-3100",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "web", "dev"],
-      "env": { "API_PROXY": "http://localhost:3100" },
+      "runtimeArgs": [
+        "--filter",
+        "web",
+        "dev"
+      ],
+      "env": {
+        "API_PROXY": "http://localhost:3100"
+      },
       "port": 5173
     },
     {
       "name": "web-simulada",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "web", "dev:simulada"],
+      "runtimeArgs": [
+        "--filter",
+        "web",
+        "dev:simulada"
+      ],
       "port": 5173
     },
     {
       "name": "web-simulada-5174",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "web", "dev:simulada", "--port", "5174"],
+      "runtimeArgs": [
+        "--filter",
+        "web",
+        "dev:simulada",
+        "--port",
+        "5174"
+      ],
       "port": 5174
     },
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "web", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "web",
+        "dev"
+      ],
       "port": 5173
     },
     {
       "name": "api-v2-3101",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "api", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "api",
+        "dev"
+      ],
       "env": {
         "PORT": "3101",
         "API_BASE_URL": "http://localhost:3101/api",
@@ -47,9 +75,49 @@
     {
       "name": "web-v2-5175",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "web", "dev", "--port", "5175"],
-      "env": { "API_PROXY": "http://localhost:3101" },
+      "runtimeArgs": [
+        "--filter",
+        "web",
+        "dev",
+        "--port",
+        "5175"
+      ],
+      "env": {
+        "API_PROXY": "http://localhost:3101"
+      },
       "port": 5175
+    },
+    {
+      "name": "api-breb-3102",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "api",
+        "dev"
+      ],
+      "env": {
+        "PORT": "3102",
+        "API_BASE_URL": "http://localhost:3102/api",
+        "LIQUIDACION_URL": "http://localhost:3102/api/liquidacion",
+        "APP_BASE_URL": "http://localhost:5176",
+        "DATABASE_URL": "pglite:./data/pglite-breb"
+      },
+      "port": 3102
+    },
+    {
+      "name": "web-breb-5176",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "web",
+        "dev",
+        "--port",
+        "5176"
+      ],
+      "env": {
+        "API_PROXY": "http://localhost:3102"
+      },
+      "port": 5176
     }
   ]
 }

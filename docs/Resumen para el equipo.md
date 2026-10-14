@@ -3,7 +3,7 @@
 > **Léelo primero.** Este documento junta lo importante para el hackathon (Medellín, 16 y 17 de
 > octubre de 2026): qué es Tatú, qué ya probamos con dinero de prueba real, qué aprendimos y qué
 > decidir antes del evento. Los demás documentos de `docs/` son el detalle y el contexto para la IA;
-> no hace falta leerlos para entender el proyecto. Actualizado el **12 de octubre de 2026**.
+> no hace falta leerlos para entender el proyecto. Actualizado el **13 de octubre de 2026** (cobro a la llave Bre-B, § 1).
 >
 > **Está basado en lo que se construyó y probó en la rama `piloto`** (10 a 12 de octubre): un piloto
 > desechable con pagos reales en la Interledger Test Wallet. El código del evento se escribe desde cero.
@@ -27,10 +27,30 @@ reintegra días después. **Tatú cambia eso con Open Payments (Interledger):**
 | Rol | Quién es en la demo | Qué hace en la app |
 |---|---|---|
 | Entidad | El gobierno (la wallet que paga) | Crea el programa, aprueba el tope en su banco, ve el tablero, pausa, cierra |
-| Beneficiario | Quien recibe el subsidio | Ve cuánto tiene, cobra a su wallet o va a un punto |
+| Beneficiario | Quien recibe el subsidio | Ve cuánto tiene, cobra a su llave Bre-B (o a su wallet) o va a un punto |
 | Punto de pago | Un Efecty o Punto Red | Digita la cédula, la persona pone su PIN, entrega el efectivo y ve su caja |
 
 Lo que el jurado debe recordar es **el movimiento de la plata**, no las pantallas.
+
+### Lo nuevo (13 de octubre): cobrar a la llave Bre-B
+
+Casi nadie en Colombia tiene una wallet Open Payments, pero 33,9 millones de clientes ya tienen una
+**llave Bre-B** (cédula, celular, correo o @alias; documento técnico de Bre-B, febrero de 2026). La
+lección de Bizum es que la gente adopta un medio de pago cuando no tiene que aprender nada nuevo.
+Por eso:
+
+- **El beneficiario cobra a la llave que ya tiene.** Si su cédula es llave Bre-B, pulsa «Cobrar» y
+  ya: no enlaza nada. Sin cuenta, sigue cobrando en un punto con su cédula.
+- **Tatú sigue hablando solo Open Payments.** Un **banco puente** (un banco o SEDPE en Bre-B con
+  Rafiki) publica una wallet address por llave y entrega la plata por Bre-B. En la demo el puente
+  es **simulado** y se dice así.
+- **La plata sale de una wallet Open Payments y llega a una llave.** La cuenta de la entidad no
+  puede ser una llave: Bre-B no da permisos con tope.
+- **Para el jurado:** «Bre-B es la carretera; Tatú decide quién pasa, cuándo y cuánto» y «Tatú no le
+  paga a un alias, le paga a una persona».
+
+Reglas RN-14 a RN-18, HU-07 y HU-09 actualizadas, decisión AD-21 y respuestas ensayadas en la Guía.
+Plan y diagrama: [`piloto/Plan Bre-B.md`](./piloto/Plan%20Bre-B.md).
 
 ---
 
@@ -173,6 +193,9 @@ Más detalle: [`api/README.md`](../api/README.md).
       [API del piloto](./piloto/API%20del%20piloto.md) (§ 9: pendientes que tocan la API).
 - [ ] **Reescribir en el evento** lo que haga falta: el piloto **no se copia** (regla de la Guía). Lo
       que se reutiliza son los aprendizajes de este documento.
+- [ ] **Averiguar lo pendiente de Bre-B** antes del pitch (Arquitectura, P-26 a P-28): si solo el
+      titular puede registrar su cédula como llave, si se puede confirmar «esta llave es de esta
+      cédula» y cuándo entran los pagos de empresa a persona. No decir en el pitch nada de eso sin confirmarlo.
 - [ ] **Extras** (solo si el flujo principal pasa el viernes a las 17:15): bono en comercio, QR del
       beneficiario, leer el código de barras de la cédula.
 - [ ] **Bonos con destino** (extra 1): **ya construidos en el piloto**, falta probarlos con la Test
@@ -198,9 +221,12 @@ Más detalle: [`api/README.md`](../api/README.md).
 | Cómo hablar con Open Payments | `Hallazgos — Investigación de Fuentes.md` y `ENDPOINTS.md` |
 | Todos los endpoints de la API del piloto (43) y los pendientes que la tocan | [`piloto/API del piloto.md`](./piloto/API%20del%20piloto.md) · para probarlos, Swagger en `/api/docs` con la API prendida |
 | Todo lo que hizo y encontró el piloto (D-01 a D-36) | `piloto/Resultados del piloto.md` y `piloto/Plan de ajustes.md` |
+| Cobrar a la llave Bre-B: plan, diagrama y qué se simula | [`piloto/Plan Bre-B.md`](./piloto/Plan%20Bre-B.md) |
 | Correr la API del piloto | `api/README.md` |
 
 **Glosario.** *Permiso (grant):* la autorización con tope que aprueba la entidad. *Token:* la llave
 temporal (10 min) con la que la app usa el permiso. *Wallet address:* la «dirección» de una cuenta,
 como `$ilp.interledger-test.dev/nombre`. *Novedad:* alguien que entró a la liquidación después de
-fijar el tope. *Liquidación:* la lista de quién recibe cuánto (en el piloto, la llena el registro).
+fijar el tope. *Liquidación:* la lista de quién recibe cuánto (en el piloto, la llena el registro). *Llave Bre-B:* el
+alias (cédula, celular, correo o @alias) con el que alguien recibe por Bre-B; apunta a una sola
+cuenta. *Banco puente:* el banco con Rafiki que traduce una llave Bre-B a una wallet Open Payments.

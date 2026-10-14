@@ -1,13 +1,13 @@
 # Reglas de negocio — guía rápida
 
-Referencia rápida de las **13 reglas de negocio (RN-01…RN-13)** del proyecto «Justo a Tiempo».
+Referencia rápida de las **18 reglas de negocio (RN-01…RN-18)** del proyecto «Justo a Tiempo». RN-14 a RN-18 (llave Bre-B) se agregaron el 13 de octubre de 2026 con el [Plan Bre-B](./piloto/Plan%20Bre-B.md).
 **Fuente canónica:** [`Historias de Usuario — Bonos con Destino.md`](./Historias%20de%20Usuario%20—%20Bonos%20con%20Destino.md) § Reglas, fórmulas y variables (líneas 514-530). Si una regla cambia, se edita allí y se actualiza este resumen.
 
 El repositorio sigue siendo **solo documentación** (sin código). Las rutas de archivo citadas son las planificadas en [`Estructura del proyecto.md`](./Estructura%20del%20proyecto.md).
 
 ---
 
-## 1. Las 13 reglas, por momento de validación
+## 1. Las 18 reglas, por momento de validación
 
 ### Al solicitar el cobro (`POST /cobros`)
 
@@ -16,9 +16,18 @@ El repositorio sigue siendo **solo documentación** (sin código). Las rutas de 
 | RN-01 | La cédula debe tener un **pago disponible en la liquidación** del programa | No hay base propia de beneficiarios (AD-12); se consulta por cédula a la liquidación simulada | HU-02, HU-10 |
 | RN-02 | **Un solo cobro activo o pagado** por cédula y programa | Índice único parcial en estados Solicitado, PorConfirmar, Pagando y Pagado — la protección es de base de datos | HU-14 |
 | RN-03 | **Destino libre** (subsidio): canales a la cuenta y retiro · **Destino restringido** (bono, extra): solo compra en comercios de `programa_punto` | El destino sale de `programa.destino` | HU-09, HU-21 |
-| RN-04 | El canal a la cuenta exige una cuenta **Verificada** y en la **misma moneda** del programa | Estados de cuenta: SinEnlazar → PorVerificar → Verificada | HU-07, HU-09 |
+| RN-04 | El canal a la cuenta exige una cuenta **Verificada** y en la **misma moneda** del programa | Estados de cuenta: SinEnlazar → PorVerificar → Verificada. La cuenta es una **llave Bre-B** o una wallet Open Payments (RN-14) | HU-07, HU-09 |
+| RN-17 | «Cobrar a mi cuenta» **sin cuenta enlazada prueba primero la llave Bre-B de tipo cédula** de la persona; si existe, la cuenta queda Verificada (RN-15) y se cobra; si no, se ofrece enlazar otra llave o cobrar en un punto | Cero pasos para quien ya tiene su cédula registrada en Bre-B | HU-09 |
 | RN-05 | **Monto:** subsidio = valor completo disponible · bono = `min(valor, total_compra)` | El monto lo calcula el **backend**, nunca el navegador. *El caso bono es propuesto* | HU-10, HU-21 |
 | RN-06 | El programa está **Activo y dentro de su vigencia**; uno Cerrado rechaza todo cobro | Vigencia: `vigente_desde` / `vigente_hasta` | HU-13, HU-17 |
+
+### Al enlazar la cuenta (`POST /cuentas`)
+
+| ID | Regla | Detalle | HU |
+| --- | --- | --- | --- |
+| RN-14 | La persona **elige el tipo** de llave Bre-B: Cédula, Celular, Correo o @Llave (o, como opción avanzada, una wallet Open Payments). **Nunca se adivina por el formato** | Un celular y una cédula nueva tienen 10 dígitos los dos | HU-07 |
+| RN-15 | Una llave **tipo cédula** que coincide con la cédula del beneficiario queda **Verificada sola**, sin PIN ni aprobación en el banco | El banco de la persona registra la llave sobre una cuenta de su propio cliente. *Por confirmar en el anexo 1 de la Circular DSP-465 (P-26)* | HU-07, HU-09 |
+| RN-16 | Una llave de **otro tipo** (celular, correo, @alias) solo queda Verificada si el banco puente confirma que **su titular es la cédula del beneficiario**, además del PIN. Si no coincide, se rechaza con «Esa llave no está a tu nombre» | Evita que un tercero enlace su @alias a la cédula de otra persona. *En la demo lo responde el puente simulado; en producción depende de P-27* | HU-07 |
 
 ### Al confirmar (PIN) (`POST /cobros/:id/confirmar`)
 
@@ -37,6 +46,7 @@ El repositorio sigue siendo **solo documentación** (sin código). Las rutas de 
 | ID | Regla | Detalle | HU |
 | --- | --- | --- | --- |
 | RN-09 | ⭐ La plataforma **no valida el tope antes de pagar**: lo hace cumplir el **banco** con `InsufficientGrant` → cobro **Fallido sin mover dinero** | Regla estrella de la demo: el video debe mostrar este rechazo (AD-11) | HU-13 |
+| RN-18 | Una cuenta con llave Bre-B **se vuelve a resolver en cada cobro**, antes de crear el pago entrante. Si la llave ya no existe, el cobro queda **Rechazado sin mover dinero** | La persona puede mover su llave a otro banco entre el enlace y el cobro | HU-09 |
 
 ### Al consultar (`GET /cobros/:id`)
 
@@ -107,7 +117,7 @@ EsperandoAprobacion ──(callback ok)──▶ Activo   │ ──(rechazo/ven
 Activo ⇄ Pausado (HU-18)   │   Activo|Pausado ──(cerrar)──▶ Cerrado → todo cobro rechazado (RN-06)
 ```
 
-**Cuenta del beneficiario (3 estados):** `SinEnlazar → PorVerificar → Verificada` (requisito de RN-04).
+**Cuenta del beneficiario (3 estados):** `SinEnlazar → PorVerificar → Verificada` (requisito de RN-04). Una llave Bre-B tipo cédula (RN-15) o una llave confirmada por el puente (RN-16) pasa directo a `Verificada`; `PorVerificar` queda solo para la wallet Open Payments, que se verifica con un permiso interactivo.
 
 Cada flecha crea un **evento** en la tabla `evento` (HU-16).
 
@@ -117,7 +127,7 @@ Cada flecha crea un **evento** en la tabla `evento` (HU-16).
 
 | Capa | Implementación planificada | Reglas |
 | --- | --- | --- |
-| Funciones puras | `cobros/estados.ts` — transiciones y núcleo de reglas sin red ni BD | RN-01…RN-13, máquina de estados |
+| Funciones puras | `cobros/estados.ts` — transiciones y núcleo de reglas sin red ni BD | RN-01…RN-18, máquina de estados |
 | Frontera HTTP | Zod en `cobros/rutas.ts` — montos, cédulas, wallet addresses antes de llamar a Open Payments | RN-05, RN-11 |
 | Base de datos | Índice único parcial (programa, cédula) en estados activos · `idempotency_key` UNIQUE · columna `version` (bloqueo optimista) | RN-02, RN-11, idempotencia 3 niveles |
 | Servicio | `cobros/servicio.ts` — cuándo llamar al adaptador, tope de RN-08 | RN-08, RN-09 |
@@ -135,5 +145,7 @@ Cada flecha crea un **evento** en la tabla `evento` (HU-16).
 | Caso «bono» de la fórmula | RN-05 | Propuesto |
 | Bloqueo y vencimiento de PIN | RN-07, RN-12 | Propuestos |
 | Disparo del pago en canal cuenta (¿`POST /cobros` paga directo o se llama a confirmar sin PIN?) | HU-09 vs Guía API | Abierto (Arquitectura § contradicciones) |
+| ¿Solo el titular puede registrar su cédula como llave Bre-B? | RN-15 · **P-26** | Por confirmar en el anexo 1 de la Circular DSP-465 |
+| ¿Bre-B o el banco puente pueden responder «esta llave es de la cédula X: sí o no»? ¿El directorio devuelve el titular enmascarado? | RN-16 · **P-27** | Abierto: el documento técnico de Bre-B (feb. 2026) no lo dice |
 
 Ver también: [`Hallazgos — Investigación de Fuentes.md`](./Hallazgos%20—%20Investigación%20de%20Fuentes.md) § pendientes P-01…P-25 y [`Documento de Arquitectura`](./Documento%20de%20Arquitectura%20—%20Hackathon%20Open%20Payments.md) § 3.2 (operaciones O2/O4/O5/O6/O8 con las reglas que aplican en cada una).

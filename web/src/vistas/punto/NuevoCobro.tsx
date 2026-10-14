@@ -1,50 +1,57 @@
-import { ChevronRight, TriangleAlert, Wallet } from 'lucide-react'
+import { ChevronRight, TriangleAlert } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 
 import { api, mensajeDeError } from '@/api/client'
 import type { CajaPunto, Cobro, CobroResumen, PagosEnPunto } from '@/api/tipos'
 import { usePolling } from '@/api/usePolling'
-import { Aviso, MensajeError } from '@/componentes/Comun'
+import { Aviso, CargandoEnLinea, MensajeError } from '@/componentes/Comun'
 import { EstadoCobro } from '@/componentes/EstadoCobro'
 import { MarcoPunto } from '@/componentes/Marcos'
 import { textoMonto } from '@/componentes/Monto'
+import { PasosCobroPunto } from '@/componentes/PasosCobroPunto'
 import { Titulo } from '@/componentes/Titulo'
 import { Button } from '@/componentes/ui/button'
 import { Input } from '@/componentes/ui/input'
 import { useRol } from '@/contexto/Rol'
 import { formatHora } from '@/lib/textos'
 
-/** D-36: lo de hoy en una línea, con el enlace a «Mi caja». */
+/** D-36 y prototipo P0: lo de hoy en dos tarjetas Noche, que llevan a «Mi caja». */
 export function CajaDeHoy({ puntoId }: { puntoId: string | null }) {
   const caja = usePolling(() => api.get<CajaPunto>(`/puntos/${puntoId}/resumen?desde=hoy`), 10_000, true, { clave: puntoId })
-  const t = caja.datos?.totales[0]
-  if (!caja.datos) return null
-  const total = <strong>{t ? textoMonto(t.entregado, t.moneda) : '$0'}</strong>
-  if (caja.datos.punto.tipo === 'compra') {
-    // § 11: una sede de comercio no entrega efectivo; recibe el pago de los bonos
-    return (
-      <Link to="/punto/caja" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-muted px-4 py-3 text-foreground no-underline hover:text-foreground">
-        <Wallet aria-hidden className="size-5 shrink-0" />
-        <span className="flex-1">Hoy vendiste con bonos {total} · ya te pagaron todo</span>
-        <span className="inline-flex items-center gap-1 text-enlace">
-          Mi caja <ChevronRight aria-hidden className="size-4" />
-        </span>
-      </Link>
-    )
-  }
+  const c = caja.datos
+  if (!c) return null
+  const t = c.totales[0]
+  const monto = (v: string | undefined) => (t && v !== undefined ? textoMonto(v, t.moneda) : '$0')
+  const enCamino = t && t.pendiente !== '0'
+  // § 11: una sede de comercio no entrega efectivo; recibe el pago de los bonos
+  const comercio = c.punto.tipo === 'compra'
   return (
-    <Link
-      to="/punto/caja"
-      className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-muted px-4 py-3 text-foreground no-underline hover:text-foreground"
-    >
-      <Wallet aria-hidden className="size-5 shrink-0" />
-      <span className="flex-1">
-        Hoy entregaste {total} · ya te reembolsaron todo · <strong>$0</strong> por adelantado
+    <Link to="/punto/caja" aria-label="Ver mi caja" className="grid grid-cols-2 gap-2.5 text-bloque-texto no-underline hover:text-bloque-texto">
+      <span className="flex min-w-0 flex-col gap-1 bloque rounded-2xl px-4 py-3.5">
+        <span className="text-[13px] font-bold">{comercio ? 'Ventas con bono hoy' : 'Retiros pagados hoy'}</span>
+        <span className="cifra text-[24px] [overflow-wrap:anywhere] sm:text-[28px]">{monto(t?.entregado)}</span>
+        <span className="text-[13px] text-noche-tenue">
+          {enCamino ? `${monto(t.pendiente)} en camino a tu wallet` : comercio ? 'Ya te pagaron todo' : 'Ya te reembolsaron todo'}
+        </span>
       </span>
-      <span className="inline-flex items-center gap-1 text-enlace">
-        Mi caja <ChevronRight aria-hidden className="size-4" />
-      </span>
+      {comercio ? (
+        <span className="flex min-w-0 flex-col justify-between gap-1 bloque rounded-2xl px-4 py-3.5">
+          <span className="text-[13px] font-bold">Te pagaron los bonos</span>
+          <span className="cifra text-[24px] [overflow-wrap:anywhere] sm:text-[28px]">{monto(t?.reembolsado)}</span>
+          <span className="inline-flex items-center gap-1 text-[13px] text-noche-tenue">
+            Mi caja <ChevronRight aria-hidden className="size-3.5" />
+          </span>
+        </span>
+      ) : (
+        <span className="flex min-w-0 flex-col gap-1 bloque rounded-2xl px-4 py-3.5">
+          <span className="text-[13px] font-bold">Adelantado de tu caja</span>
+          <span className="cifra text-[24px] text-ambar [overflow-wrap:anywhere] sm:text-[28px]">{monto(c.giradoPorAdelantado)}</span>
+          <span className="inline-flex items-center gap-1 text-[13px] text-noche-tenue">
+            {c.giradoPorAdelantado === '0' ? 'Nada por recuperar · ' : ''}Mi caja <ChevronRight aria-hidden className="size-3.5" />
+          </span>
+        </span>
+      )}
     </Link>
   )
 }
@@ -107,9 +114,11 @@ export default function NuevoCobro() {
   return (
     <MarcoPunto ancho="ancho">
       <Titulo className="text-[28px] md:text-[32px]">Nuevo cobro</Titulo>
+      <CajaDeHoy puntoId={puntoId} />
       {/* En PC: la cédula a la izquierda y los cobros de hoy a la derecha. */}
       <div className="grid items-start gap-[18px] md:grid-cols-2 md:gap-10">
       <div className="flex min-w-0 flex-col gap-[18px]">
+      <PasosCobroPunto paso={opciones ? 'Pago' : 'Cédula'} />
       <form
         className="flex flex-col gap-[18px]"
         onSubmit={(e) => {
@@ -161,10 +170,10 @@ export default function NuevoCobro() {
                   type="button"
                   disabled={enviando}
                   onClick={() => void pedir(documento.trim(), p.programa.id)}
-                  className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-control bg-background px-4 py-3 text-left text-foreground hover:bg-muted disabled:opacity-60"
+                  className="flex min-h-16 w-full items-center gap-3 rounded-xl border border-control bg-card px-4 py-3 text-left text-foreground hover:bg-muted disabled:opacity-60"
                 >
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <strong className="text-2xl">{textoMonto(p.monto, p.moneda)}</strong>
+                    <strong className="cifra text-2xl">{textoMonto(p.monto, p.moneda)}</strong>
                     <span className="text-[15px] text-muted-foreground">{p.programa.nombre}</span>
                   </span>
                   <ChevronRight aria-hidden className="size-6 shrink-0" />
@@ -184,7 +193,6 @@ export default function NuevoCobro() {
       </div>
 
       <section className="mt-2 flex min-w-0 flex-col gap-2.5 md:mt-0" aria-labelledby="titulo-hoy">
-        <CajaDeHoy puntoId={puntoId} />
         <h2 id="titulo-hoy" className="m-0 text-lg font-bold">
           Cobros de hoy
         </h2>
@@ -194,7 +202,7 @@ export default function NuevoCobro() {
               <li key={c.id}>
                 <Link
                   to={`/punto/cobros/${c.id}`}
-                  className="flex min-h-14 items-center gap-3 rounded-xl border border-border px-3.5 py-2.5 text-foreground no-underline hover:bg-muted hover:text-foreground"
+                  className="flex min-h-14 items-center gap-3 rounded-xl border border-border bg-card px-3.5 py-2.5 text-foreground no-underline hover:bg-muted hover:text-foreground"
                 >
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className="flex flex-wrap items-center gap-x-2">
@@ -204,7 +212,9 @@ export default function NuevoCobro() {
                         {formatHora(c.creado, false)}
                       </time>
                     </span>
-                    <EstadoCobro estado={c.estado} motivo={c.motivo} />
+                    <span className="self-start">
+                      <EstadoCobro estado={c.estado} motivo={c.motivo} />
+                    </span>
                   </span>
                   <ChevronRight aria-hidden className="size-5 shrink-0" />
                 </Link>
@@ -213,7 +223,7 @@ export default function NuevoCobro() {
           </ul>
         ) : (
           <div className="rounded-xl border-2 border-dashed border-border px-4 py-5 text-center text-tenue">
-            {hoy.error ? hoy.error : hoy.datos ? 'Todavía no hay cobros hoy.' : 'Cargando…'}
+            {hoy.error ? hoy.error : hoy.datos ? 'Todavía no hay cobros hoy.' : <CargandoEnLinea />}
           </div>
         )}
       </section>

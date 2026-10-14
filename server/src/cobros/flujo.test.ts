@@ -7,6 +7,7 @@ import { esperarPagos } from './orquestacion.js'
 
 vi.mock('../openPaymentsService.js', async (orig) => (await import('../../test/falsos.js')).falsoOP(await orig()))
 vi.mock('../liquidacion/cliente.js', async (orig) => (await import('../../test/falsos.js')).falsaLiquidacion(await orig()))
+vi.mock('../puente/cliente.js', async (orig) => (await import('../../test/falsos.js')).falsoPuente(await orig()))
 
 const a = app()
 let programaId: string

@@ -134,7 +134,7 @@ export default function AprobarEnBanco() {
             <h2 className="m-0 text-xl font-bold">El permiso que vas a aprobar</h2>
             <div className="flex flex-col gap-0.5">
               <span className="text-sm text-tenue">Tope total</span>
-              <span className="text-[40px] leading-[1.1] font-bold sm:text-[44px]">{textoMonto(tope, programa.moneda)}</span>
+              <span className="cifra text-[40px] [overflow-wrap:anywhere] sm:text-[48px]">{textoMonto(tope, programa.moneda)}</span>
               <span className="text-[15px] text-muted-foreground">
                 La suma de la liquidación: {plural(liquidacion.cedulas, 'cédula')}
               </span>
@@ -165,7 +165,7 @@ export default function AprobarEnBanco() {
             )}
 
             {esperando && (
-              <div aria-live="polite" className="flex flex-col gap-3 rounded-[10px] border-2 border-dashed border-control px-[18px] py-4">
+              <div aria-live="polite" className="flex flex-col gap-3 rounded-xl bg-muted px-[18px] py-4">
                 <div className="flex items-center gap-2.5">
                   <Clock aria-hidden className="size-[22px]" />
                   <strong className="text-[17px]">Esperando tu aprobación en el banco…</strong>
@@ -190,10 +190,15 @@ export default function AprobarEnBanco() {
           <aside className="flex flex-[1_1_320px] flex-col gap-4">
             <Tarjeta className="gap-3">
               <h2 className="m-0 text-lg font-bold">Cómo funciona</h2>
-              <ol className="m-0 flex flex-col gap-2 pl-5 text-[15px]">
-                <li>Pulsas «Aprobar en mi banco».</li>
-                <li>Tu banco te muestra el tope y tú lo apruebas.</li>
-                <li>Vuelves aquí y el programa queda Activo.</li>
+              <ol className="m-0 flex list-none flex-col gap-2.5 p-0 text-[15px]">
+                {['Pulsas «Aprobar en mi banco».', 'Tu banco te muestra el tope y tú lo apruebas.', 'Vuelves aquí y el programa queda Activo.'].map((t, i) => (
+                  <li key={i} className="flex items-start gap-2.5">
+                    <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-foreground text-[13px] font-bold text-background">
+                      {i + 1}
+                    </span>
+                    {t}
+                  </li>
+                ))}
               </ol>
             </Tarjeta>
             <figure className="m-0 flex flex-col gap-2.5 rounded-xl border-2 border-dashed border-control bg-card p-5">

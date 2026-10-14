@@ -6,7 +6,7 @@ import { cuenta_beneficiario as cuenta } from '../schema.js'
 export type FilaCuenta = typeof cuenta.$inferSelect
 
 export type NuevaCuenta = Pick<FilaCuenta, 'id' | 'beneficiario_id' | 'billetera' | 'estado'> &
-  Partial<Pick<FilaCuenta, 'verificada_en' | 'nonce_cliente' | 'nonce_cierre' | 'uri_continuacion' | 'token_continuacion'>>
+  Partial<Pick<FilaCuenta, 'verificada_en' | 'nonce_cliente' | 'nonce_cierre' | 'uri_continuacion' | 'token_continuacion' | 'tipo_llave' | 'llave'>>
 
 const VIGENTE = ['PorVerificar', 'Verificada'] as const
 

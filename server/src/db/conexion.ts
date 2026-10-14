@@ -19,6 +19,8 @@ export type Ejecutor = PgAsyncDatabase<PgQueryResultHKT>
  */
 export const ESQUEMA = 'piloto'
 export const ESQUEMA_GOBIERNO = 'piloto_gobierno'
+/** El banco puente de Bre-B simulado (030_puente.sql): Tatú lo consulta por HTTP, nunca con SQL. */
+export const ESQUEMA_PUENTE = 'piloto_puente'
 const RUTA = `${ESQUEMA}, ${ESQUEMA_GOBIERNO}`
 
 interface Conexion {

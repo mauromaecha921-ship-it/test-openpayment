@@ -8,6 +8,7 @@ private.key
 
 # Datos locales del piloto (tokens en texto plano, db/README.md § Pendientes 3)
 api/data/
+server/data/
 *.db
 *.db-*
 

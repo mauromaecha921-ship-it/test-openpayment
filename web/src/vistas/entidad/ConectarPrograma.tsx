@@ -1,6 +1,6 @@
 import { Check, TriangleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router'
+import { Navigate, useNavigate, useParams } from 'react-router'
 
 import { resolverBilletera, type EstadoBilletera } from '@/api/billeteras'
 import { api, mensajeDeError } from '@/api/client'
@@ -41,6 +41,43 @@ const MONTO_VALIDO = /^\d+(\.\d+)?$/
 
 const resolver = resolverBilletera
 
+// Registrar personas o comercios lleva a «Equipo de prueba» y de ahí se vuelve aquí. Lo escrito y sin
+// guardar se deja en sessionStorage (misma pestaña) y se recupera al volver, también con «Atrás».
+const CLAVE_PENDIENTE = 'tatu.programa-pendiente'
+
+function guardarPendiente(clave: string, form: ProgramaEntrada) {
+  try {
+    sessionStorage.setItem(CLAVE_PENDIENTE, JSON.stringify({ clave, form }))
+  } catch {
+    // Sin almacenamiento: al volver se ve lo último guardado
+  }
+}
+
+function leerPendiente(clave: string): ProgramaEntrada | null {
+  try {
+    const crudo = sessionStorage.getItem(CLAVE_PENDIENTE)
+    if (!crudo) return null
+    const p = JSON.parse(crudo) as { clave: string; form: ProgramaEntrada }
+    return p.clave === clave ? p.form : null
+  } catch {
+    return null
+  }
+}
+
+function borrarPendiente() {
+  try {
+    sessionStorage.removeItem(CLAVE_PENDIENTE)
+  } catch {
+    // nada que borrar
+  }
+}
+
+/** A «Equipo de prueba», con la ruta para volver a terminar el programa. */
+function rutaEquipo(volver: string, seccion: 'personas' | 'comercios') {
+  // Las personas se registran arriba, junto al aviso; los comercios están más abajo
+  return `/equipo?volver=${encodeURIComponent(volver)}${seccion === 'comercios' ? '#titulo-comercios' : ''}`
+}
+
 export default function ConectarPrograma() {
   const { id } = useParams()
   const navegar = useNavigate()
@@ -72,11 +109,27 @@ export default function ConectarPrograma() {
     }
   }, [config.extras.bono])
 
-  // Al editar, se carga el borrador; cualquier otro estado tiene su propia pantalla.
+  // Al editar, se carga el borrador; cualquier otro estado tiene su propia pantalla. Si se fue a
+  // registrar personas sin guardar, lo que había escrito vuelve encima.
   useEffect(() => {
     let vivo = true
     void api.get<Punto[]>('/puntos').then((p) => vivo && setPuntos(p.filter((x) => x.tipo !== 'compra'))).catch(() => undefined)
-    if (!id) return
+    const pendiente = leerPendiente(id ?? 'nuevo')
+    // Se borra al aplicarlo, no al leerlo: si el efecto se corta (otra carga), sigue ahí
+    const recuperar = async (f: ProgramaEntrada) => {
+      setForm(f)
+      borrarPendiente()
+      setAviso('Volviste del equipo de prueba: recuperamos lo que tenías escrito. Si registraste personas, calcula el total otra vez.')
+      if (f.billetera.trim()) {
+        setBilletera({ estado: 'buscando' })
+        const b = await resolver(f.billetera)
+        if (vivo) setBilletera(b)
+      }
+    }
+    if (!id) {
+      if (pendiente) void recuperar(pendiente)
+      return
+    }
     ;(async () => {
       try {
         const p = await api.get<Programa>(`/programas/${id}`)
@@ -97,7 +150,16 @@ export default function ConectarPrograma() {
           categorias: p.categorias ?? [],
         })
         setBilletera({ estado: 'encontrada', billetera: { id: p.billetera, moneda: p.moneda } })
-        setLiquidacion(await api.get<Liquidacion>(`/programas/${id}/liquidacion`))
+        // Siempre se pide de nuevo: si registró personas en el equipo, el total cambió
+        const l = await api.get<Liquidacion>(`/programas/${id}/liquidacion`)
+        if (!vivo) return
+        if (pendiente) {
+          await recuperar(pendiente)
+          // Con otro monto, el total del servidor ya no sirve
+          if (pendiente.montoPorPersona === aPesos(p.montoPorPersona, p.moneda.escala)) setLiquidacion(l)
+        } else {
+          setLiquidacion(l)
+        }
       } catch (e) {
         if (vivo) setErrorCarga(mensajeDeError(e))
       } finally {
@@ -185,6 +247,12 @@ export default function ConectarPrograma() {
     }
     const programaId = await guardar()
     if (programaId) navegar(`/entidad/programas/${programaId}/aprobar`)
+  }
+
+  /** Guarda lo escrito y va a registrar; «Volver» en el equipo trae de vuelta aquí. */
+  const irAlEquipo = (seccion: 'personas' | 'comercios') => {
+    guardarPendiente(id ?? 'nuevo', form)
+    navegar(rutaEquipo(id ? `/entidad/programas/${id}/editar` : '/entidad/programas/nuevo', seccion))
   }
 
   if (redirigir) return <Navigate to={redirigir} replace />
@@ -279,9 +347,9 @@ export default function ConectarPrograma() {
             <Tarjeta className="gap-3.5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="m-0 text-xl font-bold">{form.tipo === 'bono' ? '3. Personas y valor del bono' : '3. Personas y monto'}</h2>
-                <Link to="/equipo" className="inline-flex min-h-11 items-center text-[15px]">
+                <Button variant="link" className="h-auto min-h-11 px-0 text-[15px] font-normal text-enlace underline" onClick={() => irAlEquipo('personas')}>
                   Registrar personas
-                </Link>
+                </Button>
               </div>
               <p className="m-0 text-[15px] text-muted-foreground">
                 Cada persona registrada en «Equipo de prueba» recibe este monto en su wallet. Regístrenlas antes de aprobar: quien llegue
@@ -322,6 +390,7 @@ export default function ConectarPrograma() {
                 comercios={comercios}
                 elegidas={form.categorias ?? []}
                 cambiar={(c) => cambiar('categorias', c)}
+                irAlEquipo={() => irAlEquipo('comercios')}
               />
             ) : (
               <SeccionPuntos programaId={id ?? null} moneda={moneda} puntos={puntos} alAgregar={(p) => setPuntos((l) => [...l, p])} />
@@ -369,11 +438,13 @@ function SeccionCategorias({
   comercios,
   elegidas,
   cambiar,
+  irAlEquipo,
 }: {
   categorias: Categoria[]
   comercios: Comercio[]
   elegidas: string[]
   cambiar: (c: string[]) => void
+  irAlEquipo: () => void
 }) {
   const sedesVerificadas = (categoria: string) =>
     comercios.filter((c) => c.categoria === categoria && c.verificado).reduce((n, c) => n + c.sedes.length, 0)
@@ -381,9 +452,9 @@ function SeccionCategorias({
     <Tarjeta className="gap-3.5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="m-0 text-xl font-bold">4. Dónde se usa el bono</h2>
-        <Link to="/equipo" className="inline-flex min-h-11 items-center text-[15px]">
+        <Button variant="link" className="h-auto min-h-11 px-0 text-[15px] font-normal text-enlace underline" onClick={irAlEquipo}>
           Registrar comercios
-        </Link>
+        </Button>
       </div>
       <p className="m-0 text-[15px] text-muted-foreground">
         El bono no se cobra en efectivo ni a la cuenta: se usa como parte del pago de una compra. Lo aceptan las sedes de comercios

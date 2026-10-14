@@ -6,6 +6,10 @@ import { vi } from 'vitest'
 import type * as OP from '../src/openPaymentsService.js'
 import type * as Liq from '../src/liquidacion/cliente.js'
 import * as datos from '../src/liquidacion/datos.js'
+import type * as Puente from '../src/puente/cliente.js'
+import type { Llave, TipoLlave } from '../src/puente/contrato.js'
+import * as datosPuente from '../src/puente/datos.js'
+import { enmascararNombre } from '../src/puente/enmascarar.js'
 
 /** Valores que nunca deben aparecer en una respuesta ni en un evento (V-20). */
 export const SECRETOS = {
@@ -28,6 +32,8 @@ export const estado = {
   /** Si es true, crearPagoSaliente queda «enviando» (sentAmount 0) hasta que se lea. */
   salientesLentos: false,
   falloAlContinuar: false,
+  /** Plan Bre-B: el banco puente no responde. */
+  puenteCaido: false,
 }
 
 export function reiniciarEstado() {
@@ -38,6 +44,7 @@ export function reiniciarEstado() {
   estado.contador = 0
   estado.salientesLentos = false
   estado.falloAlContinuar = false
+  estado.puenteCaido = false
 }
 
 type ModuloOP = typeof OP
@@ -119,5 +126,38 @@ export function falsaLiquidacion(real: typeof Liq) {
     persona: vi.fn(async (d: string) => (await personas([d])).get(d)),
     inscribir: vi.fn(async (d: string, nombre: string, pin?: string) => datos.inscribir(d, nombre, pin)),
     ponerPin: vi.fn(async (d: string, pin: string) => datos.ponerPin(d, pin)),
+  }
+}
+
+/** El banco puente de Bre-B (Plan Bre-B) sin HTTP: responde desde puente/datos.ts, como su router. */
+export function falsoPuente(real: typeof Puente) {
+  const vivo = () => {
+    if (estado.puenteCaido) throw new real.PuenteNoResponde()
+  }
+  return {
+    ...real,
+    resolverLlave: vi.fn(async (tipo: TipoLlave, valor: string) => {
+      vivo()
+      const l = await datosPuente.obtener(tipo, valor)
+      return l ? { tipo: l.tipo, valor: l.valor, billetera: l.billetera, titular: enmascararNombre(l.nombreTitular) } : null
+    }),
+    pertenece: vi.fn(async (tipo: TipoLlave, valor: string, documento: string) => {
+      vivo()
+      const l = await datosPuente.obtener(tipo, valor)
+      return l ? l.documentoTitular === documento : null
+    }),
+    llavesDe: vi.fn(async (documento: string) => {
+      vivo()
+      return datosPuente.deTitular(documento)
+    }),
+    registrarLlave: vi.fn(async (l: Llave) => {
+      vivo()
+      if ((await datosPuente.registrar(l)) === 'deOtro') throw new real.LlaveRechazada(409, 'LlaveEnUso', 'Esa llave ya es de otra persona')
+      return l
+    }),
+    borrarLlave: vi.fn(async (tipo: TipoLlave, valor: string) => {
+      vivo()
+      return datosPuente.borrar(tipo, valor)
+    }),
   }
 }

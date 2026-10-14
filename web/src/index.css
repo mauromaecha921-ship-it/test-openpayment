@@ -7,12 +7,12 @@
    Contrastes sobre arena y sobre #EDE5D3: #4A5468 6,7 / 6,1 · #5A657A 5,2 / 4,7 · #1E4FC8 6,2 / 5,6.
    #847A66 (3,7 / 3,4) es solo para bordes y controles, nunca para texto. */
 
-/* El piloto solo tiene tema claro, como los wireframes: `dark:` de shadcn queda atado a una clase
-   que no se usa, para que el modo oscuro del sistema no mezcle colores. */
+/* Modo oscuro (docs/piloto/Plan modo oscuro.md): lo deciden los tokens, con `data-tema` en <html>
+   (lo pone el script de index.html antes de pintar: lo guardado o, si no hay, el sistema). `dark:`
+   de shadcn sigue atado a una clase que no se usa, para que sus grises no pisen la paleta;
+   `oscuro:` es la variante propia (cambiar el logo, por ejemplo). */
 @custom-variant dark (&:is(.dark *));
-:root {
-  color-scheme: light;
-}
+@custom-variant oscuro (&:where([data-tema="oscuro"], [data-tema="oscuro"] *));
 
 @theme inline {
   --font-sans: 'Archivo Variable', 'Helvetica Neue', Arial, sans-serif;
@@ -53,6 +53,11 @@
   --color-noche: var(--noche);
   --color-ambar: var(--ambar);
   --color-arcilla: var(--arcilla);
+  --color-noche-tenue: var(--noche-tenue);
+  --color-noche-suave: var(--noche-suave);
+  --color-bloque: var(--bloque);
+  --color-bloque-texto: var(--bloque-texto);
+  --color-rechazo-relleno: var(--rechazo-relleno);
 
   --radius-sm: calc(var(--radius) * 0.5);
   --radius-md: calc(var(--radius) * 0.67);
@@ -63,7 +68,9 @@
   --radius-4xl: 999px;
 }
 
-:root {
+:root,
+[data-tema="claro"] {
+  color-scheme: light;
   --background: #f5f0e6;
   --foreground: #13203a;
   --card: #fffdf8;
@@ -92,6 +99,9 @@
   --noche: #13203a;
   --ambar: #f6a623;
   --arcilla: #6e4630;
+  /* Sobre los bloques Noche: texto secundario (9,1:1) y fondo de las filas internas. */
+  --noche-tenue: #b8c2d6;
+  --noche-suave: #1e2c49;
 
   /* Estados del cobro: siempre con ícono y texto, nunca solo color. Todos ≥ 4,5:1 sobre su fondo.
      #1B7F4B (Pagado) da 4,4:1 sobre arena: se usa en rellenos con texto blanco (5,0:1) y #17703F
@@ -103,6 +113,58 @@
   --pagando-fondo: #fce3b4;
   --rechazo: #a3261c;
   --rechazo-fondo: #f8e4df;
+  --rechazo-relleno: #a3261c;
+
+  /* Bloques Noche (cifra principal, «Pagando…», caja de hoy) y su texto. */
+  --bloque: #13203a;
+  --bloque-texto: #f5f0e6;
+  --bloque-borde: none;
+}
+
+/* Paleta «Noche», del logo oscuro: fondo Noche hondo, texto Arena clara #EFE6D2 y acentos ámbar.
+   Contrastes: texto 14,9 sobre el fondo y 13,1 sobre la tarjeta · gris arena #BDB5A3 8,0 / 6,8 sobre
+   #1E2C49 (cálido, para no confundirlo con los enlaces)
+   · enlace #8DB0FF 8,6 / 7,6 · ámbar 9,2. Chips: #5CC98A sobre #123828 6,3 · #F6C97A sobre #3A2A10
+   8,9 · #FF8A7A sobre #3D1A1A 6,7. Los rellenos (verde, rojo, azul) no cambian: blanco ≥ 5:1. */
+[data-tema="oscuro"] {
+  color-scheme: dark;
+  --background: #0b1324;
+  --foreground: #efe6d2;
+  --card: #13203a;
+  --card-foreground: #efe6d2;
+  --popover: #13203a;
+  --popover-foreground: #efe6d2;
+  --primary: #2e5fe0;
+  --primary-foreground: #ffffff;
+  --secondary: #1e2c49;
+  --secondary-foreground: #efe6d2;
+  --muted: #1e2c49;
+  --muted-foreground: #bdb5a3;
+  --tenue: #bdb5a3;
+  --accent: #1e2c49;
+  --accent-foreground: #efe6d2;
+  --destructive: #ff8a7a;
+  --border: #2c3b5c;
+  --input: #6b7a99;
+  --control: #6b7a99;
+  --ring: #5b85ff;
+  --enlace: #8db0ff;
+  --enlace-hover: #efe6d2;
+
+  --noche-tenue: #bdb5a3;
+  --noche-suave: #2c3b5c;
+
+  --pagado: #5cc98a;
+  --pagado-fondo: #123828;
+  --pagando: #f6c97a;
+  --pagando-fondo: #3a2a10;
+  --rechazo: #ff8a7a;
+  --rechazo-fondo: #3d1a1a;
+
+  /* Sobre un fondo ya oscuro, el bloque Noche sube un tono y lleva un borde ámbar fino. */
+  --bloque: #1e2c49;
+  --bloque-texto: #efe6d2;
+  --bloque-borde: inset 0 0 0 1px rgb(246 166 35 / 0.4);
 }
 
 @layer base {
@@ -148,9 +210,41 @@
   line-height: 1;
 }
 
+/* Cifras grandes ($230.000), como en el prototipo: 800 al 125 % y dígitos tabulares. */
+@utility cifra {
+  font-weight: 800;
+  font-stretch: 125%;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Títulos de pantalla: 800 al 115 %, un poco menos ancho que la cifra para que quepan a 375 px. */
+@utility titular {
+  font-weight: 800;
+  font-stretch: 115%;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+}
+
 /* TatuAnimado: el suelo por el que rueda y el halo verde al quedar pagado. */
 .tatu-suelo {
   background-image: repeating-linear-gradient(90deg, var(--control) 0 14px, transparent 14px 24px);
+}
+.tatu-suelo-claro {
+  background-image: repeating-linear-gradient(90deg, var(--noche-tenue) 0 14px, transparent 14px 24px);
+}
+/* Cargando: aparece después de 200 ms, para que una respuesta rápida no muestre un destello. */
+.aparece-tarde {
+  animation: aparecer 160ms ease-out 200ms both;
+}
+@keyframes aparecer {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .tatu-halo {
   translate: -50% -50%;
@@ -166,6 +260,13 @@
     opacity: 0;
     scale: 2.2;
   }
+}
+
+/* Bloque Noche: fondo, texto y (en oscuro) el borde ámbar. */
+@utility bloque {
+  background-color: var(--bloque);
+  color: var(--bloque-texto);
+  box-shadow: var(--bloque-borde);
 }
 
 @utility mono {

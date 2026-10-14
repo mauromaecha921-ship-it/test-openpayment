@@ -46,10 +46,13 @@ export default function ProgramaCerrado({ tablero: t }: { tablero: Tablero }) {
         )}
       </div>
 
-      <section className="flex flex-col items-start gap-2 rounded-[14px] border-2 border-foreground bg-card p-6 sm:p-8">
-        <h2 className="m-0 text-lg font-normal text-muted-foreground">Nunca salió de tu cuenta</h2>
-        <span className="text-[44px] leading-[1.05] font-bold text-enlace [overflow-wrap:anywhere] sm:text-[64px]">{textoMonto(cierre.nuncaSalio, m)}</span>
-        <p className="m-0 text-[17px] text-muted-foreground">No hay nada que reintegrar: lo que no se cobró sigue en la cuenta del programa.</p>
+      <section className="bloque flex items-center gap-6 rounded-2xl p-6 sm:p-8">
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-2">
+          <h2 className="m-0 text-lg font-bold">Nunca salió de tu cuenta</h2>
+          <span className="cifra text-[44px] text-ambar [overflow-wrap:anywhere] sm:text-[64px]">{textoMonto(cierre.nuncaSalio, m)}</span>
+          <p className="m-0 text-[17px]">No hay nada que reintegrar: lo que no se cobró sigue en la cuenta del programa.</p>
+        </div>
+        <img src="/marca/tatu-logo-oscuro.svg" alt="" className="hidden size-36 shrink-0 sm:block" />
       </section>
 
       <div className="flex flex-wrap gap-4">
@@ -60,9 +63,9 @@ export default function ProgramaCerrado({ tablero: t }: { tablero: Tablero }) {
             ['Girado por adelantado', t.giradoPorAdelantado],
           ] as const
         ).map(([etiqueta, valor]) => (
-          <section key={etiqueta} className="flex flex-[1_1_220px] flex-col gap-1 rounded-xl border border-border bg-card px-6 py-5">
-            <h2 className="m-0 text-[15px] font-normal text-muted-foreground">{etiqueta}</h2>
-            <span className="text-[30px] font-bold">{textoMonto(valor, m)}</span>
+          <section key={etiqueta} className="flex flex-[1_1_220px] flex-col gap-1 rounded-2xl border border-border bg-card px-6 py-5">
+            <h2 className="m-0 text-[15px] font-bold">{etiqueta}</h2>
+            <span className="cifra text-[30px]">{textoMonto(valor, m)}</span>
           </section>
         ))}
       </div>

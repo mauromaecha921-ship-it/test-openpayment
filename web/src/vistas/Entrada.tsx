@@ -28,7 +28,7 @@ export const claseSelect =
 
 /** Color del ícono de cada rol, como en el prototipo: entidad noche, beneficiario azul, punto ámbar. */
 const COLOR_ROL = {
-  entidad: 'bg-noche text-background',
+  entidad: 'bg-foreground text-background',
   beneficiario: 'bg-primary text-primary-foreground',
   punto: 'bg-ambar text-noche',
 }
@@ -110,7 +110,8 @@ export default function Entrada() {
       <Encabezado variante="entrada" />
       <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 pt-8 pb-12 sm:px-6 sm:pt-12">
         <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:gap-6 sm:text-left">
-          <img src="/marca/tatu-logo-claro.svg" alt="" className="size-28 shrink-0 sm:size-32" />
+          <img src="/marca/tatu-logo-claro.svg" alt="" className="size-28 shrink-0 oscuro:hidden sm:size-32" />
+          <img src="/marca/tatu-logo-oscuro.svg" alt="" className="hidden size-28 shrink-0 rounded-3xl oscuro:block sm:size-32" />
           <div className="flex flex-col gap-2">
             <p className="marca m-0 text-[50px] sm:text-[64px]">Tatú</p>
             <p className="m-0 max-w-[420px] text-lg leading-snug">

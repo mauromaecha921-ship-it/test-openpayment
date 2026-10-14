@@ -15,7 +15,7 @@ import { useResumen } from './useResumen'
 export function TarjetaCobrado({ cobro: c }: { cobro: CobroResumen }) {
   const pagado = c.estado === 'Pagado'
   return (
-    <section className="flex flex-col gap-3.5 rounded-2xl border-2 border-foreground p-5">
+    <section className="flex flex-col gap-3.5 rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center gap-2.5">
         <span
           aria-hidden

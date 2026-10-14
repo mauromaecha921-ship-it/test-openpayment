@@ -1,7 +1,7 @@
 # API del piloto: todos los endpoints
 
-> Parte del [piloto](./README.md). Catálogo único de las **46 rutas** que usa hoy la API del piloto
-> (rama `piloto-v2`, 12 de octubre de 2026; la rama `piloto` tiene las 43 primeras), con lo que hace
+> Parte del [piloto](./README.md). Catálogo único de las **52 rutas** que usa hoy la API del piloto
+> (rama `piloto-v2`, 13 de octubre de 2026; la rama `piloto` tiene las 43 primeras), con lo que hace
 > cada una, quién la usa y de dónde salió.
 > Todas van bajo `/api` (por ejemplo, `GET /api/programas`). El código está en `api/src/*/rutas.ts`.
 >
@@ -20,6 +20,7 @@ actualizar la API de la Guía antes del evento y para comparar con lo que lleva 
 - **Guía:** está en la API REST del Documento Guía (alcance original).
 - **Piloto:** la agregó el Plan backend para que funcionaran los wireframes (D-05).
 - **Ajustes:** la agregó el [Plan de ajustes](./Plan%20de%20ajustes.md) después de probar (§ y hallazgo).
+- **Bre-B:** la agregó el [Plan Bre-B](./Plan%20Bre-B.md): cobrar a la llave Bre-B a través de un banco puente simulado.
 
 **Columna «Quién»:** Entidad · Beneficiario · Punto (retiro) · Comercio (sede que acepta bonos) ·
 Equipo (registro de prueba) · Sistema (la propia API o la Test Wallet).
@@ -51,10 +52,11 @@ Equipo (registro de prueba) · Sistema (la propia API o la Test Wallet).
 |---|---|---|---|---|
 | `GET /beneficiarios/demo` | Personas para el selector de la entrada (nombre y etiqueta, sin la cédula completa) | Beneficiario | Piloto | HU-19 |
 | `GET /beneficiarios` | Personas registradas con su wallet, moneda, estado de la cuenta y si tienen PIN | Equipo | Ajustes § 2 | — |
-| `POST /beneficiarios` | **Registra una persona con su cédula y su wallet** (nombre y PIN opcionales); la cuenta queda verificada | Equipo | Ajustes § 2 (D-31) | HU-07 |
+| `POST /beneficiarios` | **Registra una persona con su cédula y su wallet** (nombre y PIN opcionales); la cuenta queda verificada. Con `cobraCon: llaveCedula`, su cédula queda como llave Bre-B en el puente simulado y no se le enlaza cuenta | Equipo | Ajustes § 2 (D-31), Bre-B | HU-07, RN-17 |
 | `POST /beneficiarios/:documento/pin` | Pone o cambia el PIN de alguien ya registrado (para retirar en un punto o usar un bono) | Equipo | Ajustes | HU-11 |
 | `GET /beneficiarios/:documento/resumen` | Lo que ve la persona: **todos** sus subsidios y bonos pendientes, su cuenta y su historial | Beneficiario | Piloto (ampliada en Ajustes: varios programas) | HU-08 |
-| `POST /cuentas` | Enlaza o cambia la wallet de la persona; pide confirmarla en su banco (o simulada) | Beneficiario | Guía | HU-07 |
+| `POST /cuentas` | Enlaza una **llave Bre-B** (`tipoLlave` + `llave`: la tipo cédula queda verificada sola, las demás con PIN y titular confirmado por el puente) o una wallet escrita a mano (pide confirmarla en su banco, o simulada) | Beneficiario | Guía (ampliada en Bre-B) | HU-07, RN-14 a RN-16 |
+| `GET /cuentas/llaves/:tipo/:valor` | «¿Eres Ana M\*\*\* R\*\*\*?»: la llave enmascarada y su titular, antes de enlazar | Beneficiario | Bre-B | HU-07 |
 | `GET /cuentas/:documento` | Estado de la cuenta mientras la persona aprueba | Beneficiario | Piloto | HU-07 |
 | `GET /cuentas/callback/:id` | Vuelta desde la Test Wallet al verificar la cuenta | Sistema | Piloto | HU-07, D-03 |
 
@@ -62,7 +64,7 @@ Equipo (registro de prueba) · Sistema (la propia API o la Test Wallet).
 
 | Método y ruta | Qué hace | Quién | Origen | HU / hallazgo |
 |---|---|---|---|---|
-| `POST /cobros` | Pide un cobro: a la **cuenta** (paga enseguida), **retiro** en un punto o **compra** con bono (esperan el PIN). Aplica todas las reglas y nunca recibe el monto del navegador | Beneficiario, Punto, Comercio | Guía | HU-09, HU-10, HU-21 |
+| `POST /cobros` | Pide un cobro: a la **cuenta** (paga enseguida), **retiro** en un punto o **compra** con bono (esperan el PIN). Aplica todas las reglas y nunca recibe el monto del navegador. En la cuenta, sin cuenta enlazada prueba la cédula como llave Bre-B (RN-17) y vuelve a resolver la llave antes de pagar (RN-18) | Beneficiario, Punto, Comercio | Guía | HU-09, HU-10, HU-21 |
 | `POST /cobros/:id/confirmar` | La persona confirma con su PIN y sale el pago | Punto, Comercio | Guía | HU-11, HU-12 |
 | `POST /cobros/:id/cancelar` | El punto cancela un cobro que espera el PIN | Punto | Piloto | D-09 |
 | `GET /cobros/:id` | Estado del cobro y su línea de tiempo (se consulta cada segundo) | Todos | Guía | HU-12, HU-16 |
@@ -103,17 +105,32 @@ no guarda nombres ni PIN y se los pide aquí ([Plan Supabase y pnpm](./Plan%20Su
 | `POST /liquidacion/personas` | Inscribe a una persona en el gobierno, o la actualiza («Equipo de prueba» hace de gobierno) | Equipo | Piloto v2 | § 3 del plan v2 |
 | `POST /liquidacion/personas/:documento/pin` | Pone o cambia el PIN de una persona inscrita | Equipo | Piloto v2 | HU-11 |
 
-## 7. Salud, estado y configuración
+## 7. Banco puente de Bre-B (simulado)
+
+En producción es un banco o SEDPE que participa en Bre-B y opera Rafiki (Arquitectura, AD-21); en el
+piloto vive en la misma API, bajo `/api/puente`, y la API lo consume por HTTP (`PUENTE_URL`; vacío, el
+simulador). Sus datos están en el esquema `piloto_puente`: cada llave apunta a una wallet de la Test
+Wallet. Tatú nunca guarda el nombre ni la cédula del titular.
+
+| Método y ruta | Qué hace | Quién | Origen | HU / hallazgo |
+|---|---|---|---|---|
+| `GET /puente/llaves/:tipo/:valor` | A qué wallet llega una llave y el titular enmascarado | Sistema | Bre-B | HU-07, RN-18 |
+| `POST /puente/llaves/:tipo/:valor/pertenece` | «¿Esta llave es de esta cédula?» (sí o no, sin revelarla) | Sistema | Bre-B | RN-16 |
+| `GET /puente/llaves?documento=…` | Las llaves de una persona | Equipo | Bre-B | — |
+| `POST /puente/llaves` | Registra una llave o cambia a qué wallet llega («Equipo de prueba» hace de banco) | Equipo | Bre-B | RN-18 |
+| `DELETE /puente/llaves/:tipo/:valor` | Borra una llave | Equipo | Bre-B | RN-18 |
+
+## 8. Salud, estado y configuración
 
 | Método y ruta | Qué hace | Quién | Origen | HU / hallazgo |
 |---|---|---|---|---|
 | `GET /salud` | La base de datos responde y la llave coincide con la publicada en la Test Wallet | Equipo | Piloto | — |
-| `GET /estado` | **«Pagos reales» o «simulados»** y qué falta (llave, token falso); lo muestra la página `/estado` | Equipo | Ajustes § 2 | — |
+| `GET /estado` | **«Pagos reales» o «simulados»** y qué falta (llave, token falso), y si responde el banco puente de Bre-B; lo muestra la página `/estado` | Equipo | Ajustes § 2 | — |
 | `GET /config` | Extras prendidos (bonos…) y tiempos de consulta | Web | Piloto | RNF-10 |
 
 ---
 
-## 8. Resumen por origen
+## 9. Resumen por origen
 
 | Origen | Rutas |
 |---|---|
@@ -121,9 +138,10 @@ no guarda nombres ni PIN y se los pide aquí ([Plan Supabase y pnpm](./Plan%20Su
 | Piloto, para que funcionaran los wireframes (D-05) | 21 |
 | Ajustes, después de probar con dinero real | 13 |
 | Piloto v2: el gobierno simulado guarda el nombre y el PIN | 3 |
-| **Total** | **46** |
+| Bre-B: la consulta de la llave en Tatú y el banco puente simulado | 6 |
+| **Total** | **52** |
 
-## 9. Pendientes que tocan la API
+## 10. Pendientes que tocan la API
 
 | Pendiente | Qué haría falta | Dónde |
 |---|---|---|

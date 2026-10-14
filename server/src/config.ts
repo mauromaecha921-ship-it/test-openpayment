@@ -39,6 +39,8 @@ const esquema = z.object({
   APP_BASE_URL: z.url().transform((v) => v.replace(/\/+$/, '')),
   API_BASE_URL: z.url().transform((v) => v.replace(/\/+$/, '')),
   LIQUIDACION_URL: z.url().transform((v) => v.replace(/\/+$/, '')),
+  // Banco puente de Bre-B (Plan Bre-B, AD-21). Vacío: el simulador de esta API, en ${API_BASE_URL}/puente
+  PUENTE_URL: opcional.pipe(z.url().optional()).transform((v) => v?.replace(/\/+$/, '')),
   // PostgreSQL (Supabase) o PGlite: «pglite:ruta» en disco, «pglite:memoria» para las pruebas
   DATABASE_URL: z.string().trim().default(BASE_LOCAL),
 
@@ -63,6 +65,7 @@ const esquema = z.object({
   TOKEN_RENOVAR_CADA_SEG: entero(240),
   VERIFICACION_CUENTA: z.enum(['subject', 'simulada']).default('subject'),
   LIQUIDACION_SIMULAR_FALLA: booleano,
+  PUENTE_SIMULAR_FALLA: booleano,
   // Monto base de la liquidación simulada en unidades mínimas ($230.000 con escala 2)
   LIQUIDACION_MONTO_BASE: z.string().regex(/^[1-9]\d*$/, 'entero positivo en unidades mínimas').default('23000000'),
 

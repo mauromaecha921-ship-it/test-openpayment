@@ -9,7 +9,7 @@ Este documento consolida la arquitectura del MVP del hackathon a partir de lo qu
 | Fuente | Versión revisada | Qué aporta a la arquitectura |
 | --- | --- | --- |
 | [Documento Guía — Hackathon Open Payments](https://claude.ai/code/artifact/51700d7c-2f22-4497-af66-8b3d67fba504) | Revisión 72 | Producto, alcance del MVP, arquitectura recomendada, API REST, stack, seguridad y revisión del diseño «Hexagonal + Saga» |
-| [Historias de Usuario — Entrega Justo a Tiempo](https://claude.ai/code/artifact/b62529b1-12d5-489a-a239-43d2dc12bdf7) | Revisión 50 (alineada con la revisión 66 de la Guía) | 25 historias, reglas RN-01 a RN-13, diccionario de datos, variables, RNF-01 a RNF-12 y diagramas de secuencia, estados y entidad-relación |
+| [Historias de Usuario — Entrega Justo a Tiempo](https://claude.ai/code/artifact/b62529b1-12d5-489a-a239-43d2dc12bdf7) | Revisión 50 (alineada con la revisión 66 de la Guía) | 25 historias, reglas RN-01 a RN-18 (RN-14 a RN-18, llave Bre-B, del 13 de octubre), diccionario de datos, variables, RNF-01 a RNF-12 y diagramas de secuencia, estados y entidad-relación |
 | Carpeta `D:\PRE-Hackathon` | 1 de octubre de 2026 | Arquitectura v2 en PDF (origen del diseño revisado en la Guía), reglas y entrega del evento, ideas iniciales; `guion.md` está vacío |
 
 Convenciones:
@@ -88,6 +88,7 @@ El rol «punto» es cualquier red de puntos, no una empresa. En 2026 el efectivo
 | --- | --- | --- | --- |
 | Plataforma (nuestra API) | Aplica las reglas, guarda programas, cuentas enlazadas y cobros, y firma las peticiones Open Payments | Custodiar dinero o guardar la base de beneficiarios | Historias, § Sistemas |
 | Liquidación de la entidad (simulada) | Responde si una cédula tiene un pago disponible y por cuánto; en la demo también valida el PIN (propuesto) | Ser copiada a nuestra base | HU-02, HU-11 |
+| Banco puente (simulado) | Hace el papel de un banco o SEDPE que participa en Bre-B y opera Rafiki: dice si una llave Bre-B existe, a qué wallet llega y si su titular es una cédula dada (AD-21) | Custodiar dinero en la demo: la plata va de la Test Wallet a la Test Wallet | HU-07, HU-09; RN-15 a RN-18 |
 | ASE: Interledger Test Wallet | Custodia las cuentas, muestra las pantallas de consentimiento, ejecuta los pagos y hace cumplir el tope con InsufficientGrant | Recibir instrucciones sin firma | Historias, § Sistemas; RN-09 |
 
 ### Roles que solo aparecen en los extras o fuera del producto
@@ -103,7 +104,7 @@ Por qué no hay login: un login propio con contraseñas no suma puntos y está e
 
 ## 1.4 Funcionalidades clave
 
-Nueve funcionalidades obligatorias cubren el flujo del subsidio de punta a punta; suman 18 historias Must y 61 puntos, y solo dos de ellas mueven dinero: el cobro a la cuenta y el cobro en el punto (Historias, § Épicas y backlog).
+Nueve funcionalidades obligatorias cubren el flujo del subsidio de punta a punta; suman 18 historias Must y 66 puntos, y solo dos de ellas mueven dinero: el cobro a la cuenta y el cobro en el punto (Historias, § Épicas y backlog).
 
 | # | Funcionalidad | Historias | Qué hace Open Payments | Paso del video |
 | --- | --- | --- | --- | --- |
@@ -199,7 +200,7 @@ El backend es un monolito modular con dos fronteras: un único adaptador hacia O
 | --- | --- | --- | --- | --- |
 | Monolito modular | Un proceso Node + Express con módulos `programas/`, `cobros/`, `liquidacion/` y `db/` | Un solo proceso basta; microservicios y colas son sobreingeniería | Guía, § Arquitectura recomendada y § Qué no usar | Decidido |
 | Adaptador único (frontera hexagonal simplificada) | Solo `openPaymentsService.ts` importa el SDK y firma peticiones | Un puerto de 10 métodos y una fábrica para un segundo método que no existe cuestan horas; los mentores revisan este archivo | Guía, § Revisión y § Estructura del repositorio | Decidido |
-| Núcleo de reglas puras | RN-01 a RN-13 y las transiciones viven en funciones sin red ni base de datos | Se prueban con una tabla de casos en Vitest | `cobros/estados.ts`; RNF-07 | Decidido |
+| Núcleo de reglas puras | RN-01 a RN-18 y las transiciones viven en funciones sin red ni base de datos | Se prueban con una tabla de casos en Vitest | `cobros/estados.ts`; RNF-07 | Decidido |
 | Máquina de estados explícita | Cobro con 6 estados, programa con 5 y cuenta con 3; cualquier otra transición se rechaza | Estados visibles en la demo y manejo de rechazo y vencimiento | Guía, § Estados de un cobro; Historias, § Diagramas | Decidido |
 | Saga orquestada con punto de no retorno | El cobro se guarda en Pagando antes de crear el pago saliente; antes de Pagando no se ha movido dinero y después no hay rollback, solo consulta | Los pagos ocurren en servidores distintos sin una transacción común | Guía, § Revisión; HU-12; Arquitectura v2, § 9 | Decidido |
 | Avance por eventos, sin worker | El estado avanza al crear, en el callback y al consultar; los vencimientos (120 s del PIN) se evalúan al consultar | Con un solo proceso no hay competencia y el worker es lo más caro de depurar | Guía, § Revisión; RN-12 | Decidido |
@@ -250,8 +251,8 @@ Ocho operaciones cubren el flujo principal y solo dos mueven dinero: el cobro a 
 | --- | --- | --- | --- | --- | --- |
 | O1 | Conectar programa | `POST /programas` | Payment pointer con $ pasa a https://; moneda tomada de la wallet · → Borrador | walletAddress.get | `programa`, `evento` |
 | O2 | Aprobar el permiso | `POST /programas/:id/autorizar` y `GET /callback/:id` | Tope = suma de la liquidación (RN-08); hash verificado · Borrador → EsperandoAprobacion → Activo, o vuelve a Borrador si se rechaza o vence | grant.request interactivo (create, read, `limits.debitAmount`, sin receptor) y grant.continue | Tokens y nonces en `programa` (solo backend), `evento` |
-| O3 | Enlazar cuenta | `POST /cuentas` y su callback | PIN antes de enlazar · SinEnlazar → PorVerificar → Verificada | Verificación de propiedad de la wallet address | `cuenta_beneficiario`, `evento` |
-| O4 | Cobrar a la cuenta | `POST /cobros` (canal cuenta) | RN-01, RN-02, RN-04, RN-06 · Solicitado → Pagando → Pagado o Fallido, sin PIN | grant de pago entrante, incomingPayment.create, outgoingPayment.create, outgoingPayment.get | `cobro` con URLs y referencia, `evento` |
+| O3 | Enlazar cuenta | `POST /cuentas` y su callback | Con llave Bre-B: tipo elegido (RN-14); la tipo cédula queda Verificada sola (RN-15) y las demás con PIN y titular confirmado por el puente (RN-16). Con wallet Open Payments: PIN antes de enlazar · SinEnlazar → PorVerificar → Verificada | Llave: ninguna (puente simulado). Wallet: verificación de propiedad de la wallet address | `cuenta_beneficiario` (con `tipo_llave` y `llave`), `evento` |
+| O4 | Cobrar a la cuenta | `POST /cobros` (canal cuenta) | RN-01, RN-02, RN-04, RN-06, RN-17 (sin cuenta, prueba la llave cédula) y RN-18 (vuelve a resolver la llave antes de pagar) · Solicitado → Pagando → Pagado o Fallido, sin PIN | grant de pago entrante, incomingPayment.create, outgoingPayment.create, outgoingPayment.get | `cobro` con URLs y referencia, `evento` |
 | O5 | Cobrar en el punto | `POST /cobros` (canal retiro) y `POST /cobros/:id/confirmar` | RN-01, RN-02, RN-05, RN-06, RN-07 · Solicitado → PorConfirmar → Pagando → Pagado o Fallido | Las mismas llamadas, hacia la wallet del punto | `cobro` (incluye `intentos_pin`), `evento` |
 | O6 | Consultar un cobro | `GET /cobros/:id` | RN-10: solo queda Pagado si el pago se completó; RN-12: PorConfirmar vencido → Rechazado | outgoingPayment.get | Transición y `evento`, si cambia |
 | O7 | Ver el tablero | `GET /programas/:id/tablero` | nunca salió = autorizado − cobrado | outgoingPayment.getGrantSpentAmounts | Nada |
@@ -272,6 +273,40 @@ Es la operación que define el hito crítico del viernes a las 14:00 (HU-12) y l
 9. El navegador consulta `GET /cobros/:id`; la API llama outgoingPayment.get y, cuando el pago se completa, marca Pagado (RN-10).
 10. La caja muestra «Pagado · entrega $230.000 · Ref. SUB-0002» y solo entonces el punto entrega el efectivo.
 
+### El camino del dinero en un cobro a una llave Bre-B (AD-21)
+
+El beneficiario cobra a la llave Bre-B que ya tiene (cédula, celular, correo o @alias), sin crear una wallet. **Tatú sigue hablando solo Open Payments**: un banco puente con Rafiki publica una wallet address por llave y, cuando el pago se completa, entrega la plata por Bre-B. Tatú no se conecta a Bre-B, porque solo participan entidades vigiladas.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor B as Beneficiario
+    participant T as Tatú (API)
+    participant P as Banco puente (Rafiki)
+    participant R as Bre-B (DICE y MOL)
+    participant N as Cuenta del beneficiario
+    B->>T: «Cobrar»
+    T->>T: Valida reglas (RN-01 a RN-06)
+    T->>P: Resuelve la llave (RN-17 y RN-18)
+    P->>R: ¿Existe la llave? ¿A qué cuenta va?
+    R-->>P: Sí, entidad y cuenta
+    P-->>T: Wallet address de la llave y titular enmascarado
+    T->>P: Crea el pago entrante en esa wallet
+    T->>P: Pago saliente desde la cuenta de la entidad, con el token del permiso
+    P->>P: ¿Dentro del tope? Sí: debita la cuenta de la entidad (RN-09)
+    P->>R: Transferencia inmediata a la llave
+    R->>N: Abono en 20 s como máximo
+    R-->>P: Confirmada
+    P-->>T: Pago completado (RN-10)
+    T-->>B: «Listo, $230.000 en tu cuenta»
+```
+
+- **No hay cotización.** El pago saliente se crea sobre el pago entrante con `debitAmount` (AD-10). Solo haría falta una cotización con cambio de moneda.
+- **La llave se resuelve antes de pagar**, al enlazar y otra vez en cada cobro (RN-18). Si ya no existe, el cobro se rechaza sin crear el pago entrante.
+- **Qué se simula en la demo:** el banco puente es un servicio aparte en `PUENTE_URL` (como la liquidación, AD-13) que traduce cada llave a una wallet de la Test Wallet. Los pasos 4 y 5 los responde el simulador, y los pasos 10 a 12 los hace el propio pago Open Payments entre wallets de la Test Wallet. El tope del paso 9 sí es real: lo hace cumplir la Test Wallet. En producción, el banco hace los pasos 10 a 12 con los *webhooks* de Rafiki.
+- **Dónde sirve una llave y dónde no.** Una llave dice a dónde **llega** la plata: sirve para el beneficiario y para el punto. La cuenta de la entidad, de donde **sale** la plata, tiene que ser una wallet Open Payments: Tatú necesita un permiso con tope (GNAP), y Bre-B solo hace pagos que empuja quien paga. La entidad sí puede fondear su wallet recibiendo por su llave Bre-B.
+- **Datos de Bre-B verificados** ([documento técnico del Banco de la República, febrero de 2026](https://d1b4gd4m8561gs.cloudfront.net/sites/default/files/publicaciones/archivos/documento-tecnico-bre-b-febrero-2026.pdf)). Las llaves pueden ser celular, número de documento, correo, código alfanumérico o código de comercio, y cada una apunta a una sola cuenta. Se necesitan para recibir, no para enviar. Una transferencia tarda como máximo 20 segundos y no puede pasar de 1.000 UVB. Al 31 de enero de 2026 había 99 millones de llaves de 33,9 millones de clientes. Los pagos masivos y los de empresa a persona todavía están en la agenda de ampliación (P-28).
+
 Pendiente por definir en este recorrido:
 
 - **Qué dispara el pago en el canal cuenta.** HU-09 dice que pasa de Solicitado a Pagando sin PIN, pero la API de la Guía solo paga en `POST /cobros/:id/confirmar`. Falta decidir si `POST /cobros` paga directo en ese canal o si el navegador llama a confirmar sin PIN.
@@ -280,7 +315,7 @@ Pendiente por definir en este recorrido:
 
 ## 3.5 Tabla de decisiones de arquitectura
 
-De 20 decisiones, 13 están tomadas, 2 propuestas y 5 pendientes; las pendientes se resuelven con las pruebas del 8 de octubre o con una decisión del Rol 1 (técnica) o del Rol 5 (alcance), como fija la Guía (§ Reglas de trabajo). El equipo actualiza la columna Estado.
+De 21 decisiones, 14 están tomadas, 2 propuestas y 5 pendientes; las pendientes se resuelven con las pruebas del 8 de octubre o con una decisión del Rol 1 (técnica) o del Rol 5 (alcance), como fija la Guía (§ Reglas de trabajo). El equipo actualiza la columna Estado.
 
 | ID | Decisión | Alternativas consideradas | Justificación | Fuente | Estado |
 | --- | --- | --- | --- | --- | --- |
@@ -304,6 +339,7 @@ De 20 decisiones, 13 están tomadas, 2 propuestas y 5 pendientes; las pendientes
 | AD-18 | Moneda de los montos | COP o USD de prueba | Depende de las monedas que ofrezca la Test Wallet; los montos van en entero + `assetCode` + `assetScale` | Historias, § Supuestos técnicos | Pendiente |
 | AD-19 | Cada extra detrás de su bandera `EXTRA_*` | Construir los extras en el flujo principal | Ningún extra puede romper la demo | RNF-10 | Decidida |
 | AD-20 | Cierre con grant.cancel o con token.revoke | Las dos aparecen en las fuentes | Falta probar cuál deja el permiso inutilizable en la Test Wallet | HU-17 | Pendiente |
+| AD-21 | La cuenta del beneficiario es una llave Bre-B, resuelta por un banco puente con Rafiki que publica una wallet address por llave; en la demo, un puente simulado en `PUENTE_URL`. La wallet Open Payments escrita a mano queda como opción avanzada | Exigir una wallet Open Payments a cada beneficiario; que Tatú cree wallets (custodia: no); conectarse directo a Bre-B (solo entidades vigiladas) | Casi nadie en Colombia tiene una wallet Open Payments, y 33,9 millones de clientes ya tienen una llave Bre-B. El flujo de pago no cambia: solo cambia de dónde sale la wallet de destino | HU-07, HU-09; RN-14 a RN-18; [Plan Bre-B](./piloto/Plan%20Bre-B.md) | Decidida (13 de octubre) |
 
 # 4. Datos e integración
 
@@ -330,12 +366,13 @@ Pendiente en el modelo: dónde se guarda el bloqueo de 15 minutos tras 3 PIN fal
 
 ## 4.2 Integraciones y servicios externos
 
-La única integración que mueve dinero es Open Payments contra la Interledger Test Wallet; la liquidación de la entidad es un simulador y el resto es infraestructura de desarrollo (Guía, § Alcance del MVP).
+La única integración que mueve dinero es Open Payments contra la Interledger Test Wallet; la liquidación de la entidad y el banco puente de Bre-B son simuladores y el resto es infraestructura de desarrollo (Guía, § Alcance del MVP).
 
 | Servicio | Para qué | Cómo se integra | Configuración | Estado |
 | --- | --- | --- | --- | --- |
 | [Interledger Test Wallet](https://wallet.interledger-test.dev) (ASE sobre Rafiki) | Custodiar cuentas, mostrar el consentimiento, ejecutar pagos y hacer cumplir el tope | SDK `@interledger/open-payments` 7.4.0 con un cliente autenticado que firma cada petición con Ed25519 | `OP_CLIENT_WALLET_ADDRESS`, `OP_KEY_ID`, `OP_PRIVATE_KEY_PATH` (fuera del repo) | Decidido |
 | Liquidación de la entidad (simulada) | Responder por cédula: programa, nombre, monto y si ya fue pagado; validar el PIN de prueba (propuesto) | HTTP en `LIQUIDACION_URL` | Datos de prueba de la sección 4.1 | Decidido; contrato pendiente |
+| Banco puente de Bre-B (simulado) | Resolver una llave Bre-B a su wallet, mostrar el titular enmascarado y confirmar si su titular es una cédula | HTTP en `PUENTE_URL`; en producción, el banco publica una wallet address por llave y Tatú solo usa Open Payments | Llaves de prueba que «Equipo de prueba» registra, cada una apuntando a una wallet de la Test Wallet | Decidido (AD-21); contrato en el Plan Bre-B |
 | PostgreSQL gestionado | Guardar programas, puntos, cuentas, cobros y eventos | `DATABASE_URL` | Supabase o Neon, sin elegir | Proveedor pendiente |
 | Hosting público | Link para el jurado y HTTPS para la cámara | Vercel (web), Render o Railway (API); callbacks con `API_BASE_URL` | `APP_BASE_URL`, `API_BASE_URL` | Extra HU-25 |
 | GitHub | Entrega: repo público, todo en `main`, `AI_USAGE.md` y `/prompts` | Ramas cortas y merge frecuente | `.gitignore` con `.env` y `*.key` | Decidido |
@@ -371,7 +408,7 @@ Fuera del MVP, solo visión: operador de huella autorizado por la Registraduría
 
 # 5. Vacíos y pendientes
 
-Hay 25 pendientes: 4 contradicciones entre la Guía y las Historias, 4 pruebas técnicas para el Oct 8, 2026 y 17 vacíos que ninguna fuente cubre. Ninguno impide empezar el evento, pero los marcados como bloqueo deben cerrarse antes de escribir esa parte del código. Según la Guía, el Rol 1 decide lo técnico y el Rol 5 el alcance (§ Reglas de trabajo).
+Hay 28 pendientes: 4 contradicciones entre la Guía y las Historias, 4 pruebas técnicas para el Oct 8, 2026, 17 vacíos que ninguna fuente cubre y 3 preguntas sobre Bre-B (13 de octubre). Ninguno impide empezar el evento, pero los marcados como bloqueo deben cerrarse antes de escribir esa parte del código. Según la Guía, el Rol 1 decide lo técnico y el Rol 5 el alcance (§ Reglas de trabajo).
 
 | # | Pendiente | Tipo | Qué afecta | Cómo se resuelve | Decide | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -400,6 +437,9 @@ Hay 25 pendientes: 4 contradicciones entre la Guía y las Historias, 4 pruebas t
 | P-23 | ¿El cierre exporta la conciliación con la estructura del anexo técnico 2026 (CODHOGAR, CODPERSONA, valor pagado, fecha de cobro, código DANE)? | Vacío | HU-17, tablero de la entidad | Decidir si entra como detalle opcional del cierre | Rol 1 | Abierto |
 | P-24 | Usar los términos del anexo técnico 2026: «orden de no pago» para el rechazo por programa cerrado y «archivo de liquidación» para la consulta | Vacío | Textos de rechazo, vistas, pitch | Alinear los textos de la interfaz | Rol 5 | Abierto |
 | P-25 | Cuánto recibe hoy el punto por cada giro de los $4.275 de tarifa, y quién se queda con los rendimientos de la cuenta dispersora del operador | Vacío | Pitch: argumento de comisiones para los puntos | No hay fuente pública; preguntar a Puntored en el evento | Rol 5 | Abierto |
+| P-26 | ¿Solo el titular puede registrar su número de documento como llave Bre-B? | Vacío | RN-15: la llave tipo cédula se verifica sola | Anexo 1 de la Circular Reglamentaria Externa DSP-465 (procesos de gestión de llaves) | Rol 1 | Abierto |
+| P-27 | ¿Bre-B o un participante pueden responder «esta llave es de la cédula X: sí o no» y devolver el titular enmascarado? | Vacío | RN-16: verificar llaves que no son la cédula | El documento técnico de Bre-B no lo dice; buscar en la Circular DSP-465 o preguntar a mentores | Rol 1 | Abierto |
+| P-28 | ¿Cuándo entran en las reglas de Bre-B los pagos de empresa (o entidad pública) a persona? | Vacío | Camino a producción de AD-21 | El documento técnico los pone en la agenda de ampliación; seguir la regulación de nómina y recaudos | Rol 5 | Abierto |
 
 Correcciones menores en las fuentes, sin decisión de por medio:
 

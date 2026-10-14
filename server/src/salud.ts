@@ -3,6 +3,7 @@ import { baseDeDatos, config } from './config.js'
 import { conexion } from './db/conexion.js'
 import * as programas from './db/repositorios/programas.js'
 import { diagnosticoLlave } from './openPaymentsService.js'
+import * as puente from './puente/cliente.js'
 
 /** El token de la semilla «solo UI» (src/db/semillas/solo-ui.sql): nunca paga. */
 export const TOKEN_FALSO = 'token-falso-solo-demo'
@@ -36,7 +37,15 @@ export function rutasSalud(): Router {
   // Para la web (Plan de ajustes § 3, F3): siempre 200, con «pagos reales o simulados» y qué falta.
   // No incluye la wallet cliente ni el OP_KEY_ID: el equipo los mantiene fuera de lo que se comparte.
   r.get('/estado', async (_req, res) => {
-    const [llave, conTokenFalso] = await Promise.all([diagnosticoLlave(), programas.cuantosConToken(TOKEN_FALSO)])
+    const [llave, conTokenFalso, puenteResponde] = await Promise.all([
+      diagnosticoLlave(),
+      programas.cuantosConToken(TOKEN_FALSO),
+      // Plan Bre-B: una llave que no existe responde 404 si el banco puente está arriba
+      puente.resolverLlave('cedula', '000').then(
+        () => true,
+        () => false,
+      ),
+    ])
     const faltan: string[] = []
     if (llave.coincide !== true) faltan.push(llave.detalle)
     if (conTokenFalso) {
@@ -54,6 +63,8 @@ export function rutasSalud(): Router {
       verificacionCuenta: config().VERIFICACION_CUENTA,
       // Dónde quedan los datos: Supabase o la base local (PGlite)
       baseDeDatos: { tipo: base.tipo, donde: base.descripcion },
+      // El banco puente de Bre-B: el simulador de esta API, salvo que PUENTE_URL diga otro
+      puenteBreB: { simulado: !config().PUENTE_URL, responde: puenteResponde },
     })
   })
 

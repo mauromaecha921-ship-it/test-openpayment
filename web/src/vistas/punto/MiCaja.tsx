@@ -7,7 +7,7 @@ import type { CajaPunto, CobroResumen, PeriodoCaja } from '@/api/tipos'
 import { usePolling } from '@/api/usePolling'
 import { BilleteraCorta } from '@/componentes/BilleteraCorta'
 import { CifraGrande } from '@/componentes/CifraGrande'
-import { Cargando, ErrorCarga } from '@/componentes/Comun'
+import { Cargando, CargandoEnLinea, ErrorCarga } from '@/componentes/Comun'
 import { EstadoCobro } from '@/componentes/EstadoCobro'
 import { MarcoPunto } from '@/componentes/Marcos'
 import { textoMonto } from '@/componentes/Monto'
@@ -88,9 +88,9 @@ export default function MiCaja() {
             </CifraGrande>
             <CifraGrande
               etiqueta={comercio ? 'Te pagaron los bonos' : 'Te reembolsaron'}
-              destacada
+              noche
               apoyo={
-                <span className="inline-flex items-center gap-1.5 text-pagado">
+                <span className="inline-flex items-center gap-1.5">
                   <CircleCheck aria-hidden className="size-4" />
                   {comercio ? 'Cada bono ya está en tu wallet' : 'Todo lo que entregaste ya está en tu wallet'}
                 </span>
@@ -99,7 +99,7 @@ export default function MiCaja() {
               {total ? textoMonto(total.reembolsado, total.moneda) : '$0'}
             </CifraGrande>
             {!comercio && (
-              <CifraGrande etiqueta="Pusiste por adelantado" apoyo="Nunca giras plata antes de que te paguen" azul>
+              <CifraGrande etiqueta="Pusiste por adelantado" apoyo="Nunca giras plata antes de que te paguen" noche ambar>
                 {total ? textoMonto(c.giradoPorAdelantado, total.moneda) : '$0'}
               </CifraGrande>
             )}
@@ -165,7 +165,7 @@ export default function MiCaja() {
           </ul>
         ) : (
           <div className="rounded-xl border-2 border-dashed border-border px-4 py-5 text-center text-tenue">
-            {lista.datos ? 'No hay cobros en este periodo.' : 'Cargando…'}
+            {lista.datos ? 'No hay cobros en este periodo.' : <CargandoEnLinea />}
           </div>
         )}
       </section>

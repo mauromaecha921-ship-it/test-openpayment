@@ -1,10 +1,12 @@
 /**
- * Cuentas del beneficiario: O3 y HU-07 (Plan backend § 8.7). Permiso con subject para probar
- * que la wallet es de la persona, o el plan B (VERIFICACION_CUENTA=simulada).
+ * Cuentas del beneficiario: O3 y HU-07 (Plan backend § 8.7). Una llave Bre-B que resuelve el banco
+ * puente (Plan Bre-B, RN-14 a RN-18) o una wallet Open Payments escrita a mano: permiso con
+ * subject para probar que es de la persona, o el plan B (VERIFICACION_CUENTA=simulada).
  */
 import { randomUUID } from 'node:crypto'
 import { config } from '../config.js'
 import { ErrorApi, noEncontrado } from '../comun/errores.js'
+import type { FilaBeneficiario } from '../db/repositorios/beneficiarios.js'
 import { log } from '../comun/log.js'
 import { vistaCuenta } from '../comun/vistas.js'
 import { ahoraIso, transaccion } from '../db/conexion.js'
@@ -12,10 +14,13 @@ import * as beneficiarios from '../db/repositorios/beneficiarios.js'
 import * as repo from '../db/repositorios/cuentas.js'
 import type { FilaCuenta } from '../db/repositorios/cuentas.js'
 import * as eventos from '../db/repositorios/eventos.js'
-import { actorBeneficiario } from '../db/repositorios/eventos.js'
+import { actorBeneficiario, type Actor } from '../db/repositorios/eventos.js'
 import * as liquidacion from '../liquidacion/cliente.js'
 import * as op from '../openPaymentsService.js'
 import { verificarHash } from '../programas/hash.js'
+import * as puente from '../puente/cliente.js'
+import { normalizarLlave, type TipoLlave } from '../puente/contrato.js'
+import { enmascararLlave } from '../puente/enmascarar.js'
 import { errorOpApi, resolverWallet } from '../programas/servicio.js'
 
 const TEMPORALES_EN_NULL = {
@@ -51,18 +56,143 @@ async function aplicarVencimiento(c: FilaCuenta | undefined): Promise<FilaCuenta
   return c
 }
 
-export interface EntradaCuenta {
-  documento: string
-  billetera: string
-  pin?: string
+/** Una wallet escrita a mano, o una llave Bre-B con su tipo (RN-14). */
+export type EntradaCuenta =
+  | { documento: string; billetera: string; tipoLlave?: undefined; llave?: undefined; pin?: string }
+  | { documento: string; billetera?: undefined; tipoLlave: TipoLlave; llave: string; pin?: string }
+
+/** Sin PIN registrado no hay qué validar; si lo tiene, es obligatorio y debe coincidir. */
+async function exigirPin(documento: string, pin: string | undefined) {
+  if ((await liquidacion.persona(documento))?.tienePin && !(pin && (await liquidacion.validarPin(documento, pin)))) {
+    throw new ErrorApi(422, 'PinIncorrecto', 'PIN incorrecto')
+  }
+}
+
+/**
+ * Deja una cuenta nueva como la vigente de la persona; la anterior queda como historial (índice
+ * una_cuenta_vigente). Va dentro de la transacción de quien la llama.
+ */
+async function reemplazarVigente(b: FilaBeneficiario, actor: Actor) {
+  const vigente = await repo.vigenteDe(b.id)
+  if (!vigente) return
+  await repo.actualizar(vigente.id, { estado: 'SinEnlazar', verificada_en: null, ...TEMPORALES_EN_NULL })
+  await eventos.registrar({
+    tipo: 'cuenta',
+    id: vigente.id,
+    desde: vigente.estado,
+    hacia: 'SinEnlazar',
+    detalle: { texto: 'Se reemplazó por una cuenta nueva.' },
+    actor,
+  })
+}
+
+const LLAVE_NO_EXISTE = 'No encontramos esa llave en Bre-B'
+const LLAVE_AJENA = 'Esa llave no está a tu nombre'
+
+function llaveLimpia(tipo: TipoLlave, valor: string): string {
+  const limpia = normalizarLlave(tipo, valor)
+  if (!limpia) throw new ErrorApi(400, 'LlaveInvalida', 'Eso no parece una llave de ese tipo; revisa el tipo que elegiste')
+  return limpia
+}
+
+/** «¿Eres Ana M*** R***?»: lo que la persona ve antes de enlazar (HU-07). */
+export async function consultarLlave(tipo: TipoLlave, valor: string) {
+  const llave = llaveLimpia(tipo, valor)
+  const r = await puente.resolverLlave(tipo, llave)
+  if (!r) throw new ErrorApi(404, 'LlaveNoExiste', LLAVE_NO_EXISTE)
+  return { tipoLlave: tipo, llave: enmascararLlave(tipo, llave), titular: r.titular }
+}
+
+/**
+ * HU-07 con llave Bre-B. RN-15: una llave tipo cédula que es la cédula de la persona queda
+ * Verificada sola. RN-16: las demás piden el PIN (si la persona lo tiene) y que el banco puente
+ * confirme que el titular es esta cédula. Ninguna pasa por el permiso interactivo.
+ */
+async function enlazarLlave(b: FilaBeneficiario, tipo: TipoLlave, valor: string, pin: string | undefined) {
+  const llave = llaveLimpia(tipo, valor)
+  if (tipo === 'cedula') {
+    if (llave !== b.numero_documento) throw new ErrorApi(422, 'LlaveDeOtraPersona', LLAVE_AJENA)
+  } else {
+    await exigirPin(b.numero_documento, pin)
+  }
+  const r = await puente.resolverLlave(tipo, llave)
+  if (!r) throw new ErrorApi(404, 'LlaveNoExiste', LLAVE_NO_EXISTE)
+  if (tipo !== 'cedula' && !(await puente.pertenece(tipo, llave, b.numero_documento))) {
+    throw new ErrorApi(422, 'LlaveDeOtraPersona', LLAVE_AJENA)
+  }
+  const billetera = (await resolverWallet(r.billetera)).id.replace(/\/+$/, '')
+  const id = randomUUID()
+  const actor = actorBeneficiario(b.id)
+  await transaccion(async () => {
+    await reemplazarVigente(b, actor)
+    await repo.crear({ id, beneficiario_id: b.id, billetera, estado: 'Verificada', verificada_en: ahoraIso(), tipo_llave: tipo, llave })
+    await eventos.registrar({
+      tipo: 'cuenta',
+      id,
+      hacia: 'Verificada',
+      detalle: { texto: tipo === 'cedula' ? 'Tu cédula es tu llave Bre-B: queda lista para recibir.' : 'Bre-B confirmó que la llave es tuya.', tipoLlave: tipo },
+      actor,
+    })
+  })
+  return { redirect: null, cuenta: vistaCuenta(await repo.obtener(id), b.numero_documento) }
+}
+
+/**
+ * RN-17: «Cobrar a mi cuenta» sin cuenta enlazada. Si la cédula de la persona es una llave Bre-B,
+ * se enlaza sola (RN-15) y se devuelve; si no, undefined. Puede lanzar `PuenteNoResponde`.
+ */
+export async function cuentaPorCedula(b: FilaBeneficiario): Promise<FilaCuenta | undefined> {
+  const r = await puente.resolverLlave('cedula', b.numero_documento)
+  if (!r) return undefined
+  let billetera: string
+  try {
+    billetera = (await op.leerWallet(r.billetera)).id.replace(/\/+$/, '')
+  } catch {
+    return undefined
+  }
+  const id = randomUUID()
+  try {
+    await transaccion(async () => {
+      await repo.crear({ id, beneficiario_id: b.id, billetera, estado: 'Verificada', verificada_en: ahoraIso(), tipo_llave: 'cedula', llave: b.numero_documento })
+      await eventos.registrar({
+        tipo: 'cuenta',
+        id,
+        hacia: 'Verificada',
+        detalle: { texto: 'Tu cédula es una llave Bre-B: la enlazamos sola para cobrar.', tipoLlave: 'cedula', automatica: true },
+        actor: actorBeneficiario(b.id),
+      })
+    })
+  } catch (e) {
+    // Dos «Cobrar» a la vez: el índice una_cuenta_vigente deja pasar una sola
+    const vigente = await repo.vigenteDe(b.id)
+    if (vigente) return vigente
+    throw e
+  }
+  return repo.obtener(id)
+}
+
+/**
+ * RN-18: antes de pagar, la llave se vuelve a resolver. Si cambió de wallet (la persona la movió a
+ * otro banco), se guarda la nueva; si ya no existe, 'LlaveNoExiste'. Puede lanzar `PuenteNoResponde`.
+ */
+export async function refrescarLlave(c: FilaCuenta): Promise<FilaCuenta | 'LlaveNoExiste'> {
+  if (!c.tipo_llave || !c.llave) return c
+  const r = await puente.resolverLlave(c.tipo_llave, c.llave)
+  if (!r) return 'LlaveNoExiste'
+  const billetera = r.billetera.replace(/\/+$/, '')
+  if (billetera === c.billetera) return c
+  await transaccion(async () => {
+    if (await repo.actualizar(c.id, { billetera }, 'Verificada')) {
+      await eventos.registrar({ tipo: 'cuenta', id: c.id, detalle: { texto: 'Tu llave Bre-B ahora llega a otra cuenta: el pago va a la nueva.' } })
+    }
+  })
+  return (await repo.obtener(c.id)) ?? c
 }
 
 export async function enlazar(e: EntradaCuenta) {
   const b = await persona(e.documento)
-  // Sin PIN registrado no hay qué validar; si lo tiene, es obligatorio y debe coincidir
-  if ((await liquidacion.persona(e.documento))?.tienePin && !(e.pin && (await liquidacion.validarPin(e.documento, e.pin)))) {
-    throw new ErrorApi(422, 'PinIncorrecto', 'PIN incorrecto')
-  }
+  if (e.tipoLlave !== undefined) return enlazarLlave(b, e.tipoLlave, e.llave, e.pin)
+  await exigirPin(e.documento, e.pin)
   const wallet = await resolverWallet(e.billetera)
   const billetera = wallet.id.replace(/\/+$/, '')
   const id = randomUUID()
@@ -85,18 +215,7 @@ export async function enlazar(e: EntradaCuenta) {
   const actor = actorBeneficiario(b.id)
   await transaccion(async () => {
     // Una sola cuenta vigente por persona (índice una_cuenta_vigente)
-    const vigente = await repo.vigenteDe(b.id)
-    if (vigente) {
-      await repo.actualizar(vigente.id, { estado: 'SinEnlazar', verificada_en: null, ...TEMPORALES_EN_NULL })
-      await eventos.registrar({
-        tipo: 'cuenta',
-        id: vigente.id,
-        desde: vigente.estado,
-        hacia: 'SinEnlazar',
-        detalle: { texto: 'Se reemplazó por una cuenta nueva.' },
-        actor,
-      })
-    }
+    await reemplazarVigente(b, actor)
     if (simulada) {
       await repo.crear({ id, beneficiario_id: b.id, billetera, estado: 'Verificada', verificada_en: ahoraIso(), ...TEMPORALES_EN_NULL })
       await eventos.registrar({
