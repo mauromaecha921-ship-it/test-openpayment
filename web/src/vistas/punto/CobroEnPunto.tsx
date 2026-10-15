@@ -1,6 +1,6 @@
 import { Check, Clock, Delete, Hand, ShieldAlert, Wallet } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useLocation, useNavigate, useParams } from 'react-router'
 
 import { api, ErrorApi, mensajeDeError } from '@/api/client'
 import { useConfig } from '@/api/config'
@@ -11,6 +11,7 @@ import { useCuentaRegresiva } from '@/componentes/CuentaRegresiva'
 import { EncabezadoPuntoRetiro } from '@/componentes/EncabezadoPuntoRetiro'
 import { MarcoPuntoRetiro } from '@/componentes/MarcoPuntoRetiro'
 import { textoMonto } from '@/componentes/Monto'
+import { llegaRodando, marcarPagando, TatuEnrolla, TatuResultado } from '@/componentes/TatuEnrolla'
 import { esEstadoFinal, pantallaDelCobro } from '@/lib/pantallas'
 import { formatCuentaRegresiva, formatSegundos } from '@/lib/textos'
 
@@ -52,7 +53,9 @@ export default function CobroEnPunto() {
     { clave: id },
   )
 
-  const c = esDemo ? demoCobro : consulta.datos
+  // El cobro recién pedido llega con los datos que devolvió la API: no pasa por la pantalla de carga
+  const inicial = (useLocation().state as { cobro?: Cobro } | null)?.cobro
+  const c = esDemo ? demoCobro : (consulta.datos ?? (inicial?.id === id ? inicial : undefined))
   const pantalla = pantallaDelCobro(c?.estado)
 
   // En modo demo, avanzar de Pagando a Pagado tras 3.5 segundos
@@ -180,7 +183,10 @@ function ConfirmarPin({
     }
 
     try {
-      consulta.setDatos(await api.post<Cobro>(`/cobros/${c.id}/confirmar`, { pin: enviado }))
+      const r = await api.post<Cobro>(`/cobros/${c.id}/confirmar`, { pin: enviado })
+      // Si el PIN lo rechaza (por ejemplo, bloqueado), el rechazo llega rodando y termina en rojo
+      if (r.estado === 'Rechazado' || r.estado === 'Fallido') marcarPagando(r.id)
+      consulta.setDatos(r)
     } catch (e) {
       setError(mensajeDeError(e))
       if (e instanceof ErrorApi && e.status === 422) await consulta.recargar()
@@ -433,6 +439,9 @@ function Pagando({
   onVolverInicio: () => void
 }) {
   const montoTxt = textoMonto(c.monto, c.moneda)
+  // El tatú de los pagos: sigue rodando si ya rodaba al pedir el pago; el resultado llega rodando
+  const [inicio] = useState<'rodando' | 'de-pie'>(() => (llegaRodando(c.id) ? 'rodando' : 'de-pie'))
+  useEffect(() => marcarPagando(c.id), [c.id])
 
   return (
     <>
@@ -460,9 +469,7 @@ function Pagando({
               Estamos pagando {montoTxt} desde la cuenta del programa a la billetera de tu tienda.
             </p>
 
-            <div className="my-2 h-2.5 w-full overflow-hidden rounded-full bg-white/20">
-              <div className="h-full w-3/5 rounded-full bg-[#F6A623] transition-all duration-500 animate-pulse" />
-            </div>
+            <TatuEnrolla estado="pagando" inicio={inicio} sobreColor className="my-2 w-40 self-center" />
 
             <span className="text-[13px] text-[#B8C2D6]">
               Suele tardar unos segundos.
@@ -529,9 +536,7 @@ function Pagado({
           role="status"
           className="flex flex-col items-center justify-center gap-1.5 rounded-[24px] bg-[#1B7F4B] p-6 text-center text-white"
         >
-          <span className="flex size-[80px] items-center justify-center rounded-full bg-white text-[#1B7F4B] mb-1">
-            <Check className="size-11 stroke-[3]" />
-          </span>
+          <TatuResultado id={c.id} estado="pagado" sobreColor className="mb-1 w-32" />
           <span className="text-[38px] font-extrabold tracking-tight leading-none text-white">
             Pagado
           </span>
@@ -578,9 +583,7 @@ function Pagado({
           role="status"
           className="flex flex-wrap items-center gap-7 rounded-[24px] bg-[#1B7F4B] p-8 text-white"
         >
-          <span className="flex size-[88px] shrink-0 items-center justify-center rounded-full bg-white text-[#1B7F4B]">
-            <Check className="size-13 stroke-[3]" />
-          </span>
+          <TatuResultado id={c.id} estado="pagado" sobreColor className="w-40 shrink-0" />
           <div className="flex flex-col gap-1 flex-1 basis-[360px]">
             <span className="text-[44px] font-extrabold tracking-tight leading-none text-white">
               Pagado
@@ -671,7 +674,7 @@ function Rechazo({
           role="alert"
           className="flex flex-col items-center justify-center gap-2 rounded-[24px] bg-[#A3261C] p-6 text-center text-white"
         >
-          <Hand className="size-16 stroke-[1.8] text-white" />
+          <TatuResultado id={c.id} estado="fallido" finalError="logo" sobreColor className="w-28" />
           <span className="text-[34px] font-extrabold tracking-tight leading-tight text-white">
             No entregues efectivo
           </span>
@@ -719,7 +722,7 @@ function Rechazo({
           role="alert"
           className="flex flex-wrap items-center gap-6 rounded-[24px] bg-[#A3261C] p-8 text-white"
         >
-          <Hand className="size-18 stroke-[1.8] text-white shrink-0" />
+          <TatuResultado id={c.id} estado="fallido" finalError="logo" sobreColor className="w-32 shrink-0" />
           <div className="flex flex-col gap-1 flex-1 basis-[420px]">
             <span className="text-[40px] font-extrabold tracking-tight leading-tight text-white">
               No entregues efectivo

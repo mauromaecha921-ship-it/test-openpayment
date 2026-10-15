@@ -5,6 +5,7 @@ import { api } from '@/api/client'
 import type { CajaPunto, CobroResumen } from '@/api/tipos'
 import { usePolling } from '@/api/usePolling'
 import { EncabezadoPuntoRetiro } from '@/componentes/EncabezadoPuntoRetiro'
+import { PidiendoPago } from '@/componentes/EsperaPagando'
 import { EstadoCobro } from '@/componentes/EstadoCobro'
 import { MarcoPuntoRetiro } from '@/componentes/MarcoPuntoRetiro'
 import { textoMonto } from '@/componentes/Monto'
@@ -342,27 +343,31 @@ export function InicioPuntoRetiro({ onNuevoCobro }: PropsInicioPuntoRetiro) {
                   )}
                 </p>
 
-                {nuevo.consulta.pagos.map((pg) => (
-                  <div key={pg.programa.id} className="flex flex-col gap-2 rounded-2xl border-2 border-[#13203A] bg-white p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-[17px] font-bold">{pg.programa.nombre}</span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#FCE3B4] px-2.5 py-0.5 text-[13px] font-bold">
-                        <Clock className="size-3.5 stroke-[2.5]" />
-                        Disponible
-                      </span>
+                {nuevo.pidiendo ? (
+                  <PidiendoPago />
+                ) : (
+                  nuevo.consulta.pagos.map((pg) => (
+                    <div key={pg.programa.id} className="flex flex-col gap-2 rounded-2xl border-2 border-[#13203A] bg-white p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-[17px] font-bold">{pg.programa.nombre}</span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[#FCE3B4] px-2.5 py-0.5 text-[13px] font-bold">
+                          <Clock className="size-3.5 stroke-[2.5]" />
+                          Disponible
+                        </span>
+                      </div>
+                      <span className="text-[34px] font-extrabold leading-none tracking-tight">{textoMonto(pg.monto, pg.moneda)}</span>
+                      <span className="text-[14px] text-[#4A5468]">Se entrega el valor completo</span>
+                      <button
+                        type="button"
+                        disabled={nuevo.enviando}
+                        onClick={() => void nuevo.pagar(pg.programa.id)}
+                        className="mt-1 flex min-h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-[#2E5FE0] font-bold text-[17px] text-white transition-all hover:bg-[#254ec4] disabled:opacity-50"
+                      >
+                        {nuevo.enviando ? 'Iniciando…' : 'Pagar este subsidio'}
+                      </button>
                     </div>
-                    <span className="text-[34px] font-extrabold leading-none tracking-tight">{textoMonto(pg.monto, pg.moneda)}</span>
-                    <span className="text-[14px] text-[#4A5468]">Se entrega el valor completo</span>
-                    <button
-                      type="button"
-                      disabled={nuevo.enviando}
-                      onClick={() => void nuevo.pagar(pg.programa.id)}
-                      className="mt-1 flex min-h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-[#2E5FE0] font-bold text-[17px] text-white transition-all hover:bg-[#254ec4] disabled:opacity-50"
-                    >
-                      {nuevo.enviando ? 'Iniciando…' : 'Pagar este subsidio'}
-                    </button>
-                  </div>
-                ))}
+                  ))
+                )}
 
                 {nuevo.error && <div className="rounded-xl bg-[#F8E4DF] p-3 text-sm font-medium text-[#A3261C]">{nuevo.error}</div>}
 
