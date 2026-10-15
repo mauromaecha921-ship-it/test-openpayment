@@ -11,6 +11,7 @@ import { Titulo } from '@/componentes/Titulo'
 import { Button } from '@/componentes/ui/button'
 import { Input } from '@/componentes/ui/input'
 import { useRol } from '@/contexto/Rol'
+import { irAlCobroDelPunto } from '@/lib/irAlCobro'
 import { aUnidades } from '@/lib/montos'
 
 import { CajaDeHoy } from './NuevoCobro'
@@ -56,7 +57,7 @@ export default function VentaConBono() {
         totalCompra: unidades,
         llaveIdempotencia: programaId ? `${llave}-${programaId}` : llave,
       })
-      navegar(`/punto/cobros/${c.id}`)
+      irAlCobroDelPunto(navegar, c)
     } catch (e) {
       setError(mensajeDeError(e))
       setEnviando(false)

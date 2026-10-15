@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import type { Cobro } from '@/api/tipos'
 
 import { PasosDelPago } from './PasosDelPago'
-import { TatuAnimado } from './TatuAnimado'
+import { llegaRodando, marcarPagando, TatuEnrolla } from './TatuEnrolla'
 
 /** Segundos que lleva el cobro en Pagando, contados desde `desde` (ISO). */
 function useSegundosDesde(desde: string | null) {
@@ -20,9 +20,10 @@ function useSegundosDesde(desde: string | null) {
 }
 
 /**
- * «Pagando…» del prototipo: en el punto (P4) con «✓ PIN confirmado», la barra ámbar y el aviso de no
- * entregar el efectivo; en la cuenta (B5) con los pasos. Lleva el tatú rodando (las esperas son
- * suyas). Pasados 10 s avisa que tarda más de lo normal (P-18, RNF-02).
+ * «Pagando…» del prototipo: en el punto (P4) con «✓ PIN confirmado» y el aviso de no entregar el
+ * efectivo; en la cuenta (B5) con los pasos. En una tarjeta del tema (clara u oscura según el modo). La barra de carga es el tatú: de pie se enrolla y rueda
+ * mientras se paga, y la pantalla del resultado termina su animación (TatuResultado). Pasados 10 s
+ * avisa que tarda más de lo normal (P-18, RNF-02).
  */
 export function EsperaPagando({
   desde,
@@ -32,41 +33,32 @@ export function EsperaPagando({
 }: {
   desde: string | null
   paraPunto: boolean
-  cobro: Pick<Cobro, 'canal' | 'estado' | 'segundosHastaPagado'>
+  cobro: Pick<Cobro, 'id' | 'canal' | 'estado' | 'segundosHastaPagado'>
   /** «Estamos pagando $230.000 desde la cuenta del programa a…». */
   children?: ReactNode
 }) {
   const segundos = useSegundosDesde(desde)
   const tarda = segundos > 10
-  // La barra avanza con el tiempo hasta el 90 %: suele tardar unos 5 s
-  const avance = Math.min(90, 15 + (segundos / 6) * 75)
+  // Si se vio rodando mientras se pedía el pago, sigue rodando (no vuelve a pararse); y el resultado
+  // de este cobro llega con el tatú rodando
+  const [inicio] = useState<'rodando' | 'de-pie'>(() => (llegaRodando(cobro.id) ? 'rodando' : 'de-pie'))
+  useEffect(() => marcarPagando(cobro.id), [cobro.id])
 
   return (
     <>
-      <div className="bloque mt-1.5 flex flex-col gap-4 rounded-[22px] px-5 py-[22px]">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-col gap-4">
-            {paraPunto && (
-              <span className="inline-flex items-center gap-2 text-base font-semibold">
-                <Check aria-hidden className="size-[18px]" strokeWidth={2.5} />
-                PIN confirmado
-              </span>
-            )}
-            <p className="cifra m-0 text-[36px]">Pagando…</p>
-          </div>
-          <TatuAnimado estado="pagando" variante="cerradura" sobreOscuro className="size-16 flex-none" />
+      <div className="mt-1.5 flex flex-col gap-4 rounded-[22px] border-[1.5px] border-border bg-card px-5 py-[22px]">
+        <div className="flex min-w-0 flex-col gap-4">
+          {paraPunto && (
+            <span className="inline-flex items-center gap-2 text-base font-semibold">
+              <Check aria-hidden className="size-[18px]" strokeWidth={2.5} />
+              PIN confirmado
+            </span>
+          )}
+          <p className="cifra m-0 text-[36px]">Pagando…</p>
         </div>
+        <TatuEnrolla estado="pagando" inicio={inicio} className="w-44 self-center" />
         {children && <p className="m-0 text-[17px] leading-[1.4]">{children}</p>}
-        {paraPunto ? (
-          <>
-            <div aria-hidden className="h-2 overflow-hidden rounded-lg bg-pista-bloque">
-              <div className="h-2 rounded-lg bg-ambar transition-[width] duration-500" style={{ width: `${avance}%` }} />
-            </div>
-            <span className="text-[15px] text-noche-tenue">Suele tardar unos segundos.</span>
-          </>
-        ) : (
-          <PasosDelPago cobro={cobro} />
-        )}
+        {paraPunto ? <span className="text-[15px] text-muted-foreground">Suele tardar unos segundos.</span> : <PasosDelPago cobro={cobro} />}
       </div>
 
       {paraPunto && (
@@ -85,5 +77,19 @@ export function EsperaPagando({
         </p>
       )}
     </>
+  )
+}
+
+/**
+ * Mientras se pide el pago a la cuenta (unos segundos): el tatú de los pagos ya rueda. Después, la
+ * pantalla del cobro sigue rodando si quedó en curso, o termina en el logo rojo si se rechazó.
+ */
+export function PidiendoPago() {
+  return (
+    <div role="status" className="flex flex-col gap-4 rounded-[22px] border-[1.5px] border-border bg-card px-5 py-[22px]">
+      <p className="cifra m-0 text-[30px]">Pidiendo el pago…</p>
+      <TatuEnrolla estado="pagando" className="w-44 self-center" />
+      <span className="text-[15px] text-muted-foreground">Suele tardar unos segundos.</span>
+    </div>
   )
 }

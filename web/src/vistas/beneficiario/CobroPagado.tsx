@@ -1,4 +1,4 @@
-import { useParams } from 'react-router'
+import { useLocation, useParams } from 'react-router'
 
 import { api } from '@/api/client'
 import { useConfig } from '@/api/config'
@@ -8,7 +8,8 @@ import { BilleteraCorta } from '@/componentes/BilleteraCorta'
 import { Cargando, ErrorCarga } from '@/componentes/Comun'
 import { EsperaPagando } from '@/componentes/EsperaPagando'
 import { textoMonto } from '@/componentes/Monto'
-import { BotonEnlace, CabeceraCelular, Caja, ChipCobro, CirculoCheck, FilaDato, PantallaCelular, TituloPantalla } from '@/componentes/Proto'
+import { BotonEnlace, CabeceraCelular, Caja, ChipCobro, FilaDato, PantallaCelular, TituloPantalla } from '@/componentes/Proto'
+import { TatuResultado } from '@/componentes/TatuEnrolla'
 import { esEstadoFinal, inicioPagando } from '@/lib/pantallas'
 import { explicacionMotivo, formatHora, formatSegundos } from '@/lib/textos'
 
@@ -17,7 +18,9 @@ export default function CobroPagado() {
   const { id = '' } = useParams()
   const config = useConfig()
   const consulta = usePolling(() => api.get<Cobro>(`/cobros/${id}`), config.pollIntervaloMs, (c) => !c || !esEstadoFinal(c.estado), { clave: id })
-  const c = consulta.datos
+  // El cobro recién pedido llega con los datos que devolvió la API: no pasa por la pantalla de carga
+  const inicial = (useLocation().state as { cobro?: Cobro } | null)?.cobro
+  const c = consulta.datos ?? (inicial?.id === id ? inicial : undefined)
   const enCurso = c && (c.estado === 'Pagando' || c.estado === 'Solicitado' || c.estado === 'PorConfirmar')
   const destino = c?.cuenta ? <BilleteraCorta url={c.cuenta.billetera} /> : c?.punto ? c.punto.nombre.split(' — ')[0] : null
 
@@ -47,7 +50,7 @@ export default function CobroPagado() {
         {c?.estado === 'Pagado' && (
           <>
             <div role="status" className="mt-1.5 flex flex-col gap-1.5 rounded-[22px] bg-pagado-relleno px-5 py-[22px] text-white">
-              <CirculoCheck />
+              <TatuResultado id={c.id} estado="pagado" sobreColor className="w-32" />
               <TituloPantalla className="mt-2 text-[40px] leading-[1.05]">Pagado</TituloPantalla>
               <span className="text-xl leading-[1.35] font-semibold">
                 {textoMonto(c.monto, c.moneda)} {c.canal === 'retiro' ? 'te los entregaron en efectivo' : 'llegaron a tu cuenta'}
@@ -73,6 +76,13 @@ export default function CobroPagado() {
               <ChipCobro estado={c.estado} motivo={c.motivo} conMotivo grande />
               <TituloPantalla className="text-[27px]">{c.motivo?.mensaje ?? (c.estado === 'Fallido' ? 'El pago falló' : 'El cobro fue rechazado')}</TituloPantalla>
               <p className="m-0 text-[17px] leading-[1.45]">{explicacionMotivo(c.motivo?.codigo, c.estado)}</p>
+            </div>
+            <div className="flex items-center gap-3.5 rounded-[20px] bg-rechazo-relleno p-[18px] text-white">
+              <TatuResultado id={c.id} estado="fallido" finalError="logo" sobreColor className="w-24 flex-none" />
+              <div className="flex flex-col gap-0.5">
+                <span className="text-2xl font-extrabold">No se hizo el pago</span>
+                <span className="text-base">No se movió dinero.</span>
+              </div>
             </div>
             <Caja>
               <FilaDato etiqueta="Programa">{c.programa.nombre}</FilaDato>

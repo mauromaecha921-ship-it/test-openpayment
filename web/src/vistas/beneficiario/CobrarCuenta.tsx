@@ -6,11 +6,13 @@ import { api, ErrorApi, mensajeDeError } from '@/api/client'
 import type { Cobro } from '@/api/tipos'
 import { Aviso, Cargando, ErrorCarga, MensajeError, Volver } from '@/componentes/Comun'
 import { CuentaDestino } from '@/componentes/CuentaDestino'
+import { PidiendoPago } from '@/componentes/EsperaPagando'
 import { MarcoBeneficiario } from '@/componentes/Marcos'
 import { textoMonto } from '@/componentes/Monto'
 import { Titulo } from '@/componentes/Titulo'
 import { Button } from '@/componentes/ui/button'
 import { useRol } from '@/contexto/Rol'
+import { irAlCobroPedido } from '@/lib/irAlCobro'
 
 import { useResumen } from './useResumen'
 
@@ -44,7 +46,7 @@ export default function CobrarCuenta() {
     setErrorCobro(null)
     try {
       const c = await api.post<Cobro>('/cobros', { programaId: pago.programa.id, documento, canal: 'cuenta', llaveIdempotencia: llave })
-      navegar(`/beneficiario/cobros/${c.id}`, { replace: true })
+      irAlCobroPedido(navegar, c, { replace: true })
     } catch (e) {
       // RN-17: su cédula no es una llave Bre-B y no tiene cuenta enlazada
       if (!conCuenta && e instanceof ErrorApi && e.codigo === 'CuentaNoVerificada') setSinLlave(true)
@@ -107,6 +109,9 @@ export default function CobrarCuenta() {
                 <Link to="/beneficiario/puntos">Cobrar en un punto</Link>
               </Button>
             </div>
+          ) : enviando ? (
+            // Mientras se pide el pago, el tatú de los pagos ya rueda (y no el de carga)
+            <PidiendoPago />
           ) : (
             <>
               <Aviso icono={<ShieldCheck aria-hidden />}>

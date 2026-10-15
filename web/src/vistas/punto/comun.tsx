@@ -6,6 +6,7 @@ import type { CajaPunto, Cobro, CobroResumen, PagosEnPunto } from '@/api/tipos'
 import { usePolling } from '@/api/usePolling'
 import { textoMonto } from '@/componentes/Monto'
 import { ChipCobro } from '@/componentes/Proto'
+import { irAlCobroDelPunto } from '@/lib/irAlCobro'
 import { formatHora, plural } from '@/lib/textos'
 import { cn } from '@/lib/utils'
 import { detalleCobro, personaTexto } from '@/vistas/entidad/Tablero'
@@ -128,12 +129,15 @@ export function useConsultaCedula(puntoId: string | null) {
   const navegar = useNavigate()
   const [documento, setDocumento] = useState('')
   const [enviando, setEnviando] = useState(false)
+  // Pidiendo el cobro (no consultando la cédula): se ve el tatú de los pagos rodando
+  const [pidiendo, setPidiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [opciones, setOpciones] = useState<PagosEnPunto | null>(null)
   const llave = useMemo(() => crypto.randomUUID(), [documento])
 
   const pedir = async (programaId?: string) => {
     setEnviando(true)
+    setPidiendo(true)
     setError(null)
     try {
       const c = await api.post<Cobro>('/cobros', {
@@ -144,10 +148,11 @@ export function useConsultaCedula(puntoId: string | null) {
         // Una llave por cédula y subsidio: el doble clic en la misma opción no crea dos cobros
         llaveIdempotencia: programaId ? `${llave}-${programaId}` : llave,
       })
-      navegar(`/punto/cobros/${c.id}`)
+      irAlCobroDelPunto(navegar, c)
     } catch (e) {
       setError(mensajeDeError(e))
       setEnviando(false)
+      setPidiendo(false)
     }
   }
 
@@ -185,6 +190,7 @@ export function useConsultaCedula(puntoId: string | null) {
       setError(null)
     },
     enviando,
+    pidiendo,
     error,
   }
 }

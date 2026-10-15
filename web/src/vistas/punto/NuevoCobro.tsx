@@ -2,6 +2,7 @@ import { ChevronRight, Clock, Lock, ShieldCheck } from 'lucide-react'
 import { Link, Navigate } from 'react-router'
 
 import { MensajeError } from '@/componentes/Comun'
+import { PidiendoPago } from '@/componentes/EsperaPagando'
 import { textoMonto } from '@/componentes/Monto'
 import { AvisoArena, Boton, BotonVolver, CabeceraCelular, Chip, NotaGris, PantallaCelular, PasosCobroPunto } from '@/componentes/Proto'
 import { PantallaPuntoEscritorio } from '@/componentes/MarcosProto'
@@ -75,9 +76,13 @@ export function FormCedulaEscritorio({ consulta }: { consulta: ConsultaCedula })
       </span>
       <CampoCedula consulta={consulta} escritorio />
       <MensajeError>{consulta.error}</MensajeError>
-      <Boton type="submit" medio className="min-h-14 w-full text-lg" disabled={consulta.enviando}>
-        {consulta.enviando ? 'Consultando…' : 'Consultar'}
-      </Boton>
+      {consulta.pidiendo ? (
+        <PidiendoPago />
+      ) : (
+        <Boton type="submit" medio className="min-h-14 w-full text-lg" disabled={consulta.enviando}>
+          {consulta.enviando ? 'Consultando…' : 'Consultar'}
+        </Boton>
+      )}
       <AvisoArena icono={ShieldCheck} className="rounded-[14px] text-[15px]">
         Entrega efectivo solo cuando la pantalla diga Pagado. La cédula sola no autoriza el cobro.
       </AvisoArena>
@@ -151,11 +156,17 @@ export function PagosEscritorio({ consulta }: { consulta: ConsultaCedula }) {
         Tiene <b>{textoPagos(o.pagos.length)}</b>. Cada retiro paga un subsidio completo; antes del PIN no se mueve dinero.
       </p>
       <MensajeError>{consulta.error}</MensajeError>
-      <div className="flex flex-wrap gap-5">
-        {o.pagos.map((p, i) => (
-          <TarjetaPago key={p.programa.id} consulta={consulta} i={i} escritorio />
-        ))}
-      </div>
+      {consulta.pidiendo ? (
+        <div className="max-w-[520px]">
+          <PidiendoPago />
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-5">
+          {o.pagos.map((p, i) => (
+            <TarjetaPago key={p.programa.id} consulta={consulta} i={i} escritorio />
+          ))}
+        </div>
+      )}
     </PantallaPuntoEscritorio>
   )
 }
@@ -179,9 +190,11 @@ export default function NuevoCobro() {
           Tiene <b>{textoPagos(o.pagos.length)}</b>. Cada retiro paga un subsidio completo.
         </p>
         <MensajeError>{consulta.error}</MensajeError>
-        {o.pagos.map((p, i) => (
-          <TarjetaPago key={p.programa.id} consulta={consulta} i={i} escritorio={false} />
-        ))}
+        {consulta.pidiendo ? (
+          <PidiendoPago />
+        ) : (
+          o.pagos.map((p, i) => <TarjetaPago key={p.programa.id} consulta={consulta} i={i} escritorio={false} />)
+        )}
         <NotaGris icono={Lock} className="mt-auto">
           Al elegir un pago, {o.persona.nombre} confirma con su PIN. Antes de eso no se mueve dinero.
         </NotaGris>
@@ -210,9 +223,13 @@ export default function NuevoCobro() {
           <CampoCedula consulta={consulta} />
         </div>
         <MensajeError>{consulta.error}</MensajeError>
-        <Boton type="submit" disabled={consulta.enviando}>
-          {consulta.enviando ? 'Consultando…' : 'Consultar'}
-        </Boton>
+        {consulta.pidiendo ? (
+          <PidiendoPago />
+        ) : (
+          <Boton type="submit" disabled={consulta.enviando}>
+            {consulta.enviando ? 'Consultando…' : 'Consultar'}
+          </Boton>
+        )}
       </form>
       <AvisoArena icono={ShieldCheck} className="mt-auto">
         La cédula sola no autoriza el cobro: el beneficiario confirma con su PIN en este celular.

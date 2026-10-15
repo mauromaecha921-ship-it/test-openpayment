@@ -1,6 +1,6 @@
-import { Clock, Hand, TriangleAlert, Wallet } from 'lucide-react'
+import { Clock, TriangleAlert, Wallet } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useLocation, useParams } from 'react-router'
 
 import { api, ErrorApi, mensajeDeError } from '@/api/client'
 import { useConfig } from '@/api/config'
@@ -18,12 +18,12 @@ import {
   CabeceraCelular,
   Caja,
   ChipCobro,
-  CirculoCheck,
   claseEnlaceSuave,
   FilaDato,
   PantallaCelular,
   TituloPantalla,
 } from '@/componentes/Proto'
+import { marcarPagando, TatuResultado } from '@/componentes/TatuEnrolla'
 import { PuntosPin, TecladoPin } from '@/componentes/TecladoPin'
 import { esEstadoFinal, inicioPagando, pantallaDelCobro } from '@/lib/pantallas'
 import { explicacionMotivo, formatCuentaRegresiva, formatSegundos, MOTIVO_CORTO } from '@/lib/textos'
@@ -38,7 +38,9 @@ export default function CobroEnPunto() {
   const config = useConfig()
   const escritorio = useEscritorio()
   const consulta = usePolling(() => api.get<Cobro>(`/cobros/${id}`), config.pollIntervaloMs, (c) => !c || !esEstadoFinal(c.estado), { clave: id })
-  const c = consulta.datos
+  // El cobro recién pedido llega con los datos que devolvió la API: no pasa por la pantalla de carga
+  const inicial = (useLocation().state as { cobro?: Cobro } | null)?.cobro
+  const c = consulta.datos ?? (inicial?.id === id ? inicial : undefined)
   const pantalla = pantallaDelCobro(c?.estado)
 
   if (!c) {
@@ -105,7 +107,10 @@ function ConfirmarPin({ cobro: c, consulta, escritorio }: { cobro: Cobro; consul
     setEnviando(true)
     setError(null)
     try {
-      consulta.setDatos(await api.post<Cobro>(`/cobros/${c.id}/confirmar`, { pin: enviado }))
+      const r = await api.post<Cobro>(`/cobros/${c.id}/confirmar`, { pin: enviado })
+      // Si el PIN lo rechaza (por ejemplo, bloqueado), el rechazo llega rodando y termina en rojo
+      if (r.estado === 'Rechazado' || r.estado === 'Fallido') marcarPagando(r.id)
+      consulta.setDatos(r)
     } catch (e) {
       setError(mensajeDeError(e))
       if (e instanceof ErrorApi && e.status === 422) await consulta.recargar()
@@ -268,7 +273,7 @@ function Pagado({ cobro: c, escritorio }: { cobro: Cobro; escritorio: boolean })
           <TituloPantalla className="text-[34px]">Resultado del cobro</TituloPantalla>
         </div>
         <div role="status" className="flex flex-wrap items-center gap-7 rounded-3xl bg-pagado-relleno p-8 text-white">
-          <CirculoCheck grande />
+          <TatuResultado id={c.id} estado="pagado" sobreColor className="w-44 flex-none" />
           <div className="flex flex-[1_1_360px] flex-col gap-1.5">
             <span className="cifra text-[44px] leading-none">Pagado</span>
             <span className="text-xl font-semibold">{c.canal === 'compra' ? textoCompra(c) : aQuien}</span>
@@ -291,7 +296,7 @@ function Pagado({ cobro: c, escritorio }: { cobro: Cobro; escritorio: boolean })
     <PantallaCelular>
       <CabeceraCelular volver="/punto" etiquetaVolver="Volver al inicio" titulo="Resultado del cobro" subtitulo={personaTexto(c)} />
       <div role="status" className="flex flex-col gap-1.5 rounded-[22px] bg-pagado-relleno p-5 text-white">
-        <CirculoCheck />
+        <TatuResultado id={c.id} estado="pagado" sobreColor className="w-32" />
         <TituloPantalla className="mt-1.5 text-[38px] leading-[1.05]">Pagado</TituloPantalla>
         <span className="text-lg font-semibold">{aQuien}</span>
         {c.canal === 'compra' ? (
@@ -313,7 +318,7 @@ function BloqueNoEntregues({ cobro: c, grande = false }: { cobro: Cobro; grande?
   const compra = c.canal === 'compra'
   return (
     <div role="alert" className={`flex items-center bg-rechazo-relleno text-white ${grande ? 'flex-wrap gap-6 rounded-3xl p-8' : 'gap-3.5 rounded-[20px] p-[18px]'}`}>
-      <Hand aria-hidden className={grande ? 'size-14 flex-none' : 'size-9 flex-none'} strokeWidth={2} />
+      <TatuResultado id={c.id} estado="fallido" finalError="logo" sobreColor className={grande ? 'w-32 flex-none' : 'w-24 flex-none'} />
       <div className={`flex flex-col ${grande ? 'flex-[1_1_420px] gap-1.5' : 'gap-0.5'}`}>
         <span className={grande ? 'cifra text-[40px] leading-[1.05]' : 'text-2xl font-extrabold'}>{compra ? 'El bono no se aplicó' : 'No entregues efectivo'}</span>
         <span className={grande ? 'text-xl' : 'text-base'}>{compra ? 'Cobra la compra completa por otro medio.' : 'No se movió dinero.'}</span>

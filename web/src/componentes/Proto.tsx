@@ -348,15 +348,6 @@ export function NumeroCirculo({ n, tono = 'noche', className }: { n: number; ton
   )
 }
 
-/** El ✓ blanco en círculo de «Pagado» (P5, B6; `grande` en PD3). */
-export function CirculoCheck({ grande = false }: { grande?: boolean }) {
-  return (
-    <span aria-hidden className={`flex flex-none items-center justify-center rounded-full bg-white ${grande ? 'size-[88px]' : 'size-[50px]'}`}>
-      <Check className={`text-[#1b7f4b] ${grande ? 'size-12' : 'size-7'}`} strokeWidth={3} />
-    </span>
-  )
-}
-
 // ── Chips ─────────────────────────────────────────────────────────────────────
 
 type TonoChip = 'pagado' | 'rechazo' | 'disponible' | 'neutro' | 'activo' | 'cerrado' | 'pagando'

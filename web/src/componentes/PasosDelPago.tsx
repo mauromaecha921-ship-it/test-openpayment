@@ -5,8 +5,8 @@ import { formatSegundos } from '@/lib/textos'
 import { cn } from '@/lib/utils'
 
 /**
- * Prototipo B5: Solicitado → Pagando → Pagado dentro del bloque Noche. Círculos de 28 px: ✓ en
- * arena el hecho, anillo ámbar con punto el que va, anillo apagado el que falta.
+ * Prototipo B5: Solicitado → Pagando → Pagado en la tarjeta de Pagando, con los colores del tema.
+ * Círculos de 28 px: ✓ relleno el hecho, anillo ámbar con punto el que va, anillo apagado el que falta.
  */
 export function PasosDelPago({ cobro }: { cobro: Pick<Cobro, 'canal' | 'estado' | 'segundosHastaPagado'> }) {
   const alcanzado = cobro.estado === 'Pagado' ? 3 : cobro.estado === 'Pagando' ? 2 : 1
@@ -21,9 +21,9 @@ export function PasosDelPago({ cobro }: { cobro: Pick<Cobro, 'canal' | 'estado' 
         const hecho = i + 1 < alcanzado || (i + 1 === alcanzado && cobro.estado === 'Pagado')
         const actual = i + 1 === alcanzado && !hecho
         return (
-          <li key={i} aria-current={actual ? 'step' : undefined} className={cn('flex items-center gap-3 text-[17px]', actual && 'font-extrabold', !hecho && !actual && 'text-noche-tenue')}>
+          <li key={i} aria-current={actual ? 'step' : undefined} className={cn('flex items-center gap-3 text-[17px]', actual && 'font-extrabold', !hecho && !actual && 'text-muted-foreground')}>
             {hecho ? (
-              <span aria-hidden className="flex size-7 flex-none items-center justify-center rounded-full bg-bloque-texto text-bloque">
+              <span aria-hidden className="flex size-7 flex-none items-center justify-center rounded-full bg-foreground text-background">
                 <Check className="size-4" strokeWidth={3} />
               </span>
             ) : actual ? (
@@ -31,7 +31,7 @@ export function PasosDelPago({ cobro }: { cobro: Pick<Cobro, 'canal' | 'estado' 
                 <span className="size-2.5 rounded-full bg-ambar" />
               </span>
             ) : (
-              <span aria-hidden className="box-border size-7 flex-none rounded-full border-2 border-anillo-bloque" />
+              <span aria-hidden className="box-border size-7 flex-none rounded-full border-2 border-control" />
             )}
             {texto}
           </li>

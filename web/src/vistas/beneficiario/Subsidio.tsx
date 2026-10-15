@@ -6,9 +6,11 @@ import { api, mensajeDeError } from '@/api/client'
 import type { Cobro } from '@/api/tipos'
 import { Cargando, ErrorCarga, MensajeError } from '@/componentes/Comun'
 import { CuentaDestino } from '@/componentes/CuentaDestino'
+import { PidiendoPago } from '@/componentes/EsperaPagando'
 import { textoMonto } from '@/componentes/Monto'
 import { Boton, BotonEnlace, CabeceraCelular, PantallaCelular } from '@/componentes/Proto'
 import { useRol } from '@/contexto/Rol'
+import { irAlCobroPedido } from '@/lib/irAlCobro'
 import { formatDiaMes } from '@/lib/textos'
 
 import { useResumen } from './useResumen'
@@ -31,7 +33,7 @@ export default function Subsidio() {
     setErrorCobro(null)
     try {
       const c = await api.post<Cobro>('/cobros', { documento, canal: 'cuenta', programaId, llaveIdempotencia: llave })
-      navegar(`/beneficiario/cobros/${c.id}`)
+      irAlCobroPedido(navegar, c)
     } catch (e) {
       setErrorCobro(mensajeDeError(e))
       setEnviando(false)
@@ -55,7 +57,10 @@ export default function Subsidio() {
               Cóbralo antes del {formatDiaMes(pago.vigenciaFin)}
             </span>
           </div>
-          {verificada ? (
+          {verificada && enviando ? (
+            // Mientras se pide el pago, el tatú de los pagos ya rueda (y no el de carga)
+            <PidiendoPago />
+          ) : verificada ? (
             <>
               <span className="mt-1 text-[17px] font-extrabold">¿Cómo quieres cobrarlo?</span>
               <Boton onClick={() => void cobrar()} disabled={enviando || pago.programa.estado !== 'Activo'}>
