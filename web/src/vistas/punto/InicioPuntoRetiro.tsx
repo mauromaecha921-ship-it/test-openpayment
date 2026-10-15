@@ -1,5 +1,4 @@
-import { Plus, ShieldCheck } from 'lucide-react'
-import { useState } from 'react'
+import { Clock, Plus, ShieldCheck } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 
 import { api } from '@/api/client'
@@ -11,6 +10,8 @@ import { MarcoPuntoRetiro } from '@/componentes/MarcoPuntoRetiro'
 import { textoMonto } from '@/componentes/Monto'
 import { useRol } from '@/contexto/Rol'
 import { formatHora, MOTIVO_CORTO } from '@/lib/textos'
+
+import { useNuevoCobro } from './useNuevoCobro'
 
 export interface ItemCobroVista {
   id: string
@@ -76,7 +77,7 @@ export function InicioPuntoRetiro({ onNuevoCobro }: PropsInicioPuntoRetiro) {
   const { puntoId, puntoNombre } = useRol()
   const navegar = useNavigate()
 
-  const [cedulaDesktop, setCedulaDesktop] = useState('71234567')
+  const nuevo = useNuevoCobro()
 
   const caja = usePolling(
     () => api.get<CajaPunto>(`/puntos/${puntoId}/resumen?desde=hoy`),
@@ -133,11 +134,6 @@ export function InicioPuntoRetiro({ onNuevoCobro }: PropsInicioPuntoRetiro) {
 
   const adelantadoTxt = c ? textoMonto(c.giradoPorAdelantado, COP) : '$0'
   const nombrePunto = puntoNombre ? puntoNombre.split(' — ')[0] : 'Tienda Marta'
-
-  const manejarConsultarDesktop = (e: React.FormEvent) => {
-    e.preventDefault()
-    navegar(`/punto?accion=nuevo&cedula=${encodeURIComponent(cedulaDesktop)}`)
-  }
 
   return (
     <MarcoPuntoRetiro navActiva="inicio">
@@ -285,46 +281,104 @@ export function InicioPuntoRetiro({ onNuevoCobro }: PropsInicioPuntoRetiro) {
 
         {/* 2 Columnas PC: Formulario Izquierda + Tabla Derecha */}
         <div className="flex flex-wrap gap-6 items-start">
-          {/* Columna Izquierda: Tarjeta Nuevo Cobro */}
+          {/* Columna Izquierda: el cobro se hace aquí mismo (cédula → pagos → Pagar) */}
           <div className="flex-1 basis-[380px] max-w-[440px] flex flex-col gap-4 rounded-[20px] border-[1.5px] border-[#E2D8C4] bg-[#FFFDF8] p-6 text-[#13203A]">
-            <h2 className="m-0 text-[24px] font-extrabold tracking-tight text-[#13203A]">
-              Nuevo cobro
-            </h2>
+            {!nuevo.consulta ? (
+              <>
+                <h2 className="m-0 text-[24px] font-extrabold tracking-tight text-[#13203A]">Nuevo cobro</h2>
 
-            <form onSubmit={manejarConsultarDesktop} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1">
-                <label htmlFor="cedula-desktop-input" className="text-[17px] font-bold text-[#13203A]">
-                  Número de cédula
-                </label>
-                <span className="text-[15px] text-[#4A5468]">
-                  Pide la cédula original y digita el número.
-                </span>
-              </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    void nuevo.consultar()
+                  }}
+                  className="flex flex-col gap-4"
+                >
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="cedula-desktop-input" className="text-[17px] font-bold text-[#13203A]">
+                      Número de cédula
+                    </label>
+                    <span className="text-[15px] text-[#4A5468]">Pide la cédula original y digita el número.</span>
+                  </div>
 
-              <input
-                id="cedula-desktop-input"
-                type="text"
-                inputMode="numeric"
-                value={formatearCedula(cedulaDesktop)}
-                onChange={(e) => setCedulaDesktop(e.target.value.replace(/\D/g, ''))}
-                placeholder="71 234 567"
-                className="w-full h-16 px-4 rounded-[14px] border-2 border-[#13203A] bg-white font-bold text-[28px] text-[#13203A] tracking-wider outline-none focus:ring-2 focus:ring-[#2E5FE0]"
-              />
+                  <input
+                    id="cedula-desktop-input"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    value={formatearCedula(nuevo.cedula)}
+                    onChange={(e) => {
+                      nuevo.setCedula(e.target.value.replace(/\D/g, ''))
+                      nuevo.setError(null)
+                    }}
+                    placeholder="71 234 567"
+                    className="w-full h-16 px-4 rounded-[14px] border-2 border-[#13203A] bg-white font-bold text-[28px] text-[#13203A] tracking-wider outline-none focus:ring-2 focus:ring-[#2E5FE0]"
+                  />
 
-              <button
-                type="submit"
-                disabled={!cedulaDesktop}
-                className="flex h-14 w-full cursor-pointer items-center justify-center rounded-xl bg-[#2E5FE0] font-bold text-[18px] text-white shadow-sm transition-all hover:bg-[#254ec4] active:scale-[0.99] disabled:opacity-50"
-              >
-                Consultar
-              </button>
-            </form>
+                  {nuevo.error && <div className="rounded-xl bg-[#F8E4DF] p-3 text-sm font-medium text-[#A3261C]">{nuevo.error}</div>}
+
+                  <button
+                    type="submit"
+                    disabled={!nuevo.cedula || nuevo.enviando}
+                    className="flex h-14 w-full cursor-pointer items-center justify-center rounded-xl bg-[#2E5FE0] font-bold text-[18px] text-white shadow-sm transition-all hover:bg-[#254ec4] active:scale-[0.99] disabled:opacity-50"
+                  >
+                    {nuevo.enviando ? 'Consultando…' : 'Consultar'}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[15px] text-[#4A5468]">{nuevo.consulta.persona.etiqueta}</span>
+                  <h2 className="m-0 text-[24px] font-extrabold tracking-tight text-[#13203A]">Pagos de {nuevo.consulta.persona.nombre}</h2>
+                </div>
+                <p className="m-0 text-[15px] text-[#13203A]">
+                  {nuevo.consulta.pagos.length === 0 ? (
+                    'No tiene pagos disponibles.'
+                  ) : (
+                    <>
+                      Tiene <b>{nuevo.consulta.pagos.length} {nuevo.consulta.pagos.length === 1 ? 'pago disponible' : 'pagos disponibles'}</b>. Antes del PIN no se mueve dinero.
+                    </>
+                  )}
+                </p>
+
+                {nuevo.consulta.pagos.map((pg) => (
+                  <div key={pg.programa.id} className="flex flex-col gap-2 rounded-2xl border-2 border-[#13203A] bg-white p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-[17px] font-bold">{pg.programa.nombre}</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#FCE3B4] px-2.5 py-0.5 text-[13px] font-bold">
+                        <Clock className="size-3.5 stroke-[2.5]" />
+                        Disponible
+                      </span>
+                    </div>
+                    <span className="text-[34px] font-extrabold leading-none tracking-tight">{textoMonto(pg.monto, pg.moneda)}</span>
+                    <span className="text-[14px] text-[#4A5468]">Se entrega el valor completo</span>
+                    <button
+                      type="button"
+                      disabled={nuevo.enviando}
+                      onClick={() => void nuevo.pagar(pg.programa.id)}
+                      className="mt-1 flex min-h-12 w-full cursor-pointer items-center justify-center rounded-xl bg-[#2E5FE0] font-bold text-[17px] text-white transition-all hover:bg-[#254ec4] disabled:opacity-50"
+                    >
+                      {nuevo.enviando ? 'Iniciando…' : 'Pagar este subsidio'}
+                    </button>
+                  </div>
+                ))}
+
+                {nuevo.error && <div className="rounded-xl bg-[#F8E4DF] p-3 text-sm font-medium text-[#A3261C]">{nuevo.error}</div>}
+
+                <button
+                  type="button"
+                  onClick={nuevo.otraCedula}
+                  className="flex min-h-11 w-full cursor-pointer items-center justify-center rounded-xl border-2 border-[#13203A] font-bold text-[16px] text-[#13203A] hover:bg-[#13203A]/5"
+                >
+                  Otra cédula
+                </button>
+              </>
+            )}
 
             <div className="flex items-start gap-3 rounded-[14px] bg-[#EDE5D3] p-3.5 text-[15px] leading-snug text-[#13203A]">
               <ShieldCheck aria-hidden className="size-6 shrink-0 text-[#13203A] mt-0.5" />
-              <p className="m-0">
-                Entrega efectivo solo cuando la pantalla diga Pagado. La cédula sola no autoriza el cobro.
-              </p>
+              <p className="m-0">Entrega efectivo solo cuando la pantalla diga Pagado. La cédula sola no autoriza el cobro.</p>
             </div>
           </div>
 

@@ -111,22 +111,9 @@ export default function Entrada() {
     setPuntoId((v) => (datos.puntos.some((p) => p.id === v) ? v : (datos.puntos[0]?.id ?? '')))
   }, [datos])
 
-  const entrarEntidad = () => {
-    rol.actualizar({ rol: 'entidad', programaId: null })
-    navegar('/entidad')
-  }
-  const entrarBeneficiario = () => {
-    const b = datos?.beneficiarios.find((x) => x.documento === documento)
-    if (!b) return
-    rol.actualizar({ rol: 'beneficiario', documento: b.documento, nombre: b.nombre })
-    navegar('/beneficiario')
-  }
-  const entrarPunto = () => {
-    const p = datos?.puntos.find((x) => x.id === puntoId)
-    if (!p) return
-    rol.actualizar({ rol: 'punto', puntoId: p.id, puntoNombre: p.nombre })
-    navegar('/punto')
-  }
+  const entrarEntidad = () => navegar('/entrar/entidad')
+  const entrarBeneficiario = () => navegar('/entrar/beneficiario')
+  const entrarPunto = () => navegar('/entrar/punto')
 
   const cargando = !datos && !error
 
@@ -175,28 +162,9 @@ export default function Entrada() {
             texto="Mira cuánto tienes y cóbralo a tu wallet o en un punto."
             onEntrar={entrarBeneficiario}
           >
-            {datos && datos.beneficiarios.length === 0 ? (
-              <SinRegistros texto="Todavía no hay personas registradas." boton="Registrar personas" />
-            ) : (
-              <>
-                <label className="flex flex-col gap-1.5 text-sm font-bold">
-                  Persona
-                  <select className={claseSelect} value={documento} onChange={(e) => setDocumento(e.target.value)} disabled={cargando}>
-                    {datos?.beneficiarios.map((b) => (
-                      <option key={b.documento} value={b.documento}>
-                        {b.nombre} · {b.etiqueta}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <Link to="/equipo" className="self-start text-sm">
-                  Registrar a alguien más
-                </Link>
-                <Button size="lg" className="mt-auto w-full" onClick={entrarBeneficiario} disabled={cargando || !documento}>
-                  Entrar como beneficiario
-                </Button>
-              </>
-            )}
+            <Button size="lg" className="mt-auto w-full" onClick={entrarBeneficiario}>
+              Entrar como beneficiario
+            </Button>
           </TarjetaRol>
 
           <TarjetaRol
@@ -207,31 +175,15 @@ export default function Entrada() {
             texto="Digita la cédula, el beneficiario confirma con su PIN y recuperas el efectivo al instante."
             onEntrar={entrarPunto}
           >
-            {datos && datos.puntos.length === 0 ? (
-              <SinRegistros texto="Todavía no hay puntos registrados." boton="Agregar un punto" />
-            ) : (
-              <>
-                <label className="flex flex-col gap-1.5 text-sm font-bold">
-                  Punto
-                  <select className={claseSelect} value={puntoId} onChange={(e) => setPuntoId(e.target.value)} disabled={cargando}>
-                    {datos?.puntos.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.nombre}{p.tipo === 'compra' ? ' · comercio (bonos)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <Button size="lg" className="mt-auto w-full" onClick={entrarPunto} disabled={cargando || !puntoId}>
-                  Entrar como punto
-                </Button>
-              </>
-            )}
+            <Button size="lg" className="mt-auto w-full" onClick={entrarPunto}>
+              Entrar como punto
+            </Button>
           </TarjetaRol>
         </div>
 
         {/* Punto de retiro en computador */}
         <div className="flex flex-col items-center gap-0.5 text-center">
-          <Link to="/punto" className="inline-flex items-center gap-2 text-sm font-bold underline text-foreground hover:text-foreground">
+          <Link to="/entrar/punto" className="inline-flex items-center gap-2 text-sm font-bold underline text-foreground hover:text-foreground">
             <Monitor aria-hidden className="size-4" />
             Punto de retiro en computador
           </Link>
@@ -243,17 +195,6 @@ export default function Entrada() {
         </p>
       </main>
     </div>
-  )
-}
-
-function SinRegistros({ texto, boton }: { texto: string; boton: string }) {
-  return (
-    <>
-      <p className="m-0 rounded-lg border-2 border-dashed border-border px-4 py-3 text-tenue">{texto}</p>
-      <Button asChild size="lg" variant="outline" className="mt-auto w-full border-foreground">
-        <Link to="/equipo">{boton}</Link>
-      </Button>
-    </>
   )
 }
 

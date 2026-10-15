@@ -21,6 +21,9 @@ import DetalleCobro from '@/vistas/entidad/DetalleCobro'
 import ListaProgramas from '@/vistas/entidad/ListaProgramas'
 import SubirExcel from '@/vistas/entidad/SubirExcel'
 import VistaPrograma from '@/vistas/entidad/VistaPrograma'
+import AccesoBeneficiario from '@/vistas/acceso/AccesoBeneficiario'
+import AccesoEntidad from '@/vistas/acceso/AccesoEntidad'
+import AccesoPunto from '@/vistas/acceso/AccesoPunto'
 import Entrada from '@/vistas/Entrada'
 import Equipo from '@/vistas/Equipo'
 import Estado from '@/vistas/Estado'
@@ -54,6 +57,9 @@ export default function App() {
     <RolProvider>
       <Routes>
         <Route path="/" element={<Entrada />} />
+        <Route path="/entrar/entidad" element={<AccesoEntidad />} />
+        <Route path="/entrar/beneficiario" element={<AccesoBeneficiario />} />
+        <Route path="/entrar/punto" element={<AccesoPunto />} />
         <Route path="/equipo" element={<Equipo />} />
         <Route path="/estado" element={<Estado />} />
 
