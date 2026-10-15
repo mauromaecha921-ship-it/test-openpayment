@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router'
 import { api, mensajeDeError } from '@/api/client'
 import type { Cobro, PagosEnPunto } from '@/api/tipos'
 import { useRol } from '@/contexto/Rol'
+import { irAlCobroDelPunto } from '@/lib/irAlCobro'
 
 const CEDULAS_DEMO = ['71234567', '900000003']
 
@@ -17,6 +18,8 @@ export function useNuevoCobro() {
   const [cedula, setCedula] = useState('')
   const [consulta, setConsulta] = useState<PagosEnPunto | null>(null)
   const [enviando, setEnviando] = useState(false)
+  // Pidiendo el cobro (no consultando la cédula): se ve el tatú de los pagos rodando
+  const [pidiendo, setPidiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const consultar = async () => {
@@ -51,6 +54,7 @@ export function useNuevoCobro() {
 
   const pagar = async (programaId?: string) => {
     setEnviando(true)
+    setPidiendo(true)
     setError(null)
     try {
       const c = await api.post<Cobro>('/cobros', {
@@ -60,11 +64,12 @@ export function useNuevoCobro() {
         programaId,
         llaveIdempotencia: crypto.randomUUID(),
       })
-      navegar(`/punto/cobros/${c.id}`)
+      irAlCobroDelPunto(navegar, c)
     } catch (e) {
       if (CEDULAS_DEMO.includes(cedula.trim())) return navegar(`/punto/cobros/demo-${cedula.trim()}`)
       setError(mensajeDeError(e))
       setEnviando(false)
+      setPidiendo(false)
     }
   }
 
@@ -74,5 +79,5 @@ export function useNuevoCobro() {
     setError(null)
   }
 
-  return { cedula, setCedula, consulta, enviando, error, setError, consultar, pagar, otraCedula }
+  return { cedula, setCedula, consulta, enviando, pidiendo, error, setError, consultar, pagar, otraCedula }
 }

@@ -6,10 +6,12 @@ import { api, mensajeDeError } from '@/api/client'
 import type { CajaPunto, Cobro, PagosEnPunto } from '@/api/tipos'
 import { usePolling } from '@/api/usePolling'
 import { EncabezadoPuntoRetiro } from '@/componentes/EncabezadoPuntoRetiro'
+import { PidiendoPago } from '@/componentes/EsperaPagando'
 import { MarcoPuntoRetiro } from '@/componentes/MarcoPuntoRetiro'
 import { textoMonto } from '@/componentes/Monto'
 import { PasosCobroPunto } from '@/componentes/PasosCobroPunto'
 import { useRol } from '@/contexto/Rol'
+import { irAlCobroDelPunto } from '@/lib/irAlCobro'
 
 import { COBROS_DEMO } from './InicioPuntoRetiro'
 
@@ -40,6 +42,8 @@ export default function NuevoCobro({ onVolverInicio }: PropsNuevoCobro) {
   const [paso, setPaso] = useState<'cedula' | 'pago'>('cedula')
   const [documentoRaw, setDocumentoRaw] = useState('71234567')
   const [enviando, setEnviando] = useState(false)
+  // Pidiendo el cobro (no consultando la cédula): se ve el tatú de los pagos rodando
+  const [pidiendo, setPidiendo] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const llave = useMemo(() => crypto.randomUUID(), [documentoRaw])
@@ -49,6 +53,7 @@ export default function NuevoCobro({ onVolverInicio }: PropsNuevoCobro) {
 
   const pedir = async (cedula: string, programaId?: string) => {
     setEnviando(true)
+    setPidiendo(true)
     setError(null)
     try {
       const c = await api.post<Cobro>('/cobros', {
@@ -58,7 +63,7 @@ export default function NuevoCobro({ onVolverInicio }: PropsNuevoCobro) {
         programaId,
         llaveIdempotencia: programaId ? `${llave}-${programaId}` : llave,
       })
-      navegar(`/punto/cobros/${c.id}`)
+      irAlCobroDelPunto(navegar, c)
     } catch (e) {
       if (cedula === '71234567' || cedula === '900000003') {
         navegar(`/punto/cobros/demo-${cedula}`)
@@ -66,6 +71,7 @@ export default function NuevoCobro({ onVolverInicio }: PropsNuevoCobro) {
       }
       setError(mensajeDeError(e))
       setEnviando(false)
+      setPidiendo(false)
     }
   }
 
@@ -313,174 +319,181 @@ export default function NuevoCobro({ onVolverInicio }: PropsNuevoCobro) {
         onVolver={() => setPaso('cedula')}
       />
 
-      {/* ─────────────────────────────────────────────────────────────
-          1. VISTA MÓVIL (< 768px): Exacta a P1b
-         ───────────────────────────────────────────────────────────── */}
-      <div className="flex md:hidden flex-col gap-3.5 w-full">
-        <PasosCobroPunto paso="Pago" />
+      {pidiendo ? (
+        <PidiendoPago />
+      ) : (
+        <>
 
-        <p className="m-0 pt-1 text-[15px] text-[#13203A] leading-normal">
-          Tiene <strong>1 pago disponible</strong>. Cada retiro paga un subsidio completo.
-        </p>
+          {/* ─────────────────────────────────────────────────────────────
+              1. VISTA MÓVIL (< 768px): Exacta a P1b
+             ───────────────────────────────────────────────────────────── */}
+          <div className="flex md:hidden flex-col gap-3.5 w-full">
+            <PasosCobroPunto paso="Pago" />
 
-        <div className="flex flex-col gap-3 mt-1">
-          {/* Tarjeta 1: Subsidio Disponible */}
-          <div className="flex flex-col gap-2 rounded-2xl border-2 border-[#13203A] bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-[17px] font-bold text-[#13203A]">
-                {nombrePrograma}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#FEF3C7] px-2.5 py-0.5 text-xs font-bold text-[#92400E]">
-                <Clock className="size-3.5 stroke-[2.5]" />
-                Disponible
-              </span>
-            </div>
+            <p className="m-0 pt-1 text-[15px] text-[#13203A] leading-normal">
+              Tiene <strong>1 pago disponible</strong>. Cada retiro paga un subsidio completo.
+            </p>
 
-            <span className="text-[13px] text-[#4A5468]">
-              Entidad de prueba · hasta el 31 oct
-            </span>
-
-            <span className="my-0.5 text-[34px] font-extrabold text-[#13203A] tracking-tight">
-              {montoPrincipal}
-            </span>
-
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-[13px] text-[#4A5468]">
-                Se entrega el valor completo
-              </span>
-              <button
-                type="button"
-                disabled={enviando}
-                onClick={() => void pedir(documentoRaw, pagoPrincipal?.programa.id)}
-                className="inline-flex cursor-pointer items-center gap-1 text-[16px] font-bold text-[#2E5FE0] hover:underline disabled:opacity-50"
-              >
-                <span>{enviando ? 'Iniciando…' : 'Pagar'}</span>
-                <span aria-hidden>&gt;</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Tarjeta 2: Subsidio ya cobrado */}
-          <div className="flex flex-col gap-2 rounded-2xl border-2 border-dashed border-[#B9AE97] bg-transparent p-4 opacity-90">
-            <div className="flex items-center justify-between">
-              <span className="text-[17px] font-bold text-[#13203A]/80">
-                Subsidio de transporte
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#EDE5D3] px-2.5 py-0.5 text-xs font-semibold text-[#4A5468]">
-                ✓ Ya cobrado
-              </span>
-            </div>
-
-            <span className="text-[13px] text-[#4A5468]">
-              Entidad de prueba
-            </span>
-
-            <span className="my-0.5 text-[30px] font-bold text-[#13203A]/75 tracking-tight">
-              $50.000
-            </span>
-
-            <span className="text-[13px] text-[#4A5468]">
-              Cobrado el 12 oct en Tienda Marta
-            </span>
-          </div>
-        </div>
-
-        {error && (
-          <div className="rounded-xl bg-[#F8E4DF] p-3 text-sm font-medium text-[#A3261C]">
-            {error}
-          </div>
-        )}
-
-        <div className="mt-auto flex items-center gap-2 pb-1 text-[13px] text-[#4A5468]">
-          <Lock className="size-3.5 shrink-0" />
-          <span>
-            Al elegir un pago, {nombrePersona.split(' ')[0]} confirma con su PIN. Antes de eso no se mueve dinero.
-          </span>
-        </div>
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          2. VISTA COMPUTADOR / PC (>= 768px): Exacta a PD1
-         ───────────────────────────────────────────────────────────── */}
-      <div className="hidden md:flex flex-col gap-6 w-full">
-        <p className="m-0 text-[18px] text-[#13203A]">
-          Tiene <b>1 pago disponible</b>. Cada retiro paga un subsidio completo; antes del PIN no se mueve dinero.
-        </p>
-
-        <div className="grid grid-cols-2 gap-5 items-stretch">
-          {/* Tarjeta 1: Subsidio Disponible (PD1) */}
-          <div className="flex flex-col justify-between gap-3 p-6 rounded-[20px] bg-[#FFFDF8] border-2 border-[#13203A]">
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between items-start gap-3">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[19px] font-extrabold text-[#13203A]">
+            <div className="flex flex-col gap-3 mt-1">
+              {/* Tarjeta 1: Subsidio Disponible */}
+              <div className="flex flex-col gap-2 rounded-2xl border-2 border-[#13203A] bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-[17px] font-bold text-[#13203A]">
                     {nombrePrograma}
                   </span>
-                  <span className="text-[15px] text-[#4A5468]">
-                    Entidad de prueba
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#FEF3C7] px-2.5 py-0.5 text-xs font-bold text-[#92400E]">
+                    <Clock className="size-3.5 stroke-[2.5]" />
+                    Disponible
                   </span>
                 </div>
-                <span className="inline-flex items-center gap-1.5 font-bold text-[13px] px-2.5 py-1 rounded-full text-[#13203A] bg-[#FCE3B4]">
-                  <Clock className="size-3.5 stroke-[2.5]" />
-                  Disponible
+
+                <span className="text-[13px] text-[#4A5468]">
+                  Entidad de prueba · hasta el 31 oct
                 </span>
+
+                <span className="my-0.5 text-[34px] font-extrabold text-[#13203A] tracking-tight">
+                  {montoPrincipal}
+                </span>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[13px] text-[#4A5468]">
+                    Se entrega el valor completo
+                  </span>
+                  <button
+                    type="button"
+                    disabled={enviando}
+                    onClick={() => void pedir(documentoRaw, pagoPrincipal?.programa.id)}
+                    className="inline-flex cursor-pointer items-center gap-1 text-[16px] font-bold text-[#2E5FE0] hover:underline disabled:opacity-50"
+                  >
+                    <span>{enviando ? 'Iniciando…' : 'Pagar'}</span>
+                    <span aria-hidden>&gt;</span>
+                  </button>
+                </div>
               </div>
 
-              <span className="text-[44px] font-extrabold tracking-tight leading-none text-[#13203A] mt-2">
-                {montoPrincipal}
-              </span>
-              <span className="text-[15px] text-[#4A5468]">
-                Se entrega el valor completo · hasta el 31 oct
-              </span>
-            </div>
-
-            <button
-              type="button"
-              disabled={enviando}
-              onClick={() => void pedir(documentoRaw, pagoPrincipal?.programa.id)}
-              className="inline-flex items-center justify-center min-h-[48px] px-6 rounded-xl font-bold text-[17px] bg-[#2E5FE0] text-white hover:bg-[#254ec4] active:scale-[0.99] cursor-pointer transition-all disabled:opacity-50 mt-2"
-            >
-              {enviando ? 'Iniciando…' : 'Pagar este subsidio'}
-            </button>
-          </div>
-
-          {/* Tarjeta 2: Subsidio Ya Cobrado (PD1) */}
-          <div className="flex flex-col justify-between gap-3 p-6 rounded-[20px] bg-transparent border-[1.5px] border-dashed border-[#B9AE97]">
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between items-start gap-3">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[19px] font-extrabold text-[#13203A]">
+              {/* Tarjeta 2: Subsidio ya cobrado */}
+              <div className="flex flex-col gap-2 rounded-2xl border-2 border-dashed border-[#B9AE97] bg-transparent p-4 opacity-90">
+                <div className="flex items-center justify-between">
+                  <span className="text-[17px] font-bold text-[#13203A]/80">
                     Subsidio de transporte
                   </span>
-                  <span className="text-[15px] text-[#4A5468]">
-                    Entidad de prueba
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#EDE5D3] px-2.5 py-0.5 text-xs font-semibold text-[#4A5468]">
+                    ✓ Ya cobrado
                   </span>
                 </div>
-                <span className="inline-flex items-center gap-1.5 font-bold text-[13px] px-2.5 py-1 rounded-full text-[#4A5468] bg-[#E7DFCF]">
-                  ✓ Ya cobrado
+
+                <span className="text-[13px] text-[#4A5468]">
+                  Entidad de prueba
+                </span>
+
+                <span className="my-0.5 text-[30px] font-bold text-[#13203A]/75 tracking-tight">
+                  $50.000
+                </span>
+
+                <span className="text-[13px] text-[#4A5468]">
+                  Cobrado el 12 oct en Tienda Marta
                 </span>
               </div>
-
-              <span className="text-[44px] font-extrabold tracking-tight leading-none text-[#4A5468] mt-2">
-                $50.000
-              </span>
-              <span className="text-[15px] text-[#4A5468]">
-                Cobrado el 12 oct en Tienda Marta
-              </span>
             </div>
 
-            <div className="text-[14px] text-[#4A5468] pt-2">
-              Cada subsidio se paga una sola vez.
+            {error && (
+              <div className="rounded-xl bg-[#F8E4DF] p-3 text-sm font-medium text-[#A3261C]">
+                {error}
+              </div>
+            )}
+
+            <div className="mt-auto flex items-center gap-2 pb-1 text-[13px] text-[#4A5468]">
+              <Lock className="size-3.5 shrink-0" />
+              <span>
+                Al elegir un pago, {nombrePersona.split(' ')[0]} confirma con su PIN. Antes de eso no se mueve dinero.
+              </span>
             </div>
           </div>
-        </div>
 
-        {error && (
-          <div className="rounded-xl bg-[#F8E4DF] p-4 text-base font-medium text-[#A3261C]">
-            {error}
+          {/* ─────────────────────────────────────────────────────────────
+              2. VISTA COMPUTADOR / PC (>= 768px): Exacta a PD1
+             ───────────────────────────────────────────────────────────── */}
+          <div className="hidden md:flex flex-col gap-6 w-full">
+            <p className="m-0 text-[18px] text-[#13203A]">
+              Tiene <b>1 pago disponible</b>. Cada retiro paga un subsidio completo; antes del PIN no se mueve dinero.
+            </p>
+
+            <div className="grid grid-cols-2 gap-5 items-stretch">
+              {/* Tarjeta 1: Subsidio Disponible (PD1) */}
+              <div className="flex flex-col justify-between gap-3 p-6 rounded-[20px] bg-[#FFFDF8] border-2 border-[#13203A]">
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[19px] font-extrabold text-[#13203A]">
+                        {nombrePrograma}
+                      </span>
+                      <span className="text-[15px] text-[#4A5468]">
+                        Entidad de prueba
+                      </span>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 font-bold text-[13px] px-2.5 py-1 rounded-full text-[#13203A] bg-[#FCE3B4]">
+                      <Clock className="size-3.5 stroke-[2.5]" />
+                      Disponible
+                    </span>
+                  </div>
+
+                  <span className="text-[44px] font-extrabold tracking-tight leading-none text-[#13203A] mt-2">
+                    {montoPrincipal}
+                  </span>
+                  <span className="text-[15px] text-[#4A5468]">
+                    Se entrega el valor completo · hasta el 31 oct
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={enviando}
+                  onClick={() => void pedir(documentoRaw, pagoPrincipal?.programa.id)}
+                  className="inline-flex items-center justify-center min-h-[48px] px-6 rounded-xl font-bold text-[17px] bg-[#2E5FE0] text-white hover:bg-[#254ec4] active:scale-[0.99] cursor-pointer transition-all disabled:opacity-50 mt-2"
+                >
+                  {enviando ? 'Iniciando…' : 'Pagar este subsidio'}
+                </button>
+              </div>
+
+              {/* Tarjeta 2: Subsidio Ya Cobrado (PD1) */}
+              <div className="flex flex-col justify-between gap-3 p-6 rounded-[20px] bg-transparent border-[1.5px] border-dashed border-[#B9AE97]">
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[19px] font-extrabold text-[#13203A]">
+                        Subsidio de transporte
+                      </span>
+                      <span className="text-[15px] text-[#4A5468]">
+                        Entidad de prueba
+                      </span>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 font-bold text-[13px] px-2.5 py-1 rounded-full text-[#4A5468] bg-[#E7DFCF]">
+                      ✓ Ya cobrado
+                    </span>
+                  </div>
+
+                  <span className="text-[44px] font-extrabold tracking-tight leading-none text-[#4A5468] mt-2">
+                    $50.000
+                  </span>
+                  <span className="text-[15px] text-[#4A5468]">
+                    Cobrado el 12 oct en Tienda Marta
+                  </span>
+                </div>
+
+                <div className="text-[14px] text-[#4A5468] pt-2">
+                  Cada subsidio se paga una sola vez.
+                </div>
+              </div>
+            </div>
+
+            {error && (
+              <div className="rounded-xl bg-[#F8E4DF] p-4 text-base font-medium text-[#A3261C]">
+                {error}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </MarcoPuntoRetiro>
   )
 }

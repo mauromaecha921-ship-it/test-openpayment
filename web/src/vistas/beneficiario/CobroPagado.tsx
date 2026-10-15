@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router'
+import { Link, useLocation, useParams } from 'react-router'
 
 import { api } from '@/api/client'
 import { useConfig } from '@/api/config'
@@ -9,7 +9,7 @@ import { Bloque, Cargando, ErrorCarga, ListaDatos } from '@/componentes/Comun'
 import { EsperaPagando } from '@/componentes/EsperaPagando'
 import { MarcoBeneficiario } from '@/componentes/Marcos'
 import { textoMonto } from '@/componentes/Monto'
-import { TatuPagado } from '@/componentes/TatuAnimado'
+import { TatuResultado } from '@/componentes/TatuEnrolla'
 import { TarjetaRechazo } from '@/componentes/TarjetaRechazo'
 import { Titulo } from '@/componentes/Titulo'
 import { Button } from '@/componentes/ui/button'
@@ -25,7 +25,9 @@ export default function CobroPagado() {
   const { id = '' } = useParams()
   const config = useConfig()
   const consulta = usePolling(() => api.get<Cobro>(`/cobros/${id}`), config.pollIntervaloMs, (c) => !c || !esEstadoFinal(c.estado), { clave: id })
-  const c = consulta.datos
+  // El cobro recién pedido llega con los datos que devolvió la API: no pasa por la pantalla de carga
+  const inicial = (useLocation().state as { cobro?: Cobro } | null)?.cobro
+  const c = consulta.datos ?? (inicial?.id === id ? inicial : undefined)
 
   return (
     <MarcoBeneficiario nav={false}>
@@ -45,7 +47,7 @@ export default function CobroPagado() {
         {c?.estado === 'Pagado' && (
           <>
             <Bloque tono="pagado" role="status" className="gap-1.5">
-              <TatuPagado medallon className="mb-2 size-[88px]" />
+              <TatuResultado id={c.id} estado="pagado" sobreColor className="mb-2 w-32" />
               <Titulo className="text-[40px] sm:text-[44px]">Pagado</Titulo>
               <p className="m-0 text-lg font-bold">{textoMonto(c.monto, c.moneda)} llegaron a tu cuenta</p>
               <span className="text-[15px]">
